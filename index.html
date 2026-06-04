@@ -1597,6 +1597,189 @@ textarea{resize:none;height:72px;line-height:1.6}
   margin-bottom:10px;letter-spacing:.3px;
 }
 .cs-inline-desc{font-size:12px;color:var(--text3);line-height:1.75;max-width:240px}
+
+/* ═══════════════════════════════════════════════════════
+   ♿ AKSESIBILITAS — RAMAH LANSIA & PENGGUNA MATA MINUS
+   Semua ukuran font, padding, dan touch target diperbesar
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Base & Typography ── */
+html, body { font-size: 16px !important; }
+
+/* Heading & Brand */
+.brand-name { font-size: 20px !important; }
+.brand-sub  { font-size: 13px !important; }
+
+/* Bottom nav label */
+.bni        { font-size: 12px !important; padding: 12px 0 !important; }
+.bni i      { font-size: 28px !important; }
+
+/* Mode pills (Pelanggan / Material / Maint. dll) */
+.mpill      { font-size: 13px !important; padding: 11px 6px !important; }
+.mpill i    { font-size: 19px !important; }
+
+/* Section titles */
+.sec-t      { font-size: 13px !important; }
+.sec-t i    { font-size: 19px !important; }
+
+/* Form labels */
+.field label { font-size: 13px !important; letter-spacing: .2px !important; }
+
+/* Form inputs */
+input, select, textarea {
+  font-size: 16px !important;
+  padding: 15px 16px !important;
+  line-height: 1.5 !important;
+}
+select { padding-right: 40px !important; }
+textarea { font-size: 16px !important; padding: 15px 16px !important; }
+input::placeholder, textarea::placeholder { font-size: 15px !important; }
+
+/* Buttons */
+.btn       { font-size: 17px !important; padding: 17px !important; }
+.btn-ghost { font-size: 15px !important; padding: 15px !important; }
+.btn i     { font-size: 20px !important; }
+
+/* Tags / badges */
+.tag  { font-size: 12px !important; padding: 4px 11px !important; }
+
+/* Dashboard stat cards */
+.dstat-n   { font-size: 36px !important; }
+.dstat-l   { font-size: 14px !important; margin-top: 6px !important; }
+.dstat-trend { font-size: 13px !important; margin-top: 5px !important; }
+
+/* Chart */
+.chart-title  { font-size: 14px !important; }
+.bar-lbl      { font-size: 12px !important; }
+.legend-label { font-size: 13px !important; }
+.legend-val   { font-size: 14px !important; }
+
+/* Recent list items */
+.ritem-name { font-size: 15px !important; }
+.ritem-sub  { font-size: 13px !important; margin-top: 3px !important; }
+.ritem-av   { width: 44px !important; height: 44px !important; font-size: 14px !important; border-radius: 12px !important; }
+
+/* Data cards */
+.dcard .dc-name { font-size: 16px !important; }
+.dcard .dc-sub  { font-size: 13px !important; }
+.dcard .dc-row  { font-size: 13px !important; }
+.dc-av { width: 46px !important; height: 46px !important; font-size: 15px !important; }
+
+/* Toast notification */
+.toast { font-size: 15px !important; padding: 15px 26px !important; }
+
+/* Net pill (LIVE/OFFLINE) */
+.net-pill { font-size: 13px !important; padding: 7px 14px !important; }
+
+/* Config banner */
+.cfg-banner { font-size: 13px !important; padding: 11px 16px !important; }
+
+/* Login & role cards */
+.login-title { font-size: 24px !important; }
+.login-sub   { font-size: 15px !important; }
+.role-name   { font-size: 17px !important; }
+.role-desc   { font-size: 13px !important; }
+.role-badge  { font-size: 12px !important; padding: 4px 11px !important; }
+.login-btn   { font-size: 17px !important; padding: 18px !important; }
+.pin-label   { font-size: 14px !important; }
+.np-btn      { font-size: 24px !important; padding: 16px 12px !important; border-radius: 16px !important; }
+.np-btn.del  { font-size: 20px !important; }
+.pin-dot     { width: 20px !important; height: 20px !important; }
+.login-err   { font-size: 14px !important; }
+
+/* Cards */
+.card { padding: 18px !important; }
+
+/* Role pill in header */
+.role-pill   { font-size: 13px !important; padding: 6px 13px !important; }
+.role-pill i { font-size: 15px !important; }
+
+/* Monitor badges */
+.mon-badge-ok, .mon-badge-err, .mon-badge-pend { font-size: 13px !important; padding: 6px 14px !important; }
+
+/* Sidebar items */
+.sb-item  { font-size: 14px !important; padding: 13px 16px !important; }
+.sb-sub   { font-size: 13px !important; padding: 11px 16px 11px 40px !important; }
+.sb-item i, .sb-sub i { font-size: 20px !important; }
+
+/* ODP monitoring stats */
+#odp-mon-total-penuh, #odp-mon-total-kritis, #odp-mon-total-kosong,
+#odp-mon-total-ok, #odp-mon-total-blm { font-size: 32px !important; }
+
+/* Tutorial steps */
+.tsl-num  { font-size: 14px !important; width: 26px !important; height: 26px !important; }
+.tsl-text { font-size: 14px !important; }
+.tut-step-title { font-size: 16px !important; }
+.tut-step-desc  { font-size: 14px !important; line-height: 1.75 !important; }
+
+/* Dash empty state */
+.dash-empty-title { font-size: 17px !important; }
+.dash-empty-sub   { font-size: 14px !important; line-height: 1.7 !important; }
+.dash-empty-btn   { font-size: 14px !important; padding: 11px 20px !important; }
+.dash-empty-icon  { width: 72px !important; height: 72px !important; }
+.dash-empty-icon i{ font-size: 34px !important; }
+
+/* Empty state general */
+.empty-s i { font-size: 60px !important; }
+.empty-s p { font-size: 15px !important; }
+
+/* OTF (Sales) */
+.otf-label      { font-size: 13px !important; }
+.otf-hist-label { font-size: 13px !important; }
+.otf-hist-time  { font-size: 12px !important; }
+.otf-badge-lunas, .otf-badge-belum { font-size: 12px !important; padding: 3px 10px !important; }
+
+/* Detail pelanggan */
+.detail-item-lbl { font-size: 12px !important; }
+.cid-result-sub  { font-size: 13px !important; }
+.detail-pel-cid  { font-size: 13px !important; }
+
+/* Code block */
+.code-pre { font-size: 13px !important; line-height: 1.9 !important; }
+.code-cp  { font-size: 12px !important; }
+
+/* Permission table */
+.perm-table th   { font-size: 13px !important; }
+.perm-table td   { font-size: 13px !important; padding: 12px 10px !important; }
+.perm-role-name  { font-size: 14px !important; }
+
+/* Pin manager */
+.pin-mgr-label { font-size: 14px !important; }
+.pin-mgr-val   { font-size: 14px !important; letter-spacing: 4px !important; }
+.pin-edit-btn  { font-size: 13px !important; padding: 7px 16px !important; }
+
+/* CS inline (Coming Soon) */
+.cs-inline-title { font-size: 20px !important; }
+.cs-inline-label { font-size: 13px !important; }
+.cs-inline-desc  { font-size: 14px !important; line-height: 1.8 !important; }
+
+/* Inline style overrides — small labels throughout dashboard */
+/* Catch-all: any element with explicit tiny inline font-size */
+[style*="font-size:9px"]  { font-size: 12px !important; }
+[style*="font-size:10px"] { font-size: 13px !important; }
+[style*="font-size:11px"] { font-size: 14px !important; }
+[style*="font-size:12px"] { font-size: 15px !important; }
+[style*="font-size:13px"] { font-size: 16px !important; }
+[style*="font-size:14px"] { font-size: 16px !important; }
+[style*="font-size:8px"]  { font-size: 12px !important; }
+
+/* Inline font sizes with spaces (e.g. "font-size: 10px") */
+[style*="font-size: 9px"]  { font-size: 12px !important; }
+[style*="font-size: 10px"] { font-size: 13px !important; }
+[style*="font-size: 11px"] { font-size: 14px !important; }
+[style*="font-size: 12px"] { font-size: 15px !important; }
+[style*="font-size: 13px"] { font-size: 16px !important; }
+[style*="font-size: 8px"]  { font-size: 12px !important; }
+
+/* Larger touch targets for interactive elements */
+button:not(.np-btn):not(.mpill):not(.bni) {
+  min-height: 44px !important;
+}
+
+/* Increased line height globally for readability */
+p, span, div, label, td, th, li {
+  line-height: 1.6;
+}
 </style>
 </head>
 <body>
@@ -2405,9 +2588,41 @@ textarea{resize:none;height:72px;line-height:1.6}
 
       <!-- DASHBOARD PELANGGAN -->
       <div id="dash-p" style="display: block;">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Dashboard Pelanggan</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Dashboard Pelanggan</div>
+          <div id="dash-p-area-chip" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--c1b);color:var(--c1);border:1px solid rgba(26,86,219,.2);display:none"></div>
+        </div>
+
+        <!-- FILTER AREA + WILAYAH PELANGGAN -->
+        <div style="margin-bottom:12px;background:var(--bg2);border-radius:var(--rs);padding:11px 13px;border:1px solid var(--border2);box-shadow:0 2px 8px rgba(26,86,219,.06)">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:5px">
+              <i class="ti ti-filter" style="font-size:13px;color:var(--c1)"></i> Filter Area &amp; Wilayah
+            </span>
+            <button id="dp-reset-btn" onclick="resetDpFilter()" style="display:none;align-items:center;gap:5px;padding:5px 12px;background:rgba(220,38,38,.08);color:var(--red);border:1px solid rgba(220,38,38,.2);border-radius:20px;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:.15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+              <i class="ti ti-x" style="font-size:12px"></i> Reset
+            </button>
+          </div>
+          <div class="r2" style="gap:8px">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:5px;letter-spacing:.3px;text-transform:uppercase">Area</div>
+              <select id="dp-area-filter" onchange="onDpAreaFilterChange()" style="width:100%;padding:10px 34px 10px 12px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;color:var(--text);-webkit-appearance:none;appearance:none;outline:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
+                <option value="">Semua Area</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:5px;letter-spacing:.3px;text-transform:uppercase">Wilayah (Kec.)</div>
+              <select id="dp-wil-filter" onchange="onDpAreaFilterChange()" style="width:100%;padding:10px 34px 10px 12px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;color:var(--text);-webkit-appearance:none;appearance:none;outline:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
+                <option value="">Semua Wilayah</option>
+              </select>
+            </div>
+          </div>
+          <!-- Breakdown chips — tampil saat belum ada filter spesifik -->
+          <div id="dp-area-breakdown" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px"></div>
+        </div>
+
         <div class="dash-grid">
-          <div class="dstat c1"><div class="dstat-n c1" id="ds-total-p">0</div><div class="dstat-l">Total Pelanggan</div><div class="dstat-trend up" id="ds-new-p"><i class="ti ti-trending-up"></i> 0 hari ini</div></div>
+          <div class="dstat c1"><div class="dstat-n c1" id="ds-total-p">0</div><div class="dstat-l" id="ds-total-p-label">Total Pelanggan</div><div class="dstat-trend up" id="ds-new-p"><i class="ti ti-trending-up"></i> 0 hari ini</div></div>
           <div class="dstat" style="border-color:rgba(16,217,160,.18)"><div class="dstat-n gr" id="ds-aktif">0</div><div class="dstat-l">Status Aktif</div><div class="dstat-trend up" id="ds-aktif-pct"><i class="ti ti-check"></i> 0%</div></div>
           <div class="dstat" style="border-color:rgba(240,84,84,.18)"><div class="dstat-n" style="color:var(--red)" id="ds-area">0</div><div class="dstat-l">Dismantle</div><div class="dstat-trend" style="color:var(--text3);font-size:9px" id="ds-area-sub">Total pelanggan dismantle</div></div>
           <div class="dstat" style="border-color:rgba(167,139,250,.18)"><div class="dstat-n c1" id="ds-today-p">0</div><div class="dstat-l">Input Hari Ini</div></div>
@@ -6343,7 +6558,7 @@ function setTab(t,btn,skipDataReset){
   if(t==='set'){
     renderPinMgr();renderSalesMgr();renderAcctList();
     if(typeof switchMgmtTab==='function')switchMgmtTab('pin');
-    switchSetCat('akses');
+    closeSetCat(); // Kembali ke pusat kontrol (daftar kategori)
     updSetStats();
     _sbInitUI(); // Refresh Supabase config UI
   }
@@ -10608,16 +10823,93 @@ function updDash(){
   // Gunakan data gabungan Sheets + lokal
   var allP=getMergedPel();
 
-  // PELANGGAN STATS
-  var tp=allP.length;
-  var ak=allP.filter(function(d){return d.status==='Aktif'||d.status==='Paket 200Mbps';}).length;
-  var tp_today=allP.filter(function(d){return d.tgl===tod;}).length;
+  // ── AREA + WILAYAH FILTER PELANGGAN ──
+  var dpSel=document.getElementById('dp-area-filter');
+  var dpWil=document.getElementById('dp-wil-filter');
+
+  // Area dropdown sudah diisi oleh updateAreaDropdowns() dari wilayah settings
+  // Hanya perlu sync dropdown Wilayah berdasarkan area terpilih
+  var selArea=dpSel?dpSel.value:'';
+  if(typeof updDpWilDropdown==='function') updDpWilDropdown(selArea);
+  var selWil=dpWil?dpWil.value:'';
+
+  // Filter data pelanggan sesuai area + wilayah yang dipilih
+  var filtP=allP;
+  if(selArea) filtP=filtP.filter(function(d){return d.area===selArea;});
+  if(selWil)  filtP=filtP.filter(function(d){return d.kec===selWil;});
+
+  // Update chip label di header
+  var chipEl=document.getElementById('dash-p-area-chip');
+  if(chipEl){
+    if(selArea||selWil){
+      chipEl.textContent=(selArea||'Semua')+(selWil?' › '+selWil:'');
+      chipEl.style.display='inline-flex';
+    } else { chipEl.style.display='none'; }
+  }
+
+  // Update label stat card
+  var lblEl=document.getElementById('ds-total-p-label');
+  if(lblEl){
+    if(selWil) lblEl.textContent='Pelanggan '+selWil;
+    else if(selArea) lblEl.textContent='Pelanggan '+selArea;
+    else lblEl.textContent='Total Pelanggan';
+  }
+
+  // Breakdown chips (hanya saat tidak ada filter sama sekali)
+  var breakdown=document.getElementById('dp-area-breakdown');
+  if(breakdown){
+    if(!selArea&&!selWil){
+      var areaMap2={};
+      allP.forEach(function(d){if(d.area)areaMap2[d.area]=(areaMap2[d.area]||0)+1;});
+      var aKeys=Object.keys(areaMap2).sort();
+      if(aKeys.length){
+        breakdown.innerHTML=aKeys.map(function(a){
+          return '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--c1b);color:var(--c1);border:1px solid rgba(26,86,219,.15);cursor:pointer;white-space:nowrap" onclick="setDpAreaFilter(\''+a+'\')">'
+            +a+' <b>'+areaMap2[a]+'</b></span>';
+        }).join('');
+        breakdown.style.display='flex';
+      } else {
+        breakdown.innerHTML='';breakdown.style.display='none';
+      }
+    } else if(selArea&&!selWil){
+      // Tampilkan breakdown per kecamatan dalam area ini
+      var kecMap2={};
+      filtP.forEach(function(d){if(d.kec)kecMap2[d.kec]=(kecMap2[d.kec]||0)+1;});
+      var kKeys=Object.keys(kecMap2).sort();
+      if(kKeys.length){
+        breakdown.innerHTML='<span style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-right:4px;align-self:center">Kec:</span>'+kKeys.map(function(k){
+          return '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--gng);color:var(--green);border:1px solid rgba(5,150,105,.2);cursor:pointer;white-space:nowrap" onclick="setDpWilFilter(\''+k+'\')">'
+            +k+' <b>'+kecMap2[k]+'</b></span>';
+        }).join('');
+        breakdown.style.display='flex';
+        breakdown.style.flexWrap='wrap';
+        breakdown.style.alignItems='center';
+      } else {
+        breakdown.innerHTML='';breakdown.style.display='none';
+      }
+    } else {
+      breakdown.innerHTML='';breakdown.style.display='none';
+    }
+  }
+
+  // PELANGGAN STATS (dari filtP)
+  var tp=filtP.length;
+  var ak=filtP.filter(function(d){return d.status==='Aktif'||d.status==='Paket 200Mbps';}).length;
+  var tp_today=filtP.filter(function(d){return d.tgl===tod;}).length;
   // Hitung juga dari db.p lokal hari ini (input baru)
-  var tp_today_local=db.p.filter(function(d){return d.tgl===tod;}).length;
-  if(tp_today_local>tp_today) tp_today=tp_today_local;
-  var areas=Array.from(new Set(allP.map(function(d){return d.area;}).filter(Boolean))).length;
+  var localToday=db.p.filter(function(d){
+    if(d.tgl!==tod) return false;
+    if(selArea&&d.area!==selArea) return false;
+    if(selWil&&d.kec!==selWil) return false;
+    return true;
+  }).length;
+  if(localToday>tp_today) tp_today=localToday;
   // Stat dismantle untuk dashboard pelanggan
-  var xOnlyCount=db.m.filter(function(d){return d.type==='x';}).length;
+  var xOnlyCount=db.m.filter(function(d){
+    if(d.type!=='x') return false;
+    if(selArea&&d.area!==selArea) return false;
+    return true;
+  }).length;
   document.getElementById('ds-total-p').textContent=tp;
   document.getElementById('ds-aktif').textContent=ak;
   document.getElementById('ds-aktif-pct').innerHTML='<i class="ti ti-check"></i> '+(tp?Math.round(ak/tp*100):0)+'%';
@@ -10625,25 +10917,35 @@ function updDash(){
   document.getElementById('ds-today-p').textContent=tp_today;
   document.getElementById('ds-new-p').innerHTML='<i class="ti ti-trending-up"></i> '+tp_today+' hari ini';
 
-  // AREA BAR CHART
+  // AREA BAR CHART (dari filtP)
   var areaMap={};
-  allP.forEach(function(d){if(d.area)areaMap[d.area]=(areaMap[d.area]||0)+1;});
+  if(selArea&&!selWil){
+    // Tampilkan per kecamatan
+    filtP.forEach(function(d){if(d.kec)areaMap[d.kec]=(areaMap[d.kec]||0)+1;});
+  } else {
+    filtP.forEach(function(d){if(d.area)areaMap[d.area]=(areaMap[d.area]||0)+1;});
+  }
   renderBar('bar-area',areaMap,'c1');
 
-  // STATUS DONUT
+  // STATUS DONUT (dari filtP)
   var stMap={'Paket 200Mbps':0,'Fasum':0,'ODP/ODC Tempel':0};
-  allP.forEach(function(d){if(d.status)stMap[d.status]=(stMap[d.status]||0)+1;});
+  filtP.forEach(function(d){if(d.status)stMap[d.status]=(stMap[d.status]||0)+1;});
   var stColors={'Paket 200Mbps':'#10d9a0','Fasum':'#3d8ef8','ODP/ODC Tempel':'#fbbf24'};
   renderDonut('donut-status','donut-legend',stMap,stColors);
 
   // ODP MONITOR
   updOdpMonitor();
 
-  // RECENT — tampilkan 5 data terbaru dari gabungan lokal + Sheets (semua periode)
+  // RECENT — tampilkan 5 data terbaru dari filtP
   var rp=document.getElementById('recent-p');
-  var recsAll=allP.slice().sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');});
-  // Tambahkan data lokal yang belum ada di allP (belum dikirim)
-  db.p.forEach(function(lc){
+  var recsAll=filtP.slice().sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');});
+  // Tambahkan data lokal yang belum ada di filtP (belum dikirim)
+  var localSrc=db.p.filter(function(d){
+    if(selArea&&d.area!==selArea) return false;
+    if(selWil&&d.kec!==selWil) return false;
+    return true;
+  });
+  localSrc.forEach(function(lc){
     var exists=recsAll.some(function(x){return x.cid&&x.cid===lc.cid&&x.tgl===lc.tgl;});
     if(!exists) recsAll.push(lc);
   });
@@ -12166,9 +12468,29 @@ function toggleOdpDetail(id) {
   var icon = document.getElementById('icon-' + id);
   if (!el) return;
   var isOpen = el.style.display !== 'none';
+
+  // Tutup semua detail ODP yang sedang terbuka (accordion)
+  Object.keys(_odpOpenState).forEach(function(otherId) {
+    if (_odpOpenState[otherId] && otherId !== id) {
+      var otherEl = document.getElementById(otherId);
+      var otherIcon = document.getElementById('icon-' + otherId);
+      if (otherEl) otherEl.style.display = 'none';
+      if (otherIcon) otherIcon.style.transform = '';
+      _odpOpenState[otherId] = false;
+    }
+  });
+
+  // Toggle ODP yang dipilih
   el.style.display = isOpen ? 'none' : 'block';
   if (icon) icon.style.transform = isOpen ? '' : 'rotate(180deg)';
   _odpOpenState[id] = !isOpen;
+
+  // Scroll ke ODP yang dibuka agar langsung terlihat
+  if (!isOpen && el.parentElement) {
+    setTimeout(function(){
+      el.parentElement.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }, 80);
+  }
 }
 
 function restoreOdpOpenState() {
@@ -13403,6 +13725,16 @@ function updateAreaDropdowns(){
       areas.map(function(a){ return '<option'+(a===cur?' selected':'')+'>'+escHtml(a)+'</option>'; }).join('');
     if(cur) el.value = cur;
   });
+  // dp-area-filter — filter area di dashboard pelanggan
+  var dpArea = document.getElementById('dp-area-filter');
+  if(dpArea){
+    var curDp = dpArea.value;
+    dpArea.innerHTML = '<option value="">Semua Area</option>' +
+      areas.map(function(a){ return '<option value="'+escHtml(a)+'"'+(a===curDp?' selected':'')+'>'+escHtml(a)+'</option>'; }).join('');
+    if(curDp && areas.indexOf(curDp)>=0) dpArea.value = curDp;
+    // Setelah area diisi, update dropdown wilayah juga
+    if(typeof updDpWilDropdown === 'function') updDpWilDropdown(dpArea.value);
+  }
   // d-maint-area — area di form maintenance
   populateMaintAreaSelect();
   // x-area-select — area di form dismantle
@@ -15564,6 +15896,62 @@ function csInlineHTML(label) {
     '<div class="cs-inline-label"><i class="ti ti-clock" style="font-size:11px"></i> ' + label + '</div>' +
     '<div class="cs-inline-desc">Fitur ini sedang dalam pengembangan dan akan segera tersedia. Pantau terus pembaruan aplikasi!</div>' +
     '</div>';
+}
+
+/* ── DASHBOARD PELANGGAN — FILTER AREA + WILAYAH ── */
+function updDpWilDropdown(selArea){
+  var dpWil=document.getElementById('dp-wil-filter');
+  if(!dpWil) return;
+  var curWil=dpWil.value;
+  dpWil.innerHTML='<option value="">Semua Wilayah</option>';
+  if(selArea){
+    var wilData2=typeof getWilayahData==='function'?getWilayahData():{};
+    var kecList=((wilData2[selArea]||{}).kec)||[];
+    // Gabungkan juga kec dari data aktual pelanggan di area ini
+    var allP2=typeof getMergedPel==='function'?getMergedPel():[];
+    var kecFromData=Array.from(new Set(allP2.filter(function(d){return d.area===selArea;}).map(function(d){return d.kec;}).filter(Boolean)));
+    var mergedKec=Array.from(new Set(kecList.concat(kecFromData))).sort();
+    mergedKec.forEach(function(k){
+      var opt=document.createElement('option');opt.value=k;opt.textContent=k;dpWil.appendChild(opt);
+    });
+    dpWil.disabled=false;
+    dpWil.style.opacity='1';
+    if(curWil&&mergedKec.indexOf(curWil)>=0) dpWil.value=curWil;
+    else dpWil.value='';
+  } else {
+    dpWil.disabled=true;
+    dpWil.style.opacity='.45';
+    dpWil.value='';
+  }
+}
+function _updDpResetBtn(){
+  var btn=document.getElementById('dp-reset-btn');
+  if(!btn) return;
+  var area=(document.getElementById('dp-area-filter')||{}).value||'';
+  var wil=(document.getElementById('dp-wil-filter')||{}).value||'';
+  btn.style.display=(area||wil)?'flex':'none';
+}
+function onDpAreaFilterChange(){
+  var dpSel=document.getElementById('dp-area-filter');
+  updDpWilDropdown(dpSel?dpSel.value:'');
+  _updDpResetBtn();
+  if(typeof updDash==='function') updDash();
+}
+function resetDpFilter(){
+  var a=document.getElementById('dp-area-filter');
+  var w=document.getElementById('dp-wil-filter');
+  if(a) a.value='';
+  if(w){ w.value=''; w.disabled=true; w.style.opacity='.45'; }
+  _updDpResetBtn();
+  if(typeof updDash==='function') updDash();
+}
+function setDpAreaFilter(area){
+  var sel=document.getElementById('dp-area-filter');
+  if(sel){ sel.value=area; onDpAreaFilterChange(); }
+}
+function setDpWilFilter(kec){
+  var sel=document.getElementById('dp-wil-filter');
+  if(sel){ sel.value=kec; _updDpResetBtn(); onDpAreaFilterChange(); }
 }
 
 /* Cek apakah suatu pane/div benar-benar kosong (hanya whitespace / tidak ada child element nyata) */
