@@ -7,10 +7,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0e1a">
-<title>Dashboard Data Entry — Supabase Edition</title>
+<title>Dashboard Data Entry</title>
 <link rel="preconnect" href="https://fonts.googleapis.com/">
 <link href="./DataEntry Pro_files/css2" rel="stylesheet">
 <link rel="stylesheet" href="./DataEntry Pro_files/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -3826,20 +3827,8 @@ textarea{resize:none;height:72px;line-height:1.6}
       </div>
 
       <!-- ── GRUP MENU PENGATURAN ── -->
-      <!-- Database Supabase -->
-      <div onclick="switchSetCat('supabase')" id="scat-supabase" class="scat-btn" style="background:var(--bg2);border:1.5px solid rgba(16,217,160,.3);border-radius:var(--r);padding:14px 16px;margin-bottom:9px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 2px 8px rgba(16,217,160,.1);transition:.15s">
-        <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#1ec38f,#10b981);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(16,217,160,.35)">
-          <i class="ti ti-database-cog" style="font-size:22px;color:#fff"></i>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:800;color:var(--text);letter-spacing:-.2px">Database Supabase</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px" id="sb-menu-status">Database terpusat &amp; realtime</div>
-        </div>
-        <i class="ti ti-chevron-right" style="font-size:18px;color:var(--text4)"></i>
-      </div>
-
       <!-- Koneksi -->
-      <div onclick="switchSetCat('koneksi')" id="scat-koneksi" class="scat-btn" style="background:var(--bg2);border:1.5px solid rgba(61,142,248,.25);border-radius:var(--r);padding:14px 16px;margin-bottom:9px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 2px 8px rgba(26,86,219,.06);transition:.15s">
+      <div onclick="switchSetCat('koneksi')" id="scat-koneksi" class="scat-btn scat-active" style="background:var(--bg2);border:1.5px solid rgba(61,142,248,.25);border-radius:var(--r);padding:14px 16px;margin-bottom:9px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 2px 8px rgba(26,86,219,.06);transition:.15s">
         <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,var(--c1),rgba(61,142,248,.7));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(61,142,248,.3)">
           <i class="ti ti-plug-connected" style="font-size:22px;color:#fff"></i>
         </div>
@@ -3909,122 +3898,6 @@ textarea{resize:none;height:72px;line-height:1.6}
       <!-- ════════════════════════════
            KATEGORI: KONEKSI
       ════════════════════════════ -->
-      <!-- ═══ PANE: DATABASE SUPABASE ═══ -->
-      <div id="set-cat-supabase" class="set-cat-pane" style="display:none">
-        <!-- Status badge -->
-        <div id="sb-status-banner" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--rs);margin-bottom:14px;background:var(--rg);border:1px solid rgba(220,38,38,.2)">
-          <i class="ti ti-database-off" style="font-size:18px;color:var(--red)"></i>
-          <div style="flex:1">
-            <div style="font-size:12px;font-weight:700;color:var(--red)" id="sb-status-text">Belum Dikonfigurasi</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:1px">Isi URL dan Anon Key Supabase di bawah</div>
-          </div>
-        </div>
-
-        <!-- Supabase URL -->
-        <div class="card" style="margin-bottom:12px">
-          <div class="sec-t c1"><i class="ti ti-link"></i> Supabase Project URL</div>
-          <div class="field">
-            <label>Project URL <span class="req">*</span></label>
-            <input class="url-inp" type="url" id="sb-inp-url" placeholder="https://xxxxxxxxxxxxxxxx.supabase.co" style="border-color:rgba(16,217,160,.3);margin-bottom:7px">
-            <div style="font-size:10px;color:var(--text3)">Temukan di Supabase → Project Settings → API → Project URL</div>
-          </div>
-        </div>
-
-        <!-- Supabase Anon Key -->
-        <div class="card" style="margin-bottom:12px">
-          <div class="sec-t c1"><i class="ti ti-key"></i> Anon / Public Key</div>
-          <div class="field">
-            <label>API Key <span class="req">*</span></label>
-            <input class="url-inp" type="text" id="sb-inp-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="border-color:rgba(16,217,160,.3);margin-bottom:7px">
-            <div style="font-size:10px;color:var(--text3)">Gunakan <b>anon/public</b> key (bukan service_role). Aman disimpan di client.</div>
-          </div>
-        </div>
-
-        <!-- Tombol aksi -->
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <button onclick="sbSaveConfig()" style="flex:2;padding:13px;background:var(--green);color:#001a0f;border:none;border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-            <i class="ti ti-device-floppy"></i> Simpan & Hubungkan
-          </button>
-          <button onclick="sbTestConn()" style="flex:1;padding:13px;background:var(--c1b);color:var(--c1);border:1.5px solid rgba(61,142,248,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
-            <i class="ti ti-radar-2"></i> Test
-          </button>
-        </div>
-
-        <!-- Tombol sync manual -->
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <button onclick="fetchPelDB(true)" style="flex:1;padding:11px;background:rgba(16,217,160,.12);color:var(--green);border:1px solid rgba(16,217,160,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
-            <i class="ti ti-refresh"></i> Sync Pelanggan
-          </button>
-          <button onclick="fetchMatFromSupabase(true)" style="flex:1;padding:11px;background:rgba(249,115,22,.1);color:var(--c2);border:1px solid rgba(249,115,22,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
-            <i class="ti ti-refresh"></i> Sync Material
-          </button>
-        </div>
-
-        <!-- SQL Schema guide -->
-        <div class="card" style="background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.06)">
-          <div class="sec-t" style="color:var(--text2)"><i class="ti ti-terminal-2"></i> Setup Supabase (Pertama Kali)</div>
-          <div style="font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:10px">
-            Buka Supabase → SQL Editor → jalankan SQL berikut untuk membuat tabel:
-          </div>
-          <div style="background:var(--bg);border-radius:var(--rs);padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);white-space:pre-wrap;word-break:break-all;border:1px solid var(--border2);line-height:1.6" id="sb-sql-block">-- Tabel Pelanggan
-create table pelanggan (
-  id text primary key,
-  tgl text, nama text, cid text unique,
-  area text, kota text, alamat text,
-  rt text, rw text, kec text, kel text,
-  snont text, odc text, odp text,
-  port text, ont text, precon text,
-  status text, teknisi text, sales text,
-  operator text, ket text, nominal text,
-  type text, ts timestamptz default now(),
-  sent boolean default false,
-  created_at timestamptz default now()
-);
-
--- Tabel Material
-create table material (
-  id text primary key,
-  tgl text, item text, qty text,
-  sn text, amb text, stat text,
-  area text, pgn text, ket text,
-  cid text, type text,
-  ts timestamptz default now(),
-  sent boolean default false,
-  created_at timestamptz default now()
-);
-
--- Aktifkan RLS + izin anon
-alter table pelanggan enable row level security;
-alter table material enable row level security;
-create policy "Public read" on pelanggan for select using (true);
-create policy "Public write" on pelanggan for all using (true);
-create policy "Public read" on material for select using (true);
-create policy "Public write" on material for all using (true);</div>
-          <button onclick="copySbSql()" style="margin-top:8px;width:100%;padding:9px;background:var(--c1b);color:var(--c1);border:1px solid rgba(61,142,248,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
-            <i class="ti ti-copy"></i> Salin SQL
-          </button>
-        </div>
-
-        <!-- Deploy guide -->
-        <div class="card" style="margin-top:12px;background:rgba(26,86,219,.04);border-color:rgba(26,86,219,.12)">
-          <div class="sec-t c1"><i class="ti ti-cloud-upload"></i> Deploy: Cloudflare Pages + idcloudhost</div>
-          <div style="font-size:11px;color:var(--text2);line-height:1.8">
-            <b style="color:var(--c1)">Langkah Deploy:</b><br>
-            1. Simpan file HTML ini sebagai <code>index.html</code><br>
-            2. Buat repositori GitHub (free) dan push file<br>
-            3. Buka <b>Cloudflare Pages</b> → Connect to Git → pilih repo<br>
-            4. Build: biarkan kosong (static HTML). Deploy otomatis!<br>
-            5. Cloudflare berikan domain gratis: <code>namaproyek.pages.dev</code><br><br>
-            <b style="color:var(--c2)">Custom Domain (idcloudhost):</b><br>
-            6. Beli domain di <b>idcloudhost.com</b><br>
-            7. Di panel domain idcloudhost → DNS Management<br>
-            8. Tambah record CNAME: <code>@ → namaproyek.pages.dev</code><br>
-            9. Di Cloudflare Pages → Custom Domains → masukkan domain<br>
-            10. SSL otomatis diaktifkan oleh Cloudflare 🎉
-          </div>
-        </div>
-      </div><!-- /set-cat-supabase -->
-
       <div id="set-cat-koneksi" class="set-cat-pane" style="display:none">
 
         <!-- Status Koneksi Real-time -->
@@ -4121,6 +3994,69 @@ create policy "Public write" on material for all using (true);</div>
             </div>
 
           </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+             SUPABASE — Penyimpanan Utama
+        ══════════════════════════════════════════════ -->
+        <div style="background:var(--bg2);border:2px solid rgba(62,207,142,.3);border-radius:var(--r);padding:14px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(62,207,142,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="#3ecf8e" stroke-width="2" stroke-linejoin="round"/><path d="M2 7L12 12M12 12L22 7M12 12V22" stroke="#3ecf8e" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:#3ecf8e;display:flex;align-items:center;gap:6px">
+                Supabase
+                <span style="font-size:9px;background:rgba(62,207,142,.2);color:#3ecf8e;padding:2px 7px;border-radius:10px">PENYIMPANAN UTAMA</span>
+              </div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px">Database cloud utama — data tersimpan permanen & real-time</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <div id="sb-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0"></div>
+              <span id="sb-status-lbl" style="font-size:10px;color:var(--text3);font-weight:600">Belum dikonfigurasi</span>
+            </div>
+          </div>
+
+          <!-- URL Supabase -->
+          <div style="margin-bottom:8px">
+            <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;display:block">Project URL</label>
+            <input class="url-inp" type="url" id="sb-url-inp" placeholder="https://xxxxxxxxxxxx.supabase.co" oninput="_sbReset()" style="border-color:rgba(62,207,142,.4)">
+          </div>
+
+          <!-- Anon Key -->
+          <div style="margin-bottom:10px">
+            <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;display:block">Anon Public Key</label>
+            <input class="url-inp" type="text" id="sb-key-inp" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." oninput="_sbReset()" style="border-color:rgba(62,207,142,.4)">
+          </div>
+
+          <div style="display:flex;gap:7px;margin-bottom:10px">
+            <button onclick="saveSbConfig()" style="flex:2;padding:10px;background:#3ecf8e;color:#001a0f;border:none;border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-device-floppy"></i> Simpan</button>
+            <button onclick="sbTestConnection()" style="flex:1;padding:10px;background:transparent;color:#3ecf8e;border:1.5px solid rgba(62,207,142,.4);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-plug"></i> Test</button>
+          </div>
+
+          <!-- Push/Pull buttons -->
+          <div style="display:flex;gap:7px;margin-bottom:10px">
+            <button onclick="sbPushAllSettings()" style="flex:1;padding:9px;background:rgba(62,207,142,.12);color:#3ecf8e;border:1px solid rgba(62,207,142,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px"><i class="ti ti-cloud-upload"></i> Push Pengaturan</button>
+            <button onclick="sbPullAndReload()" style="flex:1;padding:9px;background:rgba(62,207,142,.12);color:#3ecf8e;border:1px solid rgba(62,207,142,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px"><i class="ti ti-cloud-download"></i> Pull Data</button>
+          </div>
+
+          <!-- Setup SQL info box -->
+          <div style="background:rgba(62,207,142,.05);border:1px solid rgba(62,207,142,.15);border-radius:var(--rs);padding:10px;cursor:pointer" onclick="document.getElementById('sb-sql-box').style.display=document.getElementById('sb-sql-box').style.display==='none'?'block':'none'">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font-size:11px;font-weight:700;color:#3ecf8e;display:flex;align-items:center;gap:5px"><i class="ti ti-database-cog" style="font-size:13px"></i> Setup SQL Supabase</div>
+              <i class="ti ti-chevron-down" style="font-size:12px;color:var(--text3)"></i>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">Jalankan SQL ini di Supabase SQL Editor sebelum mulai</div>
+          </div>
+          <div id="sb-sql-box" style="display:none;margin-top:6px;background:var(--bg4);border-radius:8px;padding:10px;border:1px solid var(--border)">
+            <pre style="font-size:9px;color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:pre-wrap;margin:0;line-height:1.7" id="sb-sql-pre"></pre>
+            <button onclick="copySbSql()" style="margin-top:7px;padding:7px 12px;background:var(--c1);color:#fff;border:none;border-radius:7px;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="ti ti-copy"></i> Salin SQL</button>
+          </div>
+        </div>
+
+        <!-- URL Sheets Pelanggan (Write) — Cadangan -->
+        <div style="background:var(--bg2);border:1px solid rgba(61,142,248,.15);border-radius:var(--r);padding:8px 12px;margin-bottom:4px">
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:5px"><i class="ti ti-table-filled" style="font-size:12px;color:var(--text3)"></i> Google Sheets — Penyimpanan Cadangan (opsional)</div>
         </div>
 
         <!-- URL Sheets Pelanggan (Write) -->
@@ -5531,172 +5467,248 @@ function updPmDots(){
 // Isi URL di sini untuk deployment — kosongkan ('') jika tidak dipakai
 // ═══════════════════════════════
 var BAKED={
-  url_p:    '',   // URL Apps Script Pelanggan (write) — legacy, tidak dipakai jika Supabase aktif
-  url_m:    '',   // URL Apps Script Material (write) — legacy
-  url_read: '',   // URL Apps Script Read Pelanggan — legacy
+  url_p:    '',   // URL Apps Script Pelanggan (write)
+  url_m:    '',   // URL Apps Script Material (write)
+  url_read: '',   // URL Apps Script Read Pelanggan
   url_app:  ''    // URL Hosting Aplikasi
 };
+// ═══════════════════════════════
 
-// ═══════════════════════════════════════════════════════
-// SUPABASE CONFIG — Database Terpusat
-// Isi SUPABASE_URL dan SUPABASE_ANON_KEY sesuai project Supabase kamu.
-// Bisa di-baked di sini, atau diisi via Setting → Koneksi Database.
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE INTEGRATION — Primary storage (replaces localStorage)
+// Google Sheets tetap berjalan sebagai cadangan (write-only backup)
+// ═══════════════════════════════════════════════════════════════
+
+// ── Konfigurasi Supabase (diisi Admin di Setting → Koneksi) ──
 var SB_CFG = {
-  url:  localStorage.getItem('sb_url')  || '',  // https://xxxxxxxx.supabase.co
-  key:  localStorage.getItem('sb_key')  || ''   // anon / public key
+  url:  'https://foambnxappwgchnjkojr.supabase.co',
+  key:  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvYW1ibnhhcHB3Z2Nobmprb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NjYyMTEsImV4cCI6MjA5NjE0MjIxMX0.Rpqles8_DsDZqNpwCjJWx-ofNWlN2jb_v6u4ZCe6r9k'
 };
 
-// ─── Supabase REST helpers ───────────────────────────────
-// Supabase JS SDK tidak di-load agar file tetap standalone.
-// Semua akses lewat Supabase REST API (fetch + Authorization header).
+// Key localStorage untuk config Supabase
+var K_SB_URL  = 'sb_url';
+var K_SB_KEY  = 'sb_anon_key';
 
-function _sbHeaders(){
-  return {
-    'Content-Type':  'application/json',
-    'apikey':        SB_CFG.key,
-    'Authorization': 'Bearer ' + SB_CFG.key,
-    'Prefer':        'return=representation'
-  };
+// In-memory client singleton
+var _sbClient = null;
+
+function _sbGetClient() {
+  if (_sbClient) return _sbClient;
+  try {
+    var url = localStorage.getItem(K_SB_URL) || SB_CFG.url || '';
+    var key = localStorage.getItem(K_SB_KEY) || SB_CFG.key || '';
+    if (!url || !key) return null;
+    if (typeof supabase !== 'undefined' && supabase.createClient) {
+      _sbClient = supabase.createClient(url, key);
+    }
+  } catch(e) { _sbClient = null; }
+  return _sbClient;
 }
 
-function _sbUrl(table, query){
-  return SB_CFG.url + '/rest/v1/' + table + (query ? '?' + query : '');
+function _sbReset() { _sbClient = null; }
+
+// ── Status indikator Supabase ──
+var _sbStatus = 'unknown'; // 'ok' | 'err' | 'off' | 'unknown'
+function _sbSetStatus(s) {
+  _sbStatus = s;
+  var el = document.getElementById('sb-status-dot');
+  var lbl = document.getElementById('sb-status-lbl');
+  var colors = { ok:'var(--green)', err:'var(--red)', off:'var(--text3)', unknown:'var(--yellow)' };
+  var labels = { ok:'Terhubung', err:'Gagal', off:'Belum dikonfigurasi', unknown:'Belum diuji' };
+  if (el) el.style.background = colors[s] || 'var(--yellow)';
+  if (lbl) lbl.textContent = labels[s] || s;
 }
 
-// SELECT semua baris dari tabel
-function sbSelect(table, query, cb){
-  if(!SB_CFG.url || !SB_CFG.key){ cb(null, 'Supabase belum dikonfigurasi'); return; }
-  fetch(_sbUrl(table, query || 'select=*'), { headers: _sbHeaders() })
-    .then(function(r){ return r.json(); })
-    .then(function(d){ cb(Array.isArray(d) ? d : [], null); })
-    .catch(function(e){ cb(null, e.message); });
+// ── Tabel Supabase yang dipakai ──
+// Table: app_kv  → { key TEXT PK, value TEXT, updated_at TIMESTAMPTZ }
+// Table: pelanggan → kolom sesuai field entry (id uuid PK, data JSONB, ts TIMESTAMPTZ)
+// Table: material  → id uuid PK, data JSONB, ts TIMESTAMPTZ
+// Untuk KV store (settings, pins, dll) gunakan tabel app_kv
+// Untuk data entry (pelanggan/material) gunakan tabel rows
+
+var SB_TABLE_KV   = 'app_kv';
+var SB_TABLE_ROWS = 'app_rows'; // { id TEXT PK, type TEXT, data JSONB, ts TIMESTAMPTZ, sent BOOLEAN }
+
+// ── KV: simpan satu key ──
+async function sbSetKV(key, value) {
+  var sb = _sbGetClient();
+  if (!sb) return false;
+  try {
+    var { error } = await sb.from(SB_TABLE_KV).upsert({ key: key, value: value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    return !error;
+  } catch(e) { return false; }
 }
 
-// UPSERT (insert-or-update by primary key)
-function sbUpsert(table, rows, cb){
-  if(!SB_CFG.url || !SB_CFG.key){ if(cb)cb(null, 'Supabase belum dikonfigurasi'); return; }
-  var h = Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=representation' });
-  fetch(_sbUrl(table), {
-    method: 'POST',
-    headers: h,
-    body: JSON.stringify(Array.isArray(rows) ? rows : [rows])
-  })
-    .then(function(r){ return r.json(); })
-    .then(function(d){ if(cb)cb(d, null); })
-    .catch(function(e){ if(cb)cb(null, e.message); });
+// ── KV: ambil satu key ──
+async function sbGetKV(key) {
+  var sb = _sbGetClient();
+  if (!sb) return null;
+  try {
+    var { data, error } = await sb.from(SB_TABLE_KV).select('value').eq('key', key).maybeSingle();
+    if (error || !data) return null;
+    return data.value;
+  } catch(e) { return null; }
 }
 
-// DELETE baris by kolom
-function sbDelete(table, col, val, cb){
-  if(!SB_CFG.url || !SB_CFG.key){ if(cb)cb(null, 'Supabase belum dikonfigurasi'); return; }
-  fetch(_sbUrl(table, col + '=eq.' + encodeURIComponent(val)), {
-    method: 'DELETE',
-    headers: _sbHeaders()
-  })
-    .then(function(r){ if(cb)cb(r.ok, null); })
-    .catch(function(e){ if(cb)cb(null, e.message); });
+// ── Rows: upsert satu entry (pelanggan/material) ──
+async function sbUpsertRow(entry) {
+  var sb = _sbGetClient();
+  if (!sb) return false;
+  try {
+    var row = {
+      id:   entry.ts || new Date().toISOString(),
+      type: entry.type || 'p',
+      data: JSON.stringify(entry),
+      ts:   entry.ts || new Date().toISOString(),
+      sent: !!entry.sent
+    };
+    var { error } = await sb.from(SB_TABLE_ROWS).upsert(row, { onConflict: 'id' });
+    return !error;
+  } catch(e) { return false; }
 }
 
-// Cek apakah Supabase sudah terkonfigurasi
-function sbReady(){ return !!(SB_CFG.url && SB_CFG.key); }
-
-// Simpan config Supabase ke localStorage
-function saveSbConfig(url, key){
-  SB_CFG.url = (url || '').trim().replace(/\/$/, '');
-  SB_CFG.key = (key || '').trim();
-  localStorage.setItem('sb_url', SB_CFG.url);
-  localStorage.setItem('sb_key', SB_CFG.key);
+// ── Rows: ambil semua entry berdasarkan type ──
+async function sbGetRows(type) {
+  var sb = _sbGetClient();
+  if (!sb) return null;
+  try {
+    var { data, error } = await sb.from(SB_TABLE_ROWS).select('data,sent').eq('type', type).order('ts', { ascending: true });
+    if (error || !data) return null;
+    return data.map(function(r) {
+      try { var d = JSON.parse(r.data); d.sent = r.sent; return d; }
+      catch(e) { return null; }
+    }).filter(Boolean);
+  } catch(e) { return null; }
 }
 
-// ─── Supabase: Load data pelanggan ke pelDB ─────────────
-function fetchPelFromSupabase(showToast){
-  if(!sbReady()){ return; }
-  if(showToast) toast('Memuat data dari Supabase...', 'info');
-  sbSelect('pelanggan', 'select=*&order=created_at.desc', function(rows, err){
-    if(err){ if(showToast) toast('Gagal load Supabase: ' + err, 'err'); return; }
-    pelDB = rows || [];
-    pelLastFetch = Date.now();
-    try{ lss(K.pc, JSON.stringify(pelDB)); }catch(e){}
-    if(showToast) toast(pelDB.length + ' pelanggan dimuat dari Supabase!', 'ok');
-    updDash(); updCounts(); updPelDbInfo();
-    if(typeof renderList === 'function') renderList();
+// ── Rows: hapus satu entry ──
+async function sbDeleteRow(ts) {
+  var sb = _sbGetClient();
+  if (!sb) return false;
+  try {
+    var { error } = await sb.from(SB_TABLE_ROWS).delete().eq('id', ts);
+    return !error;
+  } catch(e) { return false; }
+}
+
+// ── Sync semua KV settings ke Supabase ──
+async function sbPushAllSettings() {
+  var sb = _sbGetClient();
+  if (!sb) return;
+  var keys = [
+    K_PERM, K_ACCTS, K_CUSTOM_PINS, K_SALES_LIST, K_DOWNLINE,
+    K_SALES_ADDR||'sales_addr_detail', K_OTF, K_ODCOДP||'odcoдp_list',
+    K_WILAYAH||'wilayah_data', K.pa, K.pt, 'pin_gudang', 'pin_tamu'
+  ];
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i]; if (!k) continue;
+    var v = '';
+    try { v = localStorage.getItem(k) || ''; } catch(e) {}
+    if (v) await sbSetKV(k, v);
+  }
+  _sbSetStatus('ok');
+  toast('Semua pengaturan tersimpan ke Supabase ✓', 'ok');
+}
+
+// ── Load semua KV settings dari Supabase ke localStorage ──
+async function sbPullAllSettings() {
+  var sb = _sbGetClient();
+  if (!sb) { _sbSetStatus('off'); return false; }
+  try {
+    var { data, error } = await sb.from(SB_TABLE_KV).select('key,value');
+    if (error) { _sbSetStatus('err'); return false; }
+    if (data && data.length) {
+      data.forEach(function(row) {
+        if (row.key && row.value) {
+          try { localStorage.setItem(row.key, row.value); } catch(e) {}
+        }
+      });
+    }
+    _sbSetStatus('ok');
+    return true;
+  } catch(e) { _sbSetStatus('err'); return false; }
+}
+
+// ── Load data rows dari Supabase ke db ──
+async function sbLoadRows() {
+  var sb = _sbGetClient();
+  if (!sb) return false;
+  try {
+    var pRows = await sbGetRows('p');
+    var mRows = await sbGetRows('m');
+    if (pRows !== null) {
+      db.p = pRows;
+      try { localStorage.setItem(K.p, JSON.stringify(db.p)); } catch(e) {}
+    }
+    if (mRows !== null) {
+      db.m = mRows;
+      try { localStorage.setItem(K.m, JSON.stringify(db.m)); } catch(e) {}
+    }
+    _sbSetStatus('ok');
+    return true;
+  } catch(e) { _sbSetStatus('err'); return false; }
+}
+
+// ── Sync seluruh db.p & db.m ke Supabase (bulk upsert) ──
+async function sbPushAllRows() {
+  var sb = _sbGetClient();
+  if (!sb) return;
+  var rows = [];
+  db.p.forEach(function(e) {
+    rows.push({ id: e.ts||'p-'+Math.random(), type:'p', data:JSON.stringify(e), ts:e.ts||new Date().toISOString(), sent:!!e.sent });
   });
-}
-
-// ─── Supabase: Load data material ke db.m ───────────────
-function fetchMatFromSupabase(showToast){
-  if(!sbReady()){ return; }
-  sbSelect('material', 'select=*&order=created_at.desc', function(rows, err){
-    if(err){ if(showToast) toast('Gagal load material: ' + err, 'err'); return; }
-    db.m = rows || [];
-    try{ lss(K.m, JSON.stringify(db.m)); }catch(e){}
-    if(showToast) toast(db.m.length + ' material dimuat!', 'ok');
-    updDash(); updCounts();
-    if(typeof renderList === 'function') renderList();
+  db.m.forEach(function(e) {
+    rows.push({ id: e.ts||'m-'+Math.random(), type:'m', data:JSON.stringify(e), ts:e.ts||new Date().toISOString(), sent:!!e.sent });
   });
+  if (!rows.length) return;
+  try {
+    await sb.from(SB_TABLE_ROWS).upsert(rows, { onConflict: 'id' });
+    _sbSetStatus('ok');
+  } catch(e) { _sbSetStatus('err'); }
 }
 
-// ─── Supabase: Save pelanggan (upsert by cid) ────────────
-function sbSavePel(d, cb){
-  if(!sbReady()){ if(cb)cb(false); return; }
-  // Pastikan ada field id (Supabase perlu PK)
-  var row = Object.assign({}, d);
-  if(!row.id && row.cid) row.id = row.cid; // gunakan CID sebagai PK string
-  sbUpsert('pelanggan', row, function(res, err){
-    if(err){ toast('Gagal simpan ke Supabase: ' + err, 'err'); if(cb)cb(false); return; }
-    if(cb) cb(true);
-  });
+// ── Test koneksi Supabase ──
+async function sbTestConnection() {
+  _sbReset();
+  var sb = _sbGetClient();
+  if (!sb) { _sbSetStatus('off'); toast('Supabase belum dikonfigurasi', 'err'); return; }
+  try {
+    var { error } = await sb.from(SB_TABLE_KV).select('key').limit(1);
+    if (error) {
+      _sbSetStatus('err');
+      toast('Koneksi Supabase gagal: ' + (error.message||error.code||'unknown'), 'err');
+    } else {
+      _sbSetStatus('ok');
+      toast('Supabase terhubung ✓', 'ok');
+    }
+  } catch(e) { _sbSetStatus('err'); toast('Supabase error: '+e.message, 'err'); }
 }
 
-// ─── Supabase: Save material (upsert by ts) ──────────────
-function sbSaveMat(d, cb){
-  if(!sbReady()){ if(cb)cb(false); return; }
-  var row = Object.assign({}, d);
-  if(!row.id && row.ts) row.id = row.ts;
-  sbUpsert('material', row, function(res, err){
-    if(err){ toast('Gagal simpan material ke Supabase: ' + err, 'err'); if(cb)cb(false); return; }
-    if(cb) cb(true);
-  });
-}
+// ── Auto-setup tabel jika belum ada (menggunakan RPC atau langsung) ──
+// Catatan: user perlu buat tabel di Supabase dashboard atau via SQL editor
+// SQL yang diperlukan ditampilkan di UI Setting
 
-// ─── Supabase: Hapus pelanggan by CID ────────────────────
-function sbDeletePel(cid, cb){
-  if(!sbReady()){ if(cb)cb(false); return; }
-  sbDelete('pelanggan', 'id', cid, function(ok, err){
-    if(err){ toast('Gagal hapus dari Supabase: ' + err, 'err'); }
-    if(cb) cb(ok);
-  });
-}
+var SB_SETUP_SQL = `-- Jalankan SQL ini di Supabase SQL Editor\n\nCREATE TABLE IF NOT EXISTS app_kv (\n  key TEXT PRIMARY KEY,\n  value TEXT NOT NULL,\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS app_rows (\n  id TEXT PRIMARY KEY,\n  type TEXT NOT NULL,\n  data JSONB NOT NULL,\n  ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  sent BOOLEAN DEFAULT FALSE\n);\n\n-- RLS: izinkan semua operasi (sesuaikan policy sesuai kebutuhan keamanan)\nALTER TABLE app_kv ENABLE ROW LEVEL SECURITY;\nALTER TABLE app_rows ENABLE ROW LEVEL SECURITY;\n\nCREATE POLICY "allow_all_kv" ON app_kv FOR ALL USING (true) WITH CHECK (true);\nCREATE POLICY "allow_all_rows" ON app_rows FOR ALL USING (true) WITH CHECK (true);`;
 
-// ─── Supabase: Hapus material by ts ──────────────────────
-function sbDeleteMat(ts, cb){
-  if(!sbReady()){ if(cb)cb(false); return; }
-  sbDelete('material', 'id', ts, function(ok, err){
-    if(cb) cb(ok);
-  });
-}
+// ── Override lss: tulis ke localStorage DAN Supabase (async, non-blocking) ──
+var _origLss = null; // akan diisi setelah lss di-define
+var _sbKvQueue = {}; // debounce writes per key
 
-// ─── Supabase: Auto-sync setiap 60 detik ─────────────────
-var _sbAutoSyncTimer = null;
-function startSbAutoSync(){
-  if(_sbAutoSyncTimer) clearInterval(_sbAutoSyncTimer);
-  if(!sbReady()) return;
-  _sbAutoSyncTimer = setInterval(function(){
-    fetchPelFromSupabase(false);
-    fetchMatFromSupabase(false);
-  }, 60000);
+function _sbDebouncedKvWrite(key, value) {
+  // Hanya sync key pengaturan (bukan data entry besar)
+  var settingsKeys = [
+    K_PERM, K_ACCTS||'acct_list', K_CUSTOM_PINS,
+    K_SALES_LIST, K_DOWNLINE, 'sales_addr_detail',
+    K_OTF, 'odcoдp_list', 'wilayah_data',
+    'pin_admin','pin_tek','pin_gudang','pin_tamu',
+    K.up, K.um, K.ur, K.ua, K.pa, K.pt
+  ];
+  if (settingsKeys.indexOf(key) < 0) return;
+  clearTimeout(_sbKvQueue[key]);
+  _sbKvQueue[key] = setTimeout(function() {
+    sbSetKV(key, value).catch(function(){});
+  }, 800);
 }
-
-// ─── Supabase: Test koneksi ───────────────────────────────
-function testSbConnection(cb){
-  if(!sbReady()){ cb(false, 'URL atau Key kosong'); return; }
-  fetch(SB_CFG.url + '/rest/v1/', { headers: _sbHeaders() })
-    .then(function(r){ cb(r.ok, r.ok ? 'OK' : 'HTTP ' + r.status); })
-    .catch(function(e){ cb(false, e.message); });
-}
-
-// ═══════════════════════════════
 
 // IndexedDB — penyimpanan permanen (tidak hilang saat clear cache)
 var _idb=null;
@@ -5740,6 +5752,8 @@ var lss=function(k,v){
   idbSet(k,v); // simpan ke IndexedDB juga
   // Broadcast perubahan ke semua tab/window yang terbuka
   _syncBroadcast(k,v);
+  // Sync ke Supabase (debounced, async, non-blocking)
+  _sbDebouncedKvWrite(k,v);
 };
 
 // ═══════════════════════════════════════════════════════
@@ -5888,7 +5902,7 @@ function _showSyncIndicator(){
 
 // Restore dari IndexedDB ke localStorage saat start (jika localStorage kosong)
 function restoreFromIDB(cb){
-  var urlKeys=[K.up,K.um,K.ur,K.ua,K.pa,K.pt,'pin_gudang',K_PERM,K_TEK,K_ACCTS];
+  var urlKeys=[K.up,K.um,K.ur,K.ua,K.pa,K.pt,'pin_gudang',K_PERM,K_TEK,K_ACCTS,K_SB_URL,K_SB_KEY];
   var done=0;
   function next(){done++;if(done>=urlKeys.length&&cb)cb();}
   urlKeys.forEach(function(k){
@@ -5981,27 +5995,30 @@ window.addEventListener('offline',function(){updNet();document.getElementById('w
 // ═══════════════════════════════
 function init(){
   _syncInit(); // Aktifkan reactive sync engine
-  try{var p=ls(K.p);if(p)db.p=JSON.parse(p);}catch(e){}
-  try{var m=ls(K.m);if(m)db.m=JSON.parse(m);}catch(e){}
-  U.p=ls(K.up);U.m=ls(K.um);U.app=ls(K.ua);U.read=ls(K.ur);
+
+  // Load Supabase config dari localStorage
+  var sbUrl = '';
+  var sbKey = '';
+  try { sbUrl = localStorage.getItem(K_SB_URL)||''; sbKey = localStorage.getItem(K_SB_KEY)||''; } catch(e){}
+  if (sbUrl) SB_CFG.url = sbUrl;
+  if (sbKey) SB_CFG.key = sbKey;
+
+  // Coba load dari Supabase, fallback ke localStorage
+  function _afterSupabaseLoad(){
+    try{var p=ls(K.p);if(p)db.p=JSON.parse(p);}catch(e){}
+    try{var m=ls(K.m);if(m)db.m=JSON.parse(m);}catch(e){}
+    U.p=ls(K.up);U.m=ls(K.um);U.app=ls(K.ua);U.read=ls(K.ur);
   var sp=document.getElementById('s-p');if(sp)sp.value=U.p;
   var sm=document.getElementById('s-m');if(sm)sm.value=U.m;
   var sa=document.getElementById('s-app');if(sa)sa.value=U.app;
   var sr=document.getElementById('s-read');if(sr)sr.value=U.read;
   try{var pc=ls(K.pc);if(pc)pelDB=JSON.parse(pc);}catch(e){}
-  if(sbReady()){
-    fetchPelDB(false);
-    fetchMatFromSupabase(false);
-    startSbAutoSync();
-  } else if(U.read){
-    fetchPelDB(false);
-  }
+  if(U.read)fetchPelDB(false);
   document.getElementById('p-tgl').value=today();
   document.getElementById('m-tgl').value=today();
   document.getElementById('d-tgl').value=today();
   var xtgl=document.getElementById('x-tgl');if(xtgl)xtgl.value=today();
   updConn();updCounts();updShare();updDash();updPelDbInfo();updAllUrlBadges();renderAcctList();
-  setTimeout(function(){if(typeof updSbStatusBanner==='function')updSbStatusBanner();},200);
   applyRoleUI();
   updateAllDropdowns(); // sync semua dropdown dari akun & wilayah terpusat
   renderSalesMgr();
@@ -6024,6 +6041,10 @@ function init(){
       fetchPelDB(false);
     }
   },30000);
+  // Supabase periodic sync: push pending rows setiap 60 detik
+  setInterval(function(){
+    if(_sbGetClient()&&isOn()) sbPushAllRows();
+  },60000);
   // Sync guard: polling localStorage setiap 2 detik untuk memastikan semua tab sinkron
   // (menangkap perubahan dari service worker, iframe, atau browser tanpa BroadcastChannel)
   var _syncPollSnapshot={};
@@ -6038,6 +6059,30 @@ function init(){
     if(changed)_syncFullRefresh('poll');
   },2000);
   updTime();
+  // Update status dot di UI
+  _sbSetStatus(_sbGetClient() ? 'unknown' : 'off');
+  }// end _afterSupabaseLoad
+
+  // Load dari Supabase dulu jika tersedia, lalu jalankan init
+  var sb = _sbGetClient();
+  if (sb && isOn()) {
+    // Show loading indicator
+    var _sbLoadToast = document.getElementById('toast');
+    toast('Memuat data dari Supabase...','info',8000);
+    Promise.all([sbPullAllSettings(), sbLoadRows()])
+      .then(function(results){
+        var ok = results[0] || results[1];
+        if(ok){ _sbSetStatus('ok'); }
+        else { _sbSetStatus('err'); }
+        _afterSupabaseLoad();
+      })
+      .catch(function(){
+        _sbSetStatus('err');
+        _afterSupabaseLoad();
+      });
+  } else {
+    _afterSupabaseLoad();
+  }
 }
 
 function updTime(){
@@ -6141,8 +6186,9 @@ function setTab(t,btn){
   if(t==='set'){
     renderPinMgr();renderSalesMgr();renderAcctList();
     if(typeof switchMgmtTab==='function')switchMgmtTab('pin');
-    closeSetCat(); // tampilkan Pusat Kontrol (menu utama setting)
+    switchSetCat('koneksi');
     updSetStats();
+    _sbInitUI(); // Refresh Supabase config UI
   }
   // Sync sidebar highlight untuk tab menu (bukan mode item)
   var sbMap={dash:'sb-d',form:'sb-f',data:'sb-l',share:'sb-share',set:'sb-c',coming:'sb-coming'};
@@ -6157,11 +6203,11 @@ function setTab(t,btn){
 
 // ─── Setting Category Switcher ───
 function switchSetCat(cat){
-  var cats=['supabase','koneksi','akses','wilayah','data','dev'];
-  var catLabels={supabase:'Database Supabase',koneksi:'Koneksi',akses:'Akun & Akses',wilayah:'Wilayah & ODP',data:'Data & Backup',dev:'Developer'};
-  var catIcons={supabase:'ti-database-cog',koneksi:'ti-plug-connected',akses:'ti-shield-cog',wilayah:'ti-map-2',data:'ti-database',dev:'ti-code'};
+  var cats=['koneksi','akses','wilayah','data','dev'];
+  var catLabels={koneksi:'Koneksi',akses:'Akun & Akses',wilayah:'Wilayah & ODP',data:'Data & Backup',dev:'Developer'};
+  var catIcons={koneksi:'ti-plug-connected',akses:'ti-shield-cog',wilayah:'ti-map-2',data:'ti-database',dev:'ti-code'};
   var catColors={
-    supabase:'var(--green)',koneksi:'var(--c1)',akses:'var(--pu)',wilayah:'var(--green)',data:'var(--yellow)',dev:'#60a5fa'
+    koneksi:'var(--c1)',akses:'var(--pu)',wilayah:'var(--green)',data:'var(--yellow)',dev:'#60a5fa'
   };
   // Sembunyikan semua card grup menu
   cats.forEach(function(c){
@@ -6188,7 +6234,7 @@ function switchSetCat(cat){
 }
 
 function closeSetCat(){
-  var cats=['supabase','koneksi','akses','wilayah','data','dev'];
+  var cats=['koneksi','akses','wilayah','data','dev'];
   cats.forEach(function(c){
     var btn=document.getElementById('scat-'+c);
     var pane=document.getElementById('set-cat-'+c);
@@ -6418,9 +6464,17 @@ function savePel(){
     return;
   }
   var e={type:'p',ts:new Date().toISOString(),tgl:gv('p-tgl'),nama:gv('p-nama'),area:gv('p-area'),kota:gv('p-kota'),alamat:gv('p-alamat'),rt:gv('p-rt'),rw:gv('p-rw'),kec:gv('p-kec'),kel:gv('p-kel'),cid:gv('p-cid'),snont:gv('p-snont'),odc:gv('p-odc'),odp:gv('p-odp'),port:gv('p-port'),ont:gv('p-ont'),precon:gv('p-precon'),status:gv('p-status'),teknisi:gv('p-teknisi'),sales:gv('p-sales'),nominal:gv('p-nominal'),ket:gv('p-ket'),operator:currentAcctName||(currentRole||''),sent:false};
-  if(!U.p){toast('URL Sheets Pelanggan belum diset di Setting — data tidak disimpan','err');return;}
-  db.p.push(e);svP();updCounts();
-  send(e,db.p,db.p.length-1,'btn-p',svP,'p');
+  if(!U.p&&!_sbGetClient()){toast('URL Sheets Pelanggan dan Supabase belum diset di Setting — data tidak disimpan','err');return;}
+  db.p.push(e);svP(e);updCounts();
+  // Kirim ke Google Sheets sebagai cadangan (backup)
+  if(U.p){
+    send(e,db.p,db.p.length-1,'btn-p',svP,'p');
+  } else {
+    // Simpan lokal berhasil via Supabase, reset form
+    toast('Data pelanggan tersimpan ke Supabase ✓','ok');
+    updDash();updTime();updCounts();rstPel();
+    _syncFullRefresh('pel-saved');
+  }
 }
 
 function showCidWarn(warnId,textId,msg){
@@ -7542,8 +7596,9 @@ function saveMat(){
   var qtyVal=document.getElementById('m-qty').value;
   if(qtyVal===''||qtyVal===null){showBubbleWarn('m-qty','Qty wajib diisi!');document.getElementById('m-qty').focus();return;}
   var e={type:'m',ts:new Date().toISOString(),tgl:gv('m-tgl'),pgnNama:gv('m-pgn-nama'),cid:gv('m-cid'),item:gv('m-item'),qty:qtyVal,sn:gv('m-sn'),amb:gv('m-amb'),stat:gv('m-stat'),area:gv('m-area'),pgn:gv('m-pgn'),ikr:gv('m-ikr'),mnt:gv('m-mnt'),ket:gv('m-ket'),operator:currentAcctName||(currentRole||''),sent:false};
-  db.m.push(e);svM();updCounts();
+  db.m.push(e);svM(e);updCounts();
   if(U.m){send(e,db.m,db.m.length-1,'btn-m',svM,'m');}
+  else if(_sbGetClient()){toast('Material tersimpan ke Supabase ✓','ok');updDash();updTime();updCounts();rstMat();_syncFullRefresh('mat-saved');}
   else{toast('URL Sheets Material belum diset','err');}
 }
 
@@ -9120,44 +9175,13 @@ function retrySend(){
 }
 
 // ═══════════════════════════════
-// FETCH PELANGGAN DB — Supabase ATAU Sheets
+// FETCH PELANGGAN DB DARI SHEETS
 // ═══════════════════════════════
 var pelFetching=false;
 var pelLastFetch=0;
 
 function fetchPelDB(showToast){
-  // ── Prioritas 1: Supabase ──
-  if(sbReady()){
-    if(pelFetching)return;
-    if(!showToast&&pelDB.length&&(Date.now()-pelLastFetch<300000))return;
-    pelFetching=true;
-    updPelDbInfo();
-    var btn=document.getElementById('btn-sync-pel');
-    if(btn){btn.innerHTML='<span class="spin" style="width:14px;height:14px;border-width:2px"></span> Memuat...';btn.disabled=true;}
-    var statusEl=document.getElementById('sync-pel-status');
-    if(statusEl)statusEl.textContent='Memuat dari Supabase...';
-    sbSelect('pelanggan','select=*&order=created_at.desc',function(rows,err){
-      pelFetching=false;
-      if(btn){btn.innerHTML='<i class="ti ti-refresh"></i> Muat Ulang';btn.disabled=false;}
-      if(err){
-        if(statusEl)statusEl.textContent='Gagal: '+err;
-        if(showToast)toast('Gagal Supabase: '+err,'err');
-        updPelDbInfo();return;
-      }
-      pelDB=rows||[];
-      pelLastFetch=Date.now();
-      try{lss(K.pc,JSON.stringify(pelDB));}catch(e){}
-      updConn();updPelDbInfo();updDash();
-      if(statusEl)statusEl.textContent=pelDB.length+' pelanggan dimuat · '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-      if(showToast)toast(pelDB.length+' pelanggan dimuat dari Supabase!','ok');
-      _syncBroadcast(K.pc,JSON.stringify(pelDB));
-      if(curTab==='data')renderList();
-      if(curTab==='dash')renderOdpMonitor&&renderOdpMonitor();
-    });
-    return;
-  }
-  // ── Fallback: Google Sheets (legacy) ──
-  if(!U.read){if(showToast)toast('Supabase & Sheets belum dikonfigurasi','err');return;}
+  if(!U.read){if(showToast)toast('URL Read Sheets belum diset','err');return;}
   if(pelFetching)return;
   if(!showToast&&pelDB.length&&(Date.now()-pelLastFetch<300000))return; // cache 5 menit
   pelFetching=true;
@@ -10335,21 +10359,28 @@ document.addEventListener('click',function(e){
   }
 });
 
-var svP=function(rowToSave){
+var svP=function(entryToSync){
   lss(K.p,JSON.stringify(db.p));
-  // Jika Supabase aktif, upsert baris yang berubah
-  if(sbReady()&&rowToSave){
-    var r=Object.assign({},rowToSave);
-    if(!r.id&&r.cid)r.id=r.cid;
-    sbUpsert('pelanggan',r,null);
+  // Sync ke Supabase: jika ada entry spesifik, upsert itu saja; kalau tidak, upsert semua
+  if(_sbGetClient()){
+    if(entryToSync){
+      sbUpsertRow(entryToSync).catch(function(){});
+    } else {
+      // Debounce bulk sync 1 detik
+      clearTimeout(svP._t);
+      svP._t=setTimeout(function(){ sbPushAllRows(); },1000);
+    }
   }
 };
-var svM=function(rowToSave){
+var svM=function(entryToSync){
   lss(K.m,JSON.stringify(db.m));
-  if(sbReady()&&rowToSave){
-    var r=Object.assign({},rowToSave);
-    if(!r.id&&r.ts)r.id=r.ts;
-    sbUpsert('material',r,null);
+  if(_sbGetClient()){
+    if(entryToSync){
+      sbUpsertRow(entryToSync).catch(function(){});
+    } else {
+      clearTimeout(svM._t);
+      svM._t=setTimeout(function(){ sbPushAllRows(); },1000);
+    }
   }
 };
 function rstPel(){['p-nama','p-area','p-kota','p-alamat','p-rt','p-rw','p-kec','p-kel','p-cid','p-snont','p-odc','p-odp','p-port','p-ont','p-precon','p-status','p-teknisi','p-nominal','p-ket'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('p-tgl').value=today();var w=document.getElementById('cid-warn');if(w)w.style.display='none';var ob=document.getElementById('odp-monitor-box');if(ob)ob.style.display='none';initOdcOdpDatalist();}
@@ -15093,6 +15124,64 @@ document.addEventListener('DOMContentLoaded', function(){
   if(hd){ hd.classList.add('open'); }
 });
 
+/* ── SUPABASE CONFIG UI FUNCTIONS ── */
+function saveSbConfig(){
+  if(currentRole!=='admin'){toast('Hanya Admin yang bisa ubah konfigurasi Supabase','err');return;}
+  var url=(document.getElementById('sb-url-inp')||{}).value||'';
+  var key=(document.getElementById('sb-key-inp')||{}).value||'';
+  url=url.trim();key=key.trim();
+  if(!url||!key){toast('URL dan Anon Key Supabase wajib diisi','err');return;}
+  try{
+    localStorage.setItem(K_SB_URL,url);
+    localStorage.setItem(K_SB_KEY,key);
+    idbSet(K_SB_URL,url);idbSet(K_SB_KEY,key);
+  }catch(e){}
+  SB_CFG.url=url;SB_CFG.key=key;
+  _sbReset();
+  _sbSetStatus('unknown');
+  toast('Konfigurasi Supabase disimpan — klik Test untuk verifikasi','ok');
+}
+
+function sbPullAndReload(){
+  if(!_sbGetClient()){toast('Konfigurasi Supabase belum lengkap','err');return;}
+  toast('Memuat ulang data dari Supabase...','info',5000);
+  Promise.all([sbPullAllSettings(),sbLoadRows()])
+    .then(function(r){
+      if(r[0]||r[1]){
+        _sbSetStatus('ok');
+        toast('Data berhasil dimuat dari Supabase ✓','ok');
+        _syncFullRefresh('sb-pull');
+        updCounts();updDash();
+      } else {
+        _sbSetStatus('err');
+        toast('Gagal memuat dari Supabase','err');
+      }
+    });
+}
+
+function copySbSql(){
+  var el=document.getElementById('sb-sql-pre');
+  if(!el)return;
+  try{navigator.clipboard.writeText(SB_SETUP_SQL).then(function(){toast('SQL disalin ke clipboard','ok');});}
+  catch(e){toast('Salin manual dari kotak SQL di atas','info');}
+}
+
+function _sbInitUI(){
+  // Load saved config ke input
+  var urlEl=document.getElementById('sb-url-inp');
+  var keyEl=document.getElementById('sb-key-inp');
+  var sqlEl=document.getElementById('sb-sql-pre');
+  try{
+    if(urlEl)urlEl.value=localStorage.getItem(K_SB_URL)||SB_CFG.url||'';
+    if(keyEl)keyEl.value=localStorage.getItem(K_SB_KEY)||SB_CFG.key||'';
+  }catch(e){}
+  if(sqlEl)sqlEl.textContent=SB_SETUP_SQL;
+  _sbSetStatus(_sbGetClient()?'unknown':'off');
+}
+
+// Panggil _sbInitUI saat tab setting dibuka
+var _origSetTab = typeof setTab === 'function' ? setTab : null;
+
 /* ── SIDEBAR NAVIGATION JS ── */
 function toggleSidebar() {
   var sb = document.getElementById('sidebar');
@@ -15214,94 +15303,6 @@ function injectCSIfEmpty(el, label) {
     el.insertAdjacentHTML('afterbegin', csInlineHTML(label));
   }
 }
-
-// ═══════════════════════════════════════════════════════
-// SUPABASE SETTINGS UI HELPERS
-// ═══════════════════════════════════════════════════════
-function sbSaveConfig(){
-  if(currentRole!=='admin'){toast('Hanya Admin yang bisa ubah konfigurasi database','err');return;}
-  var url=(document.getElementById('sb-inp-url')||{}).value||'';
-  var key=(document.getElementById('sb-inp-key')||{}).value||'';
-  if(!url||!key){toast('URL dan Key tidak boleh kosong','err');return;}
-  saveSbConfig(url,key);
-  updSbStatusBanner();
-  toast('Konfigurasi Supabase disimpan!','ok');
-  // Langsung mulai sync
-  fetchPelDB(true);
-  fetchMatFromSupabase(true);
-  startSbAutoSync();
-}
-
-function sbTestConn(){
-  var url=(document.getElementById('sb-inp-url')||{}).value||SB_CFG.url;
-  var key=(document.getElementById('sb-inp-key')||{}).value||SB_CFG.key;
-  if(!url||!key){toast('Isi URL dan Key dulu','err');return;}
-  var tmpCfg={url:url.trim().replace(/\/$/,''),key:key.trim()};
-  toast('Menguji koneksi...','info');
-  fetch(tmpCfg.url+'/rest/v1/',{headers:{'apikey':tmpCfg.key,'Authorization':'Bearer '+tmpCfg.key}})
-    .then(function(r){
-      if(r.ok||r.status===200||r.status===400){
-        toast('✅ Supabase terhubung!','ok');
-      } else {
-        toast('❌ Gagal: HTTP '+r.status,'err');
-      }
-    })
-    .catch(function(e){toast('❌ Koneksi gagal: '+e.message,'err');});
-}
-
-function updSbStatusBanner(){
-  var banner=document.getElementById('sb-status-banner');
-  var text=document.getElementById('sb-status-text');
-  var menuSub=document.getElementById('sb-menu-status');
-  if(!banner||!text)return;
-  if(sbReady()){
-    banner.style.background='var(--gng)';
-    banner.style.borderColor='rgba(5,150,105,.2)';
-    banner.querySelector('i').style.color='var(--green)';
-    banner.querySelector('i').className='ti ti-database-check';
-    text.style.color='var(--green)';
-    text.textContent='Terhubung ke Supabase';
-    if(menuSub)menuSub.textContent='✅ Terhubung · '+SB_CFG.url.replace('https://','').split('.')[0];
-  } else {
-    banner.style.background='var(--rg)';
-    banner.style.borderColor='rgba(220,38,38,.2)';
-    banner.querySelector('i').style.color='var(--red)';
-    banner.querySelector('i').className='ti ti-database-off';
-    text.style.color='var(--red)';
-    text.textContent='Belum Dikonfigurasi';
-    if(menuSub)menuSub.textContent='Database terpusat & realtime';
-  }
-  // Isi input field dengan nilai tersimpan
-  var urlInp=document.getElementById('sb-inp-url');
-  var keyInp=document.getElementById('sb-inp-key');
-  if(urlInp&&!urlInp.value&&SB_CFG.url)urlInp.value=SB_CFG.url;
-  if(keyInp&&!keyInp.value&&SB_CFG.key)keyInp.value=SB_CFG.key;
-}
-
-function copySbSql(){
-  var el=document.getElementById('sb-sql-block');
-  if(!el)return;
-  var t=el.textContent||'';
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(t).then(function(){toast('SQL disalin!','ok');}).catch(function(){_fallbackCopy(t);});
-  } else {_fallbackCopy(t);}
-}
-
-function _fallbackCopy(t){
-  var ta=document.createElement('textarea');
-  ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy');toast('SQL disalin!','ok');}catch(e){toast('Gagal salin','err');}
-  document.body.removeChild(ta);
-}
-
-// Panggil updSbStatusBanner saat pane supabase dibuka
-var _origSwitchSetCat = switchSetCat;
-switchSetCat = function(cat){
-  _origSwitchSetCat(cat);
-  if(cat==='supabase') updSbStatusBanner();
-};
-
 </script>
 
 </body></html>
