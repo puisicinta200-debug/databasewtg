@@ -4942,7 +4942,6 @@ function enterApp(role){
   var effectiveRole = role;
   if(role && role.startsWith('custom_')){
     effectiveRole = 'custom';
-    // Simpan nama label kustom untuk ditampilkan di header
     if(!currentAcctName) currentAcctName = role.replace('custom_','');
   }
   currentRole=effectiveRole||role;
@@ -4950,10 +4949,29 @@ function enterApp(role){
   document.getElementById('app-shell').style.display='flex';
   applyRoleUI();
 
-  // Restore dulu dari IndexedDB ke localStorage (agar URL tidak hilang walau cache dibersihkan)
+  // Restore dulu dari IndexedDB ke localStorage
   restoreFromIDB(function(){
+    // Load Supabase config
+    try{
+      var sbUrl=localStorage.getItem(K_SB_URL)||SB_CFG.url||'';
+      var sbKey=localStorage.getItem(K_SB_KEY)||SB_CFG.key||'';
+      if(sbUrl)SB_CFG.url=sbUrl;
+      if(sbKey)SB_CFG.key=sbKey;
+      _sbReset();
+    }catch(e){}
+
     var needsConfig=(role!=='admin')&&(!ls(K.up)||!ls(K.um));
     var cfgUrlFromParam=getCfgUrlFromParam();
+
+    function _doInit(){
+      // Auto-sync dari Supabase sebelum init (non-blocking jika gagal)
+      if(_sbGetClient()&&isOn()){
+        _sbAutoSyncDone=false;
+        sbAutoSync().then(function(){ init(); }).catch(function(){ init(); });
+      } else {
+        init();
+      }
+    }
 
     if(needsConfig&&cfgUrlFromParam){
       U.read=cfgUrlFromParam;
@@ -4962,17 +4980,17 @@ function enterApp(role){
       fetchConfigFromServer(cfgUrlFromParam,function(ok){
         hideCfgBanner();
         if(ok)toast('Konfigurasi berhasil dimuat otomatis!','ok');
-        init();
+        _doInit();
       });
     } else if(needsConfig&&ls(K.ur)){
       showCfgBanner('Memuat konfigurasi dari server...');
       fetchConfigFromServer(ls(K.ur),function(ok){
         hideCfgBanner();
         if(ok)toast('Konfigurasi diperbarui dari server','ok');
-        init();
+        _doInit();
       });
     } else {
-      init();
+      _doInit();
     }
   });
 }
@@ -5002,6 +5020,8 @@ function hideCfgBanner(){
 function logoutRole(){
   if(!confirm('Keluar dari sesi '+currentRole+'?')) return;
   currentRole=null;
+  _sbAutoSyncDone=false;
+  sbStopRealtime();
   showLogin();
 }
 
@@ -5481,8 +5501,8 @@ var BAKED={
 
 // ── Konfigurasi Supabase (diisi Admin di Setting → Koneksi) ──
 var SB_CFG = {
-  url:  '',   // Supabase Project URL  (e.g. https://xxxx.supabase.co)
-  key:  ''    // Supabase anon/public key
+  url:  'https://foambnxappwgchnjkojr.supabase.co',
+  key:  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvYW1ibnhhcHB3Z2Nobmprb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NjYyMTEsImV4cCI6MjA5NjE0MjIxMX0.Rpqles8_DsDZqNpwCjJWx-ofNWlN2jb_v6u4ZCe6r9k'
 };
 
 // Key localStorage untuk config Supabase
@@ -5679,7 +5699,10 @@ async function sbTestConnection() {
       toast('Koneksi Supabase gagal: ' + (error.message||error.code||'unknown'), 'err');
     } else {
       _sbSetStatus('ok');
-      toast('Supabase terhubung ✓', 'ok');
+      toast('Supabase terhubung ✓ — memulai sync...', 'ok');
+      // Auto-sync setelah test berhasil
+      _sbAutoSyncDone = false;
+      sbAutoSync();
     }
   } catch(e) { _sbSetStatus('err'); toast('Supabase error: '+e.message, 'err'); }
 }
@@ -5689,6 +5712,65 @@ async function sbTestConnection() {
 // SQL yang diperlukan ditampilkan di UI Setting
 
 var SB_SETUP_SQL = `-- Jalankan SQL ini di Supabase SQL Editor\n\nCREATE TABLE IF NOT EXISTS app_kv (\n  key TEXT PRIMARY KEY,\n  value TEXT NOT NULL,\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS app_rows (\n  id TEXT PRIMARY KEY,\n  type TEXT NOT NULL,\n  data JSONB NOT NULL,\n  ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  sent BOOLEAN DEFAULT FALSE\n);\n\n-- RLS: izinkan semua operasi (sesuaikan policy sesuai kebutuhan keamanan)\nALTER TABLE app_kv ENABLE ROW LEVEL SECURITY;\nALTER TABLE app_rows ENABLE ROW LEVEL SECURITY;\n\nCREATE POLICY "allow_all_kv" ON app_kv FOR ALL USING (true) WITH CHECK (true);\nCREATE POLICY "allow_all_rows" ON app_rows FOR ALL USING (true) WITH CHECK (true);`;
+
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE REALTIME — Auto-sync antar semua device
+// ═══════════════════════════════════════════════════════════════
+var _sbRealtimeChannel = null;
+
+function sbStartRealtime() {
+  var sb = _sbGetClient();
+  if (!sb || _sbRealtimeChannel) return;
+  try {
+    _sbRealtimeChannel = sb
+      .channel('db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_rows' }, function(payload) {
+        // Ada perubahan di app_rows — reload data rows
+        sbLoadRows().then(function() {
+          _syncFullRefresh('realtime-rows');
+          updCounts(); updDash();
+        });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_kv' }, function(payload) {
+        // Ada perubahan di app_kv — reload settings
+        sbPullAllSettings().then(function() {
+          _syncFullRefresh('realtime-kv');
+        });
+      })
+      .subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+          var dot = document.getElementById('sb-status-dot');
+          if (dot) dot.style.animation = 'blink 1.5s infinite';
+        }
+      });
+  } catch(e) { _sbRealtimeChannel = null; }
+}
+
+function sbStopRealtime() {
+  if (_sbRealtimeChannel) {
+    try { _sbRealtimeChannel.unsubscribe(); } catch(e) {}
+    _sbRealtimeChannel = null;
+  }
+}
+
+// ── Auto-sync saat pertama connect: pull semua data dari Supabase ──
+var _sbAutoSyncDone = false;
+async function sbAutoSync() {
+  if (_sbAutoSyncDone) return;
+  var sb = _sbGetClient();
+  if (!sb) return;
+  _sbAutoSyncDone = true;
+  try {
+    await Promise.all([sbPullAllSettings(), sbLoadRows()]);
+    _sbSetStatus('ok');
+    _syncFullRefresh('auto-sync');
+    updCounts(); updDash();
+    sbStartRealtime(); // mulai realtime setelah sync selesai
+  } catch(e) {
+    _sbAutoSyncDone = false;
+    _sbSetStatus('err');
+  }
+}
 
 // ── Override lss: tulis ke localStorage DAN Supabase (async, non-blocking) ──
 var _origLss = null; // akan diisi setelah lss di-define
@@ -6061,6 +6143,8 @@ function init(){
   updTime();
   // Update status dot di UI
   _sbSetStatus(_sbGetClient() ? 'unknown' : 'off');
+  // Mulai realtime subscription jika belum
+  if(_sbGetClient()) sbStartRealtime();
   }// end _afterSupabaseLoad
 
   // Load dari Supabase dulu jika tersedia, lalu jalankan init
