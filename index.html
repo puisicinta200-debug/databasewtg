@@ -2395,7 +2395,7 @@ textarea{resize:none;height:72px;line-height:1.6}
       <div id="last-t" style="display:none">12.41.11</div>
 
       <!-- ══ DASHBOARD MODE SWITCHER ══ -->
-      <div class="mode-row" style="margin-bottom:14px" id="dash-mode-row">
+      <div class="mode-row" style="display:none;margin-bottom:14px" id="dash-mode-row">
         <button class="mpill on p" id="dash-pill-p" onclick="switchDashMode('p',this)"><i class="ti ti-users"></i> Pelanggan</button>
         <button class="mpill m" id="dash-pill-m" onclick="switchDashMode('m',this)"><i class="ti ti-package"></i> Material</button>
         <button class="mpill d" id="dash-pill-d" onclick="switchDashMode('d',this)"><i class="ti ti-replace"></i> Maint.</button>
@@ -2510,28 +2510,28 @@ textarea{resize:none;height:72px;line-height:1.6}
               <div>
                 <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> Area</label>
                 <select id="odp-mon-area-filter" onchange="onOdpMonAreaChange()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.2);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
-                  <option value="">Semua Area</option>
+                  <option value="">Pilih Area...</option>
                 </select>
               </div>
-              <!-- ODC -->
-              <div>
+              <!-- ODC — muncul setelah area dipilih -->
+              <div id="odp-mon-odc-row" style="display:none">
                 <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-sitemap" style="font-size:11px"></i> ODC</label>
                 <select id="odp-mon-odc-filter" onchange="onOdpMonOdcChange()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.2);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
-                  <option value="">Semua ODC</option>
+                  <option value="">Pilih ODC...</option>
                 </select>
               </div>
-              <!-- ODP -->
-              <div>
+              <!-- ODP — muncul setelah ODC dipilih -->
+              <div id="odp-mon-odp-row" style="display:none">
                 <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-antenna-bars-5" style="font-size:11px"></i> ODP</label>
                 <select id="odp-mon-odp-filter" onchange="renderOdpMonitor()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.2);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
-                  <option value="">Semua ODP</option>
+                  <option value="">Pilih ODP...</option>
                 </select>
               </div>
             </div>
             <!-- Info sumber data -->
             <div style="font-size:10px;color:var(--text3);margin-top:9px;display:flex;align-items:center;gap:5px;background:var(--bg3);border-radius:7px;padding:6px 10px;border:1px solid var(--border)">
               <i class="ti ti-info-circle" style="font-size:12px;color:var(--c1);flex-shrink:0"></i>
-              <span>Filter dari <b style="color:var(--c1)">Setting → Wilayah</b> · Kapasitas dari total ODP terdaftar</span>
+              <span>Filter dari <b style="color:var(--c1)">Setting → Wilayah</b> · Kapasitas dari total ODP terdaftar · <span id="odp-mon-info-total" style="color:var(--text2);font-weight:700"></span></span>
             </div>
           </div>
 
@@ -3463,22 +3463,15 @@ textarea{resize:none;height:72px;line-height:1.6}
 
     <!-- ═══ DATA ═══ -->
     <div class="pane" id="pane-data">
-      <!-- Live sync bar -->
-      <div class="live-bar" style="margin-bottom:12px">
-        <div class="live-left"><i class="ti ti-refresh" style="animation:rot 2s linear infinite" id="live-spin-icon"></i> <span id="sheets-sync-lbl">Realtime sync</span></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span id="sheets-count-badge" style="font-size:9px;font-weight:700;background:rgba(61,142,248,.15);color:var(--c1);padding:2px 7px;border-radius:10px"></span>
-          <div class="live-time" id="sync-t">--:--:--</div>
-        </div>
-      </div>
+      <!-- hidden elements kept for JS compatibility -->
+      <span id="sheets-sync-lbl" style="display:none"></span>
+      <span id="sheets-count-badge" style="display:none"></span>
+      <div id="sync-t" style="display:none"></div>
+      <i id="live-spin-icon" style="display:none"></i>
 
-      <!-- Filter chip: ODP Rekap — terpisah dari action chips -->
-      <div style="margin-bottom:10px">
-        <button id="odp-filter-btn" class="chip" style="background:rgba(255,82,82,.1);border-color:rgba(255,82,82,.3);color:var(--red);display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-size:12px;font-weight:700;border-radius:10px;border:1.5px solid rgba(255,82,82,.3);cursor:pointer;font-family:'Sora',sans-serif;transition:.15s"
-          onclick="setF('odp',this);document.querySelectorAll('#global-mode-row .dtab').forEach(function(b){b.classList.remove('on');});">
-          <i class="ti ti-antenna-bars-5" style="font-size:15px"></i> Rekap ODP
-        </button>
-      </div>
+      <!-- Rekap ODP tersedia via menu sidebar — tombol tersembunyi untuk kompatibilitas JS -->
+      <button id="odp-filter-btn" style="display:none" aria-hidden="true"
+        onclick="setF('odp',this);document.querySelectorAll('#global-mode-row .dtab').forEach(function(b){b.classList.remove('on');});"></button>
 
       <!-- Action chips: export, import, kirim ulang -->
       <div class="chips" style="margin-bottom:14px">
@@ -3615,12 +3608,6 @@ textarea{resize:none;height:72px;line-height:1.6}
           <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
           <input id="search-pel" type="text" placeholder="Cari CID, nama, ODP, area..." oninput="renderGrouped('p')" style="width:100%;padding:11px 14px 11px 36px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
         </div>
-        <!-- Export/Import Bar Pelanggan -->
-        <div style="display:flex;gap:7px;margin-bottom:10px">
-          <button onclick="expDataSection('pelanggan')" style="flex:1;padding:10px 8px;background:rgba(61,142,248,.1);color:var(--c1);border:1.5px solid rgba(61,142,248,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-download" style="font-size:14px"></i> Export CSV</button>
-          <button onclick="expDataSectionJSON('pelanggan')" style="flex:1;padding:10px 8px;background:rgba(167,139,250,.08);color:var(--pu);border:1.5px solid rgba(167,139,250,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-file-type-json" style="font-size:14px"></i> Export JSON</button>
-          <button onclick="impDataSection('pelanggan')" style="flex:1;padding:10px 8px;background:rgba(5,150,105,.08);color:var(--green);border:1.5px solid rgba(5,150,105,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-upload" style="font-size:14px"></i> Import</button>
-        </div>
         <div class="card c1" style="margin-bottom:10px">
           <div class="sec-t c1" style="margin-bottom:12px"><i class="ti ti-wifi"></i> Pelanggan</div>
           <div class="dash-grid">
@@ -3637,12 +3624,6 @@ textarea{resize:none;height:72px;line-height:1.6}
         <div style="position:relative;margin-bottom:10px">
           <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
           <input id="search-maint" type="text" placeholder="Cari CID, nama, atau item..." oninput="renderGrouped('d')" style="width:100%;padding:11px 14px 11px 36px;background:var(--bg2);border:1.5px solid rgba(167,139,250,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
-        </div>
-        <!-- Export/Import Bar Maintenance -->
-        <div style="display:flex;gap:7px;margin-bottom:10px">
-          <button onclick="expDataSection('maintenance')" style="flex:1;padding:10px 8px;background:rgba(167,139,250,.1);color:var(--pu);border:1.5px solid rgba(167,139,250,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-download" style="font-size:14px"></i> Export CSV</button>
-          <button onclick="expDataSectionJSON('maintenance')" style="flex:1;padding:10px 8px;background:rgba(167,139,250,.06);color:var(--pu);border:1.5px solid rgba(167,139,250,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-file-type-json" style="font-size:14px"></i> Export JSON</button>
-          <button onclick="impDataSection('maintenance')" style="flex:1;padding:10px 8px;background:rgba(5,150,105,.08);color:var(--green);border:1.5px solid rgba(5,150,105,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-upload" style="font-size:14px"></i> Import</button>
         </div>
         <div class="card" style="margin-bottom:10px;border-color:rgba(167,139,250,.2)">
           <div class="sec-t" style="color:var(--pu);margin-bottom:12px"><i class="ti ti-replace"></i> Maintenance</div>
@@ -3664,12 +3645,6 @@ textarea{resize:none;height:72px;line-height:1.6}
           <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
           <input id="search-dis" type="text" placeholder="Cari CID, nama, atau area..." oninput="renderGrouped('x')" style="width:100%;padding:11px 14px 11px 36px;background:var(--bg2);border:1.5px solid rgba(240,84,84,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
         </div>
-        <!-- Export/Import Bar Dismantle -->
-        <div style="display:flex;gap:7px;margin-bottom:10px">
-          <button onclick="expDataSection('dismantle')" style="flex:1;padding:10px 8px;background:rgba(220,38,38,.1);color:var(--red);border:1.5px solid rgba(220,38,38,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-download" style="font-size:14px"></i> Export CSV</button>
-          <button onclick="expDataSectionJSON('dismantle')" style="flex:1;padding:10px 8px;background:rgba(220,38,38,.06);color:var(--red);border:1.5px solid rgba(220,38,38,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-file-type-json" style="font-size:14px"></i> Export JSON</button>
-          <button onclick="impDataSection('dismantle')" style="flex:1;padding:10px 8px;background:rgba(5,150,105,.08);color:var(--green);border:1.5px solid rgba(5,150,105,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-upload" style="font-size:14px"></i> Import</button>
-        </div>
         <div class="card" style="margin-bottom:10px;border-color:rgba(240,84,84,.2)">
           <div class="sec-t" style="color:var(--red);margin-bottom:12px"><i class="ti ti-tools"></i> Dismantle</div>
           <div class="dash-grid">
@@ -3686,12 +3661,6 @@ textarea{resize:none;height:72px;line-height:1.6}
         <div style="position:relative;margin-bottom:10px">
           <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
           <input id="search-mat" type="text" placeholder="Cari nama/item material..." oninput="renderGrouped('m')" style="width:100%;padding:11px 14px 11px 36px;background:var(--bg2);border:1.5px solid rgba(249,115,22,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
-        </div>
-        <!-- Export/Import Bar Material -->
-        <div style="display:flex;gap:7px;margin-bottom:10px">
-          <button onclick="expDataSection('material')" style="flex:1;padding:10px 8px;background:rgba(249,115,22,.1);color:var(--c2);border:1.5px solid rgba(249,115,22,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-download" style="font-size:14px"></i> Export CSV</button>
-          <button onclick="expDataSectionJSON('material')" style="flex:1;padding:10px 8px;background:rgba(249,115,22,.06);color:var(--c2);border:1.5px solid rgba(249,115,22,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-file-type-json" style="font-size:14px"></i> Export JSON</button>
-          <button onclick="impDataSection('material')" style="flex:1;padding:10px 8px;background:rgba(5,150,105,.08);color:var(--green);border:1.5px solid rgba(5,150,105,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-upload" style="font-size:14px"></i> Import</button>
         </div>
         <div class="card c2" style="margin-bottom:10px">
           <div class="sec-t c2" style="margin-bottom:12px"><i class="ti ti-package"></i> Material</div>
@@ -3713,12 +3682,6 @@ textarea{resize:none;height:72px;line-height:1.6}
         <div style="position:relative;margin-bottom:10px">
           <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
           <input id="search-sales" type="text" placeholder="Cari nama sales..." oninput="renderGrouped('s')" style="width:100%;padding:11px 14px 11px 36px;background:var(--bg2);border:1.5px solid rgba(16,217,160,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
-        </div>
-        <!-- Export/Import Bar Sales -->
-        <div style="display:flex;gap:7px;margin-bottom:10px">
-          <button onclick="expDataSection('sales')" style="flex:1;padding:10px 8px;background:rgba(5,150,105,.1);color:var(--green);border:1.5px solid rgba(5,150,105,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-download" style="font-size:14px"></i> Export CSV</button>
-          <button onclick="expDataSectionJSON('sales')" style="flex:1;padding:10px 8px;background:rgba(5,150,105,.06);color:var(--green);border:1.5px solid rgba(5,150,105,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-file-type-json" style="font-size:14px"></i> Export JSON</button>
-          <button onclick="impDataSection('sales')" style="flex:1;padding:10px 8px;background:rgba(61,142,248,.08);color:var(--c1);border:1.5px solid rgba(61,142,248,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-upload" style="font-size:14px"></i> Import</button>
         </div>
         <!-- Fee per Nama Sales -->
         <div class="card" style="border-color:rgba(16,217,160,.2);margin-bottom:10px">
@@ -4045,7 +4008,7 @@ textarea{resize:none;height:72px;line-height:1.6}
         </div>
 
         <!-- ══════════════════════════════════════════════
-             SUPABASE — Penyimpanan Utama
+             DATABASE — Penyimpanan Utama
         ══════════════════════════════════════════════ -->
         <div style="background:var(--bg2);border:2px solid rgba(62,207,142,.3);border-radius:var(--r);padding:14px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -4054,7 +4017,7 @@ textarea{resize:none;height:72px;line-height:1.6}
             </div>
             <div style="flex:1">
               <div style="font-size:13px;font-weight:700;color:#3ecf8e;display:flex;align-items:center;gap:6px">
-                Supabase
+                Database
                 <span style="font-size:9px;background:rgba(62,207,142,.2);color:#3ecf8e;padding:2px 7px;border-radius:10px">PENYIMPANAN UTAMA</span>
               </div>
               <div style="font-size:10px;color:var(--text3);margin-top:1px">Database cloud utama — data tersimpan permanen & real-time</div>
@@ -4065,7 +4028,7 @@ textarea{resize:none;height:72px;line-height:1.6}
             </div>
           </div>
 
-          <!-- URL Supabase -->
+          <!-- URL Database -->
           <div style="margin-bottom:8px">
             <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;display:block">Project URL</label>
             <input class="url-inp" type="url" id="sb-url-inp" placeholder="https://xxxxxxxxxxxx.supabase.co" oninput="_sbReset()" style="border-color:rgba(62,207,142,.4)">
@@ -4091,10 +4054,10 @@ textarea{resize:none;height:72px;line-height:1.6}
           <!-- Setup SQL info box -->
           <div style="background:rgba(62,207,142,.05);border:1px solid rgba(62,207,142,.15);border-radius:var(--rs);padding:10px;cursor:pointer" onclick="document.getElementById('sb-sql-box').style.display=document.getElementById('sb-sql-box').style.display==='none'?'block':'none'">
             <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="font-size:11px;font-weight:700;color:#3ecf8e;display:flex;align-items:center;gap:5px"><i class="ti ti-database-cog" style="font-size:13px"></i> Setup SQL Supabase</div>
+              <div style="font-size:11px;font-weight:700;color:#3ecf8e;display:flex;align-items:center;gap:5px"><i class="ti ti-database-cog" style="font-size:13px"></i> Setup SQL Database</div>
               <i class="ti ti-chevron-down" style="font-size:12px;color:var(--text3)"></i>
             </div>
-            <div style="font-size:10px;color:var(--text3);margin-top:3px">Jalankan SQL ini di Supabase SQL Editor sebelum mulai</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">Jalankan SQL ini di Database SQL Editor sebelum mulai</div>
           </div>
           <div id="sb-sql-box" style="display:none;margin-top:6px;background:var(--bg4);border-radius:8px;padding:10px;border:1px solid var(--border)">
             <pre style="font-size:9px;color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:pre-wrap;margin:0;line-height:1.7" id="sb-sql-pre"></pre>
@@ -5034,7 +4997,7 @@ function enterApp(role){
       showCfgBanner('Memuat konfigurasi dari server...');
       fetchConfigFromServer(ls(K.ur),function(ok){
         hideCfgBanner();
-        if(ok)toast('Konfigurasi diperbarui dari server','ok');
+        if(ok){toast('Konfigurasi diperbarui dari server','ok');}
         _doInit();
       });
     } else {
@@ -5122,9 +5085,9 @@ function applyRoleUI(){
     if(mpM)mpM.style.display='none';
     setTimeout(function(){setMode('p');},0);
   }
-  // FIX: Untuk tamu dan role non-form, segera switch ke dash tab
-  // agar pane-form yang default 'on' tidak menimbulkan whitespace kosong
-  if(r==='tamu'||r==='custom'){
+  // FIX: Semua role langsung ke dashboard saat login
+  // agar pane-form yang default 'on' tidak muncul lebih dulu
+  {
     var bnDash=document.getElementById('bn-d');
     if(bnDash){
       ['dash','form','data','share','set','coming'].forEach(function(id){
@@ -5133,6 +5096,7 @@ function applyRoleUI(){
       document.querySelectorAll('.bni').forEach(function(b){b.classList.remove('on');});
       var pd=document.getElementById('pane-dash');if(pd)pd.classList.add('on');
       bnDash.classList.add('on');
+      curTab='dash';
       var scr=document.getElementById('scr');if(scr)scr.scrollTop=0;
     }
   }
@@ -5547,7 +5511,7 @@ var BAKED={
 // Google Sheets tetap berjalan sebagai cadangan (write-only backup)
 // ═══════════════════════════════════════════════════════════════
 
-// ── Konfigurasi Supabase (diisi Admin di Setting → Koneksi) ──
+// ── Konfigurasi Database (diisi Admin di Setting → Koneksi) ──
 var SB_CFG = {
   url:  'https://foambnxappwgchnjkojr.supabase.co',
   key:  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvYW1ibnhhcHB3Z2Nobmprb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NjYyMTEsImV4cCI6MjA5NjE0MjIxMX0.Rpqles8_DsDZqNpwCjJWx-ofNWlN2jb_v6u4ZCe6r9k'
@@ -5691,7 +5655,7 @@ async function sbPushAllSettings() {
     if (v) await sbSetKV(k, v);
   }
   _sbSetStatus('ok');
-  toast('Semua pengaturan tersimpan ke Supabase ✓', 'ok');
+  toast('Semua pengaturan tersimpan ke Database ✓', 'ok');
 }
 
 // ── Load semua KV settings dari Supabase ke localStorage ──
@@ -5763,15 +5727,15 @@ async function sbPushAllRows() {
 async function sbTestConnection() {
   _sbReset();
   var sb = _sbGetClient();
-  if (!sb) { _sbSetStatus('off'); toast('Supabase belum dikonfigurasi', 'err'); return; }
+  if (!sb) { _sbSetStatus('off'); toast('Database belum dikonfigurasi', 'err'); return; }
   try {
     var { error } = await sb.from(SB_TABLE_KV).select('key').limit(1);
     if (error) {
       _sbSetStatus('err');
-      toast('Koneksi Supabase gagal: ' + (error.message||error.code||'unknown'), 'err');
+      toast('Koneksi Database gagal: ' + (error.message||error.code||'unknown'), 'err');
     } else {
       _sbSetStatus('ok');
-      toast('Supabase terhubung ✓ — memulai sync...', 'ok');
+      toast('Database terhubung ✓ — memulai sync...', 'ok');
       // Auto-sync setelah test berhasil
       _sbAutoSyncDone = false;
       sbAutoSync();
@@ -6091,20 +6055,8 @@ function _syncFullRefresh(reason){
   _syncRefreshBusy=false;
 }
 
-// Indikator kecil di header saat sync terjadi
-function _showSyncIndicator(){
-  var el=document.getElementById('_sync-indicator');
-  if(!el){
-    el=document.createElement('div');
-    el.id='_sync-indicator';
-    el.style.cssText='position:fixed;top:calc(var(--sat,0px) + 6px);right:10px;z-index:99999;display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;color:#001a0f;background:var(--green,#0fd494);box-shadow:0 3px 12px rgba(0,0,0,.4);transition:opacity .4s ease,transform .3s ease;opacity:0;transform:translateY(-8px);pointer-events:none';
-    el.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Tersinkron';
-    document.body.appendChild(el);
-  }
-  clearTimeout(el._t);
-  el.style.opacity='1';el.style.transform='translateY(0)';
-  el._t=setTimeout(function(){el.style.opacity='0';el.style.transform='translateY(-8px)';},1800);
-}
+// _showSyncIndicator — dihapus (bubble "Tersinkron" tidak ditampilkan)
+function _showSyncIndicator(){}
 
 // Restore dari IndexedDB ke localStorage saat start (jika localStorage kosong)
 function restoreFromIDB(cb){
@@ -6274,9 +6226,6 @@ function init(){
   // Load dari Supabase dulu jika tersedia, lalu jalankan init
   var sb = _sbGetClient();
   if (sb && isOn()) {
-    // Show loading indicator
-    var _sbLoadToast = document.getElementById('toast');
-    toast('Memuat data dari Supabase...','info',8000);
     Promise.all([sbPullAllSettings(), sbLoadRows()])
       .then(function(results){
         var ok = results[0] || results[1];
@@ -6356,7 +6305,7 @@ function setMode(m){
   updDash();
 }
 
-function setTab(t,btn){
+function setTab(t,btn,skipDataReset){
   // Belum login — paksa kembali ke login
   if(!currentRole){showLogin();return;}
   // Access control
@@ -6372,8 +6321,8 @@ function setTab(t,btn){
   if(btn && btn.classList) btn.classList.add('on');
   curTab=t;
   document.getElementById('scr').scrollTop=0;
-  if(t==='data'){
-    // Reset ke Pelanggan setiap kali tab data dibuka
+  if(t==='data' && !skipDataReset){
+    // Reset ke Pelanggan setiap kali tab data dibuka (kecuali dipanggil dari goDataMode)
     datFilt='p';
     document.querySelectorAll('#global-mode-row .dtab').forEach(function(c){c.classList.remove('on');});
     var initBtn=document.getElementById('fc-p');
@@ -6394,7 +6343,7 @@ function setTab(t,btn){
   if(t==='set'){
     renderPinMgr();renderSalesMgr();renderAcctList();
     if(typeof switchMgmtTab==='function')switchMgmtTab('pin');
-    switchSetCat('koneksi');
+    switchSetCat('akses');
     updSetStats();
     _sbInitUI(); // Refresh Supabase config UI
   }
@@ -6703,7 +6652,7 @@ function savePel(){
     send(e,db.p,db.p.length-1,'btn-p',svP,'p');
   } else {
     // Simpan lokal berhasil via Supabase, reset form
-    toast('Data pelanggan tersimpan ke Supabase ✓','ok');
+    toast('Data pelanggan tersimpan ke Database ✓','ok');
     updDash();updTime();updCounts();rstPel();
     _syncFullRefresh('pel-saved');
   }
@@ -7509,7 +7458,7 @@ function checkOdpMonitor(val){
   var portRusakCount=isSebagian?(rusakInfo.portRusak||0):0;
 
   // Hitung total port efektif
-  var maxPorts=8;
+  var maxPorts = ODP_MAX_PORTS; // sinkron dengan konstanta global
   var portEfektif=isSemua?0:(isSebagian?Math.max(0,maxPorts-portRusakCount):maxPorts);
   var usedPorts=pelOnOdp.length;
   var freePorts=isSemua?0:Math.max(0,portEfektif-usedPorts);
@@ -7985,12 +7934,37 @@ function toggleBelumPel(id){
 function getOdpTerpakaiData(){
   var allP = getMergedPel();
   var usageMap = getOdpUsageMap(allP);
+  // Sinkronkan dengan daftar ODP terdaftar di Setting —
+  // pastikan ODP dari Setting yang punya pelanggan masuk ke usageMap
+  var sdAll = getOdcOdpData();
+  Object.keys(sdAll).forEach(function(area){
+    var aData = sdAll[area] || {};
+    (aData.odp || []).forEach(function(odpName){
+      var k = odpName.trim().toLowerCase();
+      if(!k) return;
+      if(usageMap[k]) return; // sudah ada
+      // Cari pelanggan yang pakai ODP ini (case-insensitive)
+      var count = allP.filter(function(d){ return (d.odp||'').trim().toLowerCase() === k; }).length;
+      if(count > 0){
+        usageMap[k] = { used: count, odc: '', area: area, rawName: odpName.trim(), pelList: [] };
+      }
+    });
+  });
+  var rusakSet = getAllOdpRusakSet();
+  var belumAktifSet = getAllOdpBelumAktifSet();
   var list = [];
   Object.keys(usageMap).forEach(function(key){
+    // Skip ODP rusak total dan belum aktif dari hitungan "terpakai biasa"
+    if(rusakSet[key] && rusakSet[key].tipe !== 'sebagian') return;
+    if(belumAktifSet[key]) return;
     var d = usageMap[key];
-    var pct = Math.round(d.used / ODP_MAX_PORTS * 100);
+    var kapEfektif = ODP_MAX_PORTS;
+    if(rusakSet[key] && rusakSet[key].tipe === 'sebagian'){
+      kapEfektif = Math.max(1, ODP_MAX_PORTS - (rusakSet[key].portRusak || 0));
+    }
+    var pct = Math.round(d.used / kapEfektif * 100);
     if(d.used > 0 && pct < 75){
-      list.push({ odp: d.rawName||key, odc: d.odc||'—', area: d.area||'—', used: d.used, free: ODP_MAX_PORTS - d.used, pct: pct });
+      list.push({ odp: d.rawName||key, odc: d.odc||'—', area: d.area||'—', used: d.used, free: Math.max(0, kapEfektif - d.used), pct: pct });
     }
   });
   list.sort(function(a,b){ return b.used - a.used; });
@@ -9364,7 +9338,7 @@ function send(entry,dbA,idx,btnId,saveFn,type){
   doFetch('cors',function(ok,errMsg){
     if(ok){
       dbA[idx].sent=true;saveFn();
-      toast('Terkirim ke Google Sheets!','ok');updDash();updTime();
+      updDash();updTime();
       btn.disabled=false;
       btn.innerHTML='<i class="ti ti-device-floppy"></i> Simpan Data '+(type==='p'?'Pelanggan':'Material');
       updCounts();type==='p'?rstPel():rstMat();
@@ -9374,7 +9348,7 @@ function send(entry,dbA,idx,btnId,saveFn,type){
       doFetch('no-cors',function(ok2,errMsg2){
         // no-cors selalu ok2=true karena opaque, anggap berhasil
         dbA[idx].sent=true;saveFn();
-        toast('Terkirim ke Google Sheets!','ok');updDash();updTime();
+        updDash();updTime();
         btn.disabled=false;
         btn.innerHTML='<i class="ti ti-device-floppy"></i> Simpan Data '+(type==='p'?'Pelanggan':'Material');
         updCounts();type==='p'?rstPel():rstMat();
@@ -9390,17 +9364,17 @@ function retrySend(){
   var pending=[];
   db.p.forEach(function(d,i){if(!d.sent&&U.p)pending.push({d:d,arr:db.p,i:i,fn:svP,type:'p'});});
   db.m.forEach(function(d,i){if(!d.sent&&U.m)pending.push({d:d,arr:db.m,i:i,fn:svM,type:'m'});});
-  if(!pending.length){toast('Semua data sudah terkirim','ok');return;}
+  if(!pending.length){return;}
   toast('Mengirim '+pending.length+' data tertunda...','info');
   var done=0;
   pending.forEach(function(p){
     var payload=JSON.stringify(p.d);
     var url=p.type==='p'?U.p:U.m;
     fetch(url,{method:'POST',body:payload})
-      .then(function(r){p.arr[p.i].sent=true;p.fn();done++;if(done===pending.length){toast(done+' data berhasil dikirim!','ok');updDash();updCounts();_syncFullRefresh('retry-ok');}})
+      .then(function(r){p.arr[p.i].sent=true;p.fn();done++;if(done===pending.length){updDash();updCounts();_syncFullRefresh('retry-ok');}})
       .catch(function(){
         fetch(url,{method:'POST',body:payload,mode:'no-cors'})
-          .then(function(){p.arr[p.i].sent=true;p.fn();done++;if(done===pending.length){toast(done+' data berhasil dikirim!','ok');updDash();updCounts();_syncFullRefresh('retry-ok');}})
+          .then(function(){p.arr[p.i].sent=true;p.fn();done++;if(done===pending.length){updDash();updCounts();_syncFullRefresh('retry-ok');}})
           .catch(function(){done++;});
       });
   });
@@ -9433,7 +9407,7 @@ function fetchPelDB(showToast){
     var fbl=document.getElementById('fetch-form-lbl');if(fbl)fbl.textContent='Muat Sheets';
     var bff=document.getElementById('btn-fetch-form');if(bff)bff.querySelector('i').className='ti ti-refresh';
     if(statusEl)statusEl.textContent=pelDB.length+' pelanggan dimuat · '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-    if(showToast)toast(pelDB.length+' pelanggan dimuat dari Sheets!','ok');
+    
     // Broadcast ke semua tab bahwa data Sheets terbaru sudah ada
     _syncBroadcast(K.pc,JSON.stringify(pelDB));
     if(curTab==='data')renderList();
@@ -9806,7 +9780,7 @@ function selectPelD(cid){
   // Auto-isi SN lama dari data pelanggan sesuai item yang dipilih
   fillSnLama();
   document.getElementById('d-detail-pel').scrollIntoView({behavior:'smooth',block:'nearest'});
-  toast(pel.nama+' dipilih','ok');
+  
 }
 
 function fillSnLama(){
@@ -9933,7 +9907,7 @@ function saveDismantle(){
 
 function finishDismantle(e,arr,idx,ok,snLama,snBaru,item,btn){
   if(ok){arr[idx].sent=true;svM();}
-  toast((ok?'Dismantle terkirim! ':'Tersimpan lokal. ')+(item==='ONT'?'SN '+snLama+' → '+snBaru:'Item '+item+' diganti'),ok?'ok':'info');
+  
   updDash();updTime();updCounts();
   _syncFullRefresh('dismantle-done');
   if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-replace"></i> Simpan Maintenance & Update SN';}
@@ -11000,6 +10974,8 @@ function populateOdpMonFilters() {
   var areaFilter = document.getElementById('odp-mon-area-filter');
   var odcFilter  = document.getElementById('odp-mon-odc-filter');
   var odpFilter  = document.getElementById('odp-mon-odp-filter');
+  var odcRow     = document.getElementById('odp-mon-odc-row');
+  var odpRow     = document.getElementById('odp-mon-odp-row');
   if (!areaFilter) return;
 
   var settingData = getOdcOdpData();
@@ -11009,106 +10985,97 @@ function populateOdpMonFilters() {
   var selOdp  = (odpFilter||{}).value||'';
 
   // Populate Area
-  areaFilter.innerHTML = '<option value="">Semua Area</option>' +
+  areaFilter.innerHTML = '<option value="">Pilih Area...</option>' +
     areas.map(function(a){ return '<option value="'+a+'"'+(a===selArea?' selected':'')+'>'+a+'</option>'; }).join('');
 
-  // Populate ODC berdasarkan area yang dipilih
-  var odcSet = {};
-  if(selArea){
-    ((settingData[selArea]||{}).odc||[]).forEach(function(o){ if(o.trim()) odcSet[o.trim()]=1; });
+  // ODC row: hanya tampil jika area dipilih
+  if (selArea) {
+    var odcList = ((settingData[selArea]||{}).odc||[]).filter(function(o){ return o.trim(); }).sort();
+    if (odcFilter) {
+      odcFilter.innerHTML = '<option value="">Pilih ODC...</option>' +
+        odcList.map(function(o){ return '<option value="'+o+'"'+(o===selOdc?' selected':'')+'>'+o+'</option>'; }).join('');
+    }
+    if (odcRow) odcRow.style.display = '';
   } else {
-    areas.forEach(function(area){
-      (settingData[area].odc||[]).forEach(function(o){ if(o.trim()) odcSet[o.trim()]=1; });
-    });
-  }
-  if(odcFilter){
-    odcFilter.innerHTML = '<option value="">Semua ODC</option>' +
-      Object.keys(odcSet).sort().map(function(o){ return '<option value="'+o+'"'+(o===selOdc?' selected':'')+'>'+o+'</option>'; }).join('');
+    if (odcFilter) odcFilter.innerHTML = '<option value="">Pilih ODC...</option>';
+    if (odcRow) odcRow.style.display = 'none';
+    if (odpRow) odpRow.style.display = 'none';
+    return;
   }
 
-  // Populate ODP berdasarkan area + ODC yang dipilih
-  var odpSet = [];
-  areas.forEach(function(area){
-    if(selArea && area!==selArea) return;
-    var aData = settingData[area]||{};
-    var odcList = aData.odc||[];
-    var odpList = aData.odp||[];
-    odpList.forEach(function(odp){
-      if(!odp.trim()) return;
-      if(selOdc){
-        // Cek apakah ODP ini termasuk ODC yang dipilih
-        var odcCode = selOdc.replace(/^ODC-/i,'').toLowerCase();
-        if(odp.toLowerCase().indexOf(odcCode)<0) return;
-      }
-      odpSet.push(odp.trim());
-    });
-  });
-  odpSet.sort();
-  if(odpFilter){
-    odpFilter.innerHTML = '<option value="">Semua ODP</option>' +
-      odpSet.map(function(o){ return '<option value="'+o+'"'+(o===selOdp?' selected':'')+'>'+o+'</option>'; }).join('');
+  // ODP row: hanya tampil jika ODC dipilih
+  if (selOdc) {
+    var odpList = ((settingData[selArea]||{}).odp||[]).filter(function(odp){
+      if (!odp.trim()) return false;
+      var odcCode = selOdc.replace(/^ODC-/i,'').toLowerCase();
+      return odp.toLowerCase().indexOf(odcCode) >= 0;
+    }).sort();
+    if (odpFilter) {
+      odpFilter.innerHTML = '<option value="">Pilih ODP...</option>' +
+        odpList.map(function(o){ return '<option value="'+o+'"'+(o===selOdp?' selected':'')+'>'+o+'</option>'; }).join('');
+    }
+    if (odpRow) odpRow.style.display = '';
+  } else {
+    if (odpFilter) odpFilter.innerHTML = '<option value="">Pilih ODP...</option>';
+    if (odpRow) odpRow.style.display = 'none';
   }
 }
 
 function onOdpMonAreaChange() {
-  var selArea = (document.getElementById('odp-mon-area-filter')||{}).value||'';
-  var odcFilter = document.getElementById('odp-mon-odc-filter');
-  var odpFilter = document.getElementById('odp-mon-odp-filter');
+  var areaFilter = document.getElementById('odp-mon-area-filter');
+  var odcFilter  = document.getElementById('odp-mon-odc-filter');
+  var odpFilter  = document.getElementById('odp-mon-odp-filter');
+  var odcRow     = document.getElementById('odp-mon-odc-row');
+  var odpRow     = document.getElementById('odp-mon-odp-row');
+  var selArea    = (areaFilter||{}).value||'';
   var settingData = getOdcOdpData();
 
-  // Reset ODC & ODP dropdown
-  var odcSet = {};
-  if(selArea){
-    ((settingData[selArea]||{}).odc||[]).forEach(function(o){ if(o.trim()) odcSet[o.trim()]=1; });
+  // Reset ODC & ODP
+  if (odcFilter) { odcFilter.innerHTML = '<option value="">Pilih ODC...</option>'; odcFilter.value = ''; }
+  if (odpFilter) { odpFilter.innerHTML = '<option value="">Pilih ODP...</option>'; odpFilter.value = ''; }
+  if (odpRow) odpRow.style.display = 'none';
+
+  if (selArea) {
+    var odcList = ((settingData[selArea]||{}).odc||[]).filter(function(o){ return o.trim(); }).sort();
+    if (odcFilter) {
+      odcFilter.innerHTML = '<option value="">Pilih ODC...</option>' +
+        odcList.map(function(o){ return '<option value="'+o+'">'+o+'</option>'; }).join('');
+    }
+    if (odcRow) odcRow.style.display = '';
   } else {
-    Object.keys(settingData).forEach(function(area){
-      (settingData[area].odc||[]).forEach(function(o){ if(o.trim()) odcSet[o.trim()]=1; });
-    });
-  }
-  if(odcFilter){
-    odcFilter.innerHTML = '<option value="">Semua ODC</option>' +
-      Object.keys(odcSet).sort().map(function(o){ return '<option value="'+o+'">'+o+'</option>'; }).join('');
+    if (odcRow) odcRow.style.display = 'none';
   }
 
-  // Reset ODP dropdown
-  var odpSet = [];
-  Object.keys(settingData).forEach(function(area){
-    if(selArea && area!==selArea) return;
-    (settingData[area].odp||[]).forEach(function(o){ if(o.trim()) odpSet.push(o.trim()); });
-  });
-  odpSet.sort();
-  if(odpFilter){
-    odpFilter.innerHTML = '<option value="">Semua ODP</option>' +
-      odpSet.map(function(o){ return '<option value="'+o+'">'+o+'</option>'; }).join('');
-  }
   renderOdpMonitor();
 }
 
 function onOdpMonOdcChange() {
-  var selArea = (document.getElementById('odp-mon-area-filter')||{}).value||'';
-  var selOdc  = (document.getElementById('odp-mon-odc-filter')||{}).value||'';
-  var odpFilter = document.getElementById('odp-mon-odp-filter');
+  var areaFilter = document.getElementById('odp-mon-area-filter');
+  var odcFilter  = document.getElementById('odp-mon-odc-filter');
+  var odpFilter  = document.getElementById('odp-mon-odp-filter');
+  var odpRow     = document.getElementById('odp-mon-odp-row');
+  var selArea    = (areaFilter||{}).value||'';
+  var selOdc     = (odcFilter||{}).value||'';
   var settingData = getOdcOdpData();
 
-  // Update ODP dropdown berdasarkan ODC yang dipilih
-  var odpSet = [];
-  Object.keys(settingData).forEach(function(area){
-    if(selArea && area!==selArea) return;
-    var aData = settingData[area]||{};
-    (aData.odp||[]).forEach(function(odp){
-      if(!odp.trim()) return;
-      if(selOdc){
-        var odcCode = selOdc.replace(/^ODC-/i,'').toLowerCase();
-        if(odp.toLowerCase().indexOf(odcCode)<0) return;
-      }
-      odpSet.push(odp.trim());
-    });
-  });
-  odpSet.sort();
-  if(odpFilter){
-    odpFilter.innerHTML = '<option value="">Semua ODP</option>' +
-      odpSet.map(function(o){ return '<option value="'+o+'">'+o+'</option>'; }).join('');
+  // Reset ODP
+  if (odpFilter) { odpFilter.innerHTML = '<option value="">Pilih ODP...</option>'; odpFilter.value = ''; }
+
+  if (selOdc && selArea) {
+    var odpList = ((settingData[selArea]||{}).odp||[]).filter(function(odp){
+      if (!odp.trim()) return false;
+      var odcCode = selOdc.replace(/^ODC-/i,'').toLowerCase();
+      return odp.toLowerCase().indexOf(odcCode) >= 0;
+    }).sort();
+    if (odpFilter) {
+      odpFilter.innerHTML = '<option value="">Pilih ODP...</option>' +
+        odpList.map(function(o){ return '<option value="'+o+'">'+o+'</option>'; }).join('');
+    }
+    if (odpRow) odpRow.style.display = '';
+  } else {
+    if (odpRow) odpRow.style.display = 'none';
   }
+
   renderOdpMonitor();
 }
 
@@ -11154,6 +11121,15 @@ function renderOdpMonitor() {
   var globalRusakSet = getAllOdpRusakSet();
   var globalBelumAktifSet = getAllOdpBelumAktifSet();
   var globalPenuh = 0, globalRusak = 0, globalKosong = 0, globalBelumAktif = 0, globalKritis = 0;
+
+  // Hitung total ODC dan ODP dari Setting untuk info banner
+  var infoTotalOdc = 0, infoTotalOdp = 0;
+  Object.keys(sdGlobal).forEach(function(a){
+    infoTotalOdc += ((sdGlobal[a]||{}).odc||[]).filter(function(o){return o.trim();}).length;
+    infoTotalOdp += ((sdGlobal[a]||{}).odp||[]).filter(function(o){return o.trim();}).length;
+  });
+  var infoEl = document.getElementById('odp-mon-info-total');
+  if(infoEl) infoEl.textContent = infoTotalOdc + ' ODC · ' + infoTotalOdp + ' ODP';
 
   // Bangun usage map dari SEMUA pelanggan (semua status yang punya ODP = terpakai)
   var fullUsageMap = {};
@@ -11299,6 +11275,7 @@ function renderOdpMonitor() {
       });
       areaStatCards[area] = {
         totalOdp: totalOdp, totalPort: totalPort,
+        odcCount: odcList.length, // ← jumlah ODC dari Setting
         terpakai: totalTerpakai, kosongPort: totalKosongPort,
         penuh: odpPenuh, kritis: odpKritis, kosong: odpKosong,
         rusak: odpRusak, belumAktif: odpBelumAktif, terpakaiOdp: odpTerpakai,
@@ -11314,9 +11291,9 @@ function renderOdpMonitor() {
         var s = areaStatCards[area];
         var sc = s.pct >= 100 ? 'var(--red)' : s.pct >= 75 ? 'var(--yellow)' : 'var(--green)';
         return '<div style="margin-bottom:10px;background:var(--bg4);border-radius:var(--rs);padding:10px 11px;border:1px solid var(--border)">' +
-          '<div style="font-size:12px;font-weight:700;color:var(--c1);margin-bottom:6px;display:flex;align-items:center;gap:5px">' +
-            '<i class="ti ti-map-pin" style="font-size:12px"></i>' + escHtml(area) +
-            '' +
+          '<div style="font-size:12px;font-weight:700;color:var(--c1);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:5px">' +
+            '<div style="display:flex;align-items:center;gap:5px"><i class="ti ti-map-pin" style="font-size:12px"></i>' + escHtml(area) + '</div>' +
+            '<span style="font-size:9px;font-weight:700;color:var(--text3);background:var(--bg3);border-radius:12px;padding:2px 8px;border:1px solid var(--border2)">' + s.odcCount + ' ODC · ' + s.totalOdp + ' ODP</span>' +
           '</div>' +
           '<div style="margin-bottom:7px">' +
             '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px">' +
@@ -11594,12 +11571,15 @@ function renderOdpMonitor() {
       }).join('');
     }
   }
+
+  // ── Sinkron card "ODP Terpakai" agar selalu konsisten dengan data terbaru ──
+  updOdpTerpakaiAll();
 }
 
 // Dipanggil dari updDash agar monitoring auto-update
 function updOdpMonitor() {
   populateOdpMonFilters(); // pakai setting, bukan pelanggan
-  renderOdpMonitor();
+  renderOdpMonitor();      // di dalamnya sudah memanggil updOdpTerpakaiAll()
   restoreOdpOpenState(); // restore card yg sudah dibuka user
   renderUntungOdp(); // hitung untung ODP per ODC
   // Juga render rekap jika tab ODP aktif
@@ -11615,14 +11595,18 @@ function odpMonLivePulse() {
   setTimeout(function(){ badge.style.opacity = '1'; }, 200);
 }
 
-// Reset semua filter monitoring ODP ke "Semua"
+// Reset semua filter monitoring ODP ke kondisi awal (hanya Area tampil)
 function resetOdpMonFilter() {
   var aF = document.getElementById('odp-mon-area-filter');
   var oF = document.getElementById('odp-mon-odc-filter');
   var pF = document.getElementById('odp-mon-odp-filter');
   if (aF) aF.value = '';
-  if (oF) { oF.innerHTML = '<option value="">Semua ODC</option>'; oF.value = ''; }
-  if (pF) { pF.innerHTML = '<option value="">Semua ODP</option>'; pF.value = ''; }
+  if (oF) { oF.innerHTML = '<option value="">Pilih ODC...</option>'; oF.value = ''; }
+  if (pF) { pF.innerHTML = '<option value="">Pilih ODP...</option>'; pF.value = ''; }
+  var odcRow = document.getElementById('odp-mon-odc-row');
+  var odpRow = document.getElementById('odp-mon-odp-row');
+  if (odcRow) odcRow.style.display = 'none';
+  if (odpRow) odpRow.style.display = 'none';
   var resetBtn = document.getElementById('odp-mon-reset-btn');
   if (resetBtn) resetBtn.style.display = 'none';
   var odcWrap = document.getElementById('odp-mon-odc-wrap');
@@ -11634,6 +11618,13 @@ function resetOdpMonFilter() {
 // REKAP ODP — Tab Data
 // ═══════════════════════════════
 var rekapOdpTab = 'area';
+var _rekapRenderTimer = null;
+var _rekapPopulating = false; // flag: sedang populate dropdown, jangan trigger render
+
+function renderOdpRekapDebounced() {
+  if (_rekapRenderTimer) clearTimeout(_rekapRenderTimer);
+  _rekapRenderTimer = setTimeout(function(){ renderOdpRekap(); }, 50);
+}
 
 function switchRekapTab(tab) {
   rekapOdpTab = tab;
@@ -11650,9 +11641,11 @@ function switchRekapTab(tab) {
   if (paneOdc)  paneOdc.style.display  = tab==='odc'  ? '' : 'none';
   if (paneOdp)  paneOdp.style.display  = tab==='odp'  ? '' : 'none';
   // Populate area dropdowns saat tab dibuka
+  _rekapPopulating = true;
   if (tab==='odc') populateRekapOdcAreaDropdown();
   if (tab==='odp') populateRekapOdpAreaDropdown();
-  renderOdpRekap();
+  _rekapPopulating = false;
+  renderOdpRekapDebounced();
 }
 
 function populateRekapOdcAreaDropdown(){
@@ -11676,6 +11669,7 @@ function populateRekapOdpAreaDropdown(){
 }
 
 function onRekapOdcAreaChange(){
+  if (_rekapPopulating) return;
   var area = (document.getElementById('rekap-odc-filter-area')||{}).value||'';
   var swrap = document.getElementById('rekap-odc-search-wrap');
   var resetWrap = document.getElementById('rekap-odc-reset-wrap');
@@ -11683,10 +11677,11 @@ function onRekapOdcAreaChange(){
   if(resetWrap) resetWrap.style.display = area ? '' : 'none';
   var inp = document.getElementById('rekap-odc-search');
   if(inp) inp.value = '';
-  renderOdpRekap();
+  renderOdpRekapDebounced();
 }
 
 function onRekapOdpAreaChange(){
+  if (_rekapPopulating) return;
   var area = (document.getElementById('rekap-odp-filter-area')||{}).value||'';
   // Populate ODC dropdown
   var odcWrap   = document.getElementById('rekap-odp-odc-wrap');
@@ -11697,6 +11692,7 @@ function onRekapOdpAreaChange(){
   if(swrap)     swrap.style.display     = area ? '' : 'none';
   if(resetWrap) resetWrap.style.display = area ? '' : 'none';
   if(odcSel){
+    _rekapPopulating = true;
     if(area){
       var settingData = getOdcOdpData();
       var odcList = ((settingData[area]||{}).odc||[]).sort();
@@ -11705,14 +11701,16 @@ function onRekapOdpAreaChange(){
     } else {
       odcSel.innerHTML = '<option value="">-- Semua ODC --</option>';
     }
+    _rekapPopulating = false;
   }
   var inp = document.getElementById('rekap-odp-search');
   if(inp) inp.value = '';
-  renderOdpRekap();
+  renderOdpRekapDebounced();
 }
 
 function onRekapOdpOdcChange(){
-  renderOdpRekap();
+  if (_rekapPopulating) return;
+  renderOdpRekapDebounced();
 }
 
 function renderOdpRekap() {
@@ -15283,7 +15281,7 @@ function toggleSbGroup(groupId, btn) {
 function goDataOdp(el) {
   if(!currentRole){showLogin();return;}
   var bnL = document.getElementById('bn-l');
-  if(typeof setTab === 'function' && bnL) setTab('data', bnL);
+  if(typeof setTab === 'function' && bnL) setTab('data', bnL, true);
   // Trigger ODP filter button
   var odpBtn = document.getElementById('odp-filter-btn');
   if(odpBtn) odpBtn.click();
@@ -15321,22 +15319,13 @@ function goInputMode(mode, el) {
 /* Navigate to Data list with a specific mode active */
 function goDataMode(mode, el) {
   if(!currentRole){showLogin();return;}
-  // Switch to data tab
+  // Switch to data tab (skip reset so mode below takes effect)
   var bnL = document.getElementById('bn-l');
-  if(typeof setTab === 'function' && bnL) setTab('data', bnL);
-  // Set mode for data list filter
-  if(typeof setMode === 'function') setMode(mode);
-  // Also click the matching dtab chip in the data pane
-  var modeMap = {p:'p',d:'d',x:'x',m:'m',s:'s'};
-  var dtabs = document.querySelectorAll('.dtab');
-  dtabs.forEach(function(t){ t.classList.remove('on'); });
-  var target;
-  if(mode==='p') target = document.getElementById('fc-p');
-  else if(mode==='d') target = document.getElementById('fc-d');
-  else if(mode==='x') target = document.getElementById('fc-x');
-  else if(mode==='m') target = document.getElementById('fc-m');
-  else if(mode==='s') target = document.getElementById('fc-s');
-  if(target){ target.classList.add('on'); if(typeof target.onclick==='function') target.onclick(); else target.click(); }
+  if(typeof setTab === 'function' && bnL) setTab('data', bnL, true);
+  // Panggil setF langsung — dummy fc-* buttons tidak punya onclick handler
+  var idMap = {p:'fc-p',d:'fc-d',x:'fc-x',m:'fc-m',s:'fc-s'};
+  var target = document.getElementById(idMap[mode]);
+  if(typeof setF === 'function') setF(mode, target || document.createElement('button'));
   // Highlight correct sub-item
   document.querySelectorAll('.sb-sub').forEach(function(b){ b.classList.remove('on'); });
   if(el) el.classList.add('on');
@@ -15366,11 +15355,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
 /* ── SUPABASE CONFIG UI FUNCTIONS ── */
 function saveSbConfig(){
-  if(currentRole!=='admin'){toast('Hanya Admin yang bisa ubah konfigurasi Supabase','err');return;}
+  if(currentRole!=='admin'){toast('Hanya Admin yang bisa ubah konfigurasi Database','err');return;}
   var url=(document.getElementById('sb-url-inp')||{}).value||'';
   var key=(document.getElementById('sb-key-inp')||{}).value||'';
   url=url.trim();key=key.trim();
-  if(!url||!key){toast('URL dan Anon Key Supabase wajib diisi','err');return;}
+  if(!url||!key){toast('URL dan Anon Key Database wajib diisi','err');return;}
   try{
     localStorage.setItem(K_SB_URL,url);
     localStorage.setItem(K_SB_KEY,key);
@@ -15379,22 +15368,22 @@ function saveSbConfig(){
   SB_CFG.url=url;SB_CFG.key=key;
   _sbReset();
   _sbSetStatus('unknown');
-  toast('Konfigurasi Supabase disimpan — klik Test untuk verifikasi','ok');
+  toast('Konfigurasi Database disimpan — klik Test untuk verifikasi','ok');
 }
 
 function sbPullAndReload(){
-  if(!_sbGetClient()){toast('Konfigurasi Supabase belum lengkap','err');return;}
-  toast('Memuat ulang data dari Supabase...','info',5000);
+  if(!_sbGetClient()){toast('Konfigurasi Database belum lengkap','err');return;}
+  toast('Memuat ulang data dari Database...','info',5000);
   Promise.all([sbPullAllSettings(),sbLoadRows()])
     .then(function(r){
       if(r[0]||r[1]){
         _sbSetStatus('ok');
-        toast('Data berhasil dimuat dari Supabase ✓','ok');
+        toast('Data berhasil dimuat dari Database ✓','ok');
         _syncFullRefresh('sb-pull');
         updCounts();updDash();
       } else {
         _sbSetStatus('err');
-        toast('Gagal memuat dari Supabase','err');
+        toast('Gagal memuat dari Database','err');
       }
     });
 }
