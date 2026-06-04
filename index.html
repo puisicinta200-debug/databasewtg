@@ -227,6 +227,44 @@ textarea{resize:none;height:76px;line-height:1.5}
 .empty-s i{font-size:52px;display:block;margin-bottom:12px;opacity:.2}
 .empty-s p{font-size:13px;line-height:1.7}
 
+/* DASHBOARD EMPTY STATE */
+.dash-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px;text-align:center;
+  background:var(--bg2);border-radius:var(--r);border:1.5px dashed var(--border2);
+  margin-bottom:14px;
+}
+.dash-empty-icon{
+  width:64px;height:64px;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:14px;
+}
+.dash-empty-icon.c1{background:var(--c1b);}
+.dash-empty-icon.c2{background:var(--c2b);}
+.dash-empty-icon.pu{background:var(--pug);}
+.dash-empty-icon.rd{background:var(--rg);}
+.dash-empty-icon.gr{background:var(--gng);}
+.dash-empty-icon i{font-size:30px;}
+.dash-empty-icon.c1 i{color:var(--c1);}
+.dash-empty-icon.c2 i{color:var(--c2);}
+.dash-empty-icon.pu i{color:var(--pu);}
+.dash-empty-icon.rd i{color:var(--red);}
+.dash-empty-icon.gr i{color:var(--green);}
+.dash-empty-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.3px;}
+.dash-empty-sub{font-size:12px;color:var(--text3);line-height:1.7;max-width:240px;margin-bottom:18px;}
+.dash-empty-btn{
+  padding:11px 22px;border:none;border-radius:var(--rs);
+  font-family:'Sora',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  transition:.15s;
+}
+.dash-empty-btn:active{transform:scale(.97);opacity:.85;}
+.dash-empty-btn.c1{background:var(--c1);color:#fff;box-shadow:0 4px 14px rgba(26,86,219,.25);}
+.dash-empty-btn.c2{background:var(--c2);color:#fff;box-shadow:0 4px 14px rgba(249,115,22,.22);}
+.dash-empty-btn.pu{background:var(--pu);color:#fff;box-shadow:0 4px 14px rgba(124,58,237,.22);}
+.dash-empty-btn.rd{background:var(--red);color:#fff;box-shadow:0 4px 14px rgba(220,38,38,.2);}
+.dash-empty-btn.gr{background:var(--green);color:#001a0f;box-shadow:0 4px 14px rgba(5,150,105,.2);}
+
 /* FILTER CHIPS */
 .chips{display:flex;gap:7px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
@@ -2246,7 +2284,21 @@ textarea{resize:none;height:72px;line-height:1.6}
       </div>
     </div>
     <nav class="sb-nav">
-      <button class="sb-item" id="sb-d" onclick="setTab('dash',this,'sb')"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></button>
+      <!-- ── DASHBOARD GROUP ── -->
+      <div class="sb-group">
+        <button class="sb-item sb-group-hd" id="sb-d" onclick="toggleSbGroup('dash-group', this)">
+          <i class="ti ti-layout-dashboard"></i>
+          <span>Dashboard</span>
+          <i class="ti ti-chevron-down sb-chevron" id="chev-dash"></i>
+        </button>
+        <div class="sb-group-body" id="dash-group">
+          <button class="sb-item sb-sub on pel" id="sb-dash-p" onclick="goDashMode('p',this)"><i class="ti ti-users"></i><span>Pelanggan</span></button>
+          <button class="sb-item sb-sub mnt" id="sb-dash-d" onclick="goDashMode('d',this)"><i class="ti ti-replace"></i><span>Maintenance</span></button>
+          <button class="sb-item sb-sub dis" id="sb-dash-x" onclick="goDashMode('x',this)"><i class="ti ti-tools"></i><span>Dismantle</span></button>
+          <button class="sb-item sb-sub mat" id="sb-dash-m" onclick="goDashMode('m',this)"><i class="ti ti-package"></i><span>Material</span></button>
+          <button class="sb-item sb-sub sal" id="sb-dash-s" onclick="goDashMode('s',this)"><i class="ti ti-cash"></i><span>Sales</span></button>
+        </div>
+      </div>
       <button class="sb-item" id="sb-overview" onclick="showComingSoon('Overview', this)"><i class="ti ti-chart-line"></i><span>Overview</span></button>
 
       <!-- ── INPUT DATA GROUP ── -->
@@ -2342,39 +2394,35 @@ textarea{resize:none;height:72px;line-height:1.6}
     <div class="pane" id="pane-dash">
       <div id="last-t" style="display:none">12.41.11</div>
 
+      <!-- ══ DASHBOARD MODE SWITCHER ══ -->
+      <div class="mode-row" style="margin-bottom:14px" id="dash-mode-row">
+        <button class="mpill on p" id="dash-pill-p" onclick="switchDashMode('p',this)"><i class="ti ti-users"></i> Pelanggan</button>
+        <button class="mpill m" id="dash-pill-m" onclick="switchDashMode('m',this)"><i class="ti ti-package"></i> Material</button>
+        <button class="mpill d" id="dash-pill-d" onclick="switchDashMode('d',this)"><i class="ti ti-replace"></i> Maint.</button>
+        <button class="mpill x" id="dash-pill-x" onclick="switchDashMode('x',this)"><i class="ti ti-tool"></i> Dismantle</button>
+        <button class="mpill s" id="dash-pill-s" onclick="switchDashMode('s',this)"><i class="ti ti-cash"></i> Sales</button>
+      </div>
+
       <!-- DASHBOARD PELANGGAN -->
       <div id="dash-p" style="display: block;">
-        <!-- MODE SWITCHER DIHAPUS -->
-        <div style="display:none">
-          <div style="display:none">
-            <button onclick="goToForm(&#39;p&#39;)" style="display:none">
-            </button>
-            <button onclick="goToForm(&#39;d&#39;)" style="display:none">
-            </button>
-            <button onclick="goToForm(&#39;m&#39;)" style="display:none">
-              <i class="ti ti-package" style="font-size:22px;color:var(--c2)"></i>
-              <span style="font-size:11px;font-weight:700;color:var(--c2)">Material</span>
-            </button>
-          </div>
-        </div>
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Dashboard Pelanggan</div>
         <div class="dash-grid">
-          <div class="dstat c1"><div class="dstat-n c1" id="ds-total-p">1</div><div class="dstat-l">Total Pelanggan</div><div class="dstat-trend up" id="ds-new-p"><i class="ti ti-trending-up"></i> 1 hari ini</div></div>
+          <div class="dstat c1"><div class="dstat-n c1" id="ds-total-p">0</div><div class="dstat-l">Total Pelanggan</div><div class="dstat-trend up" id="ds-new-p"><i class="ti ti-trending-up"></i> 0 hari ini</div></div>
           <div class="dstat" style="border-color:rgba(16,217,160,.18)"><div class="dstat-n gr" id="ds-aktif">0</div><div class="dstat-l">Status Aktif</div><div class="dstat-trend up" id="ds-aktif-pct"><i class="ti ti-check"></i> 0%</div></div>
           <div class="dstat" style="border-color:rgba(240,84,84,.18)"><div class="dstat-n" style="color:var(--red)" id="ds-area">0</div><div class="dstat-l">Dismantle</div><div class="dstat-trend" style="color:var(--text3);font-size:9px" id="ds-area-sub">Total pelanggan dismantle</div></div>
-          <div class="dstat" style="border-color:rgba(167,139,250,.18)"><div class="dstat-n c1" id="ds-today-p">1</div><div class="dstat-l">Input Hari Ini</div></div>
+          <div class="dstat" style="border-color:rgba(167,139,250,.18)"><div class="dstat-n c1" id="ds-today-p">0</div><div class="dstat-l">Input Hari Ini</div></div>
         </div>
 
 
         <div class="chart-wrap">
           <div class="chart-title"><i class="ti ti-chart-bar" style="font-size:16px;color:var(--c1)"></i> Pelanggan per Area</div>
-          <div class="bar-chart" id="bar-area"><div class="bar-col"><div class="bar c1" style="height:72px"></div><div class="bar-lbl">Cicur…</div></div></div>
+          <div class="bar-chart" id="bar-area"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:6px;padding:16px 0"><i class="ti ti-chart-bar" style="font-size:28px;color:var(--border2)"></i><span style="font-size:11px;color:var(--text3)">Belum ada data pelanggan</span></div></div>
         </div>
         <div class="chart-wrap">
           <div class="chart-title"><i class="ti ti-chart-donut" style="font-size:16px;color:var(--green)"></i> Status Pelanggan</div>
           <div class="donut-wrap">
-            <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100" id="donut-status"><path d="M 50 14 A 36 36 0 1 1 49.99999999999999 14" fill="none" stroke="#10d9a0" stroke-width="16" stroke-linecap="round"></path><text x="50" y="53" text-anchor="middle" fill="#e8eaf5" font-size="14" font-weight="700" font-family="Sora">1</text></svg>
-            <div class="donut-legend" id="donut-legend"><div class="legend-item"><div class="legend-dot" style="background:#10d9a0"></div><div class="legend-label">Paket 200Mbps</div><div class="legend-val" style="color:#10d9a0">1</div></div></div>
+            <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100" id="donut-status"><circle cx="50" cy="50" r="36" fill="none" stroke="var(--border2)" stroke-width="16"/><text x="50" y="55" text-anchor="middle" fill="var(--text3)" font-size="10" font-family="Sora">kosong</text></svg>
+            <div class="donut-legend" id="donut-legend"></div>
           </div>
         </div>
 
@@ -2545,7 +2593,7 @@ textarea{resize:none;height:72px;line-height:1.6}
         </div>
         <div class="chart-wrap">
           <div class="chart-title"><i class="ti ti-chart-bar" style="font-size:16px;color:var(--c2)"></i> Material per Area</div>
-          <div class="bar-chart" id="bar-mat"><div style="font-size:11px;color:var(--text3);text-align:center;width:100%;align-self:center">Belum ada data</div></div>
+          <div class="bar-chart" id="bar-mat"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:6px;padding:16px 0"><i class="ti ti-chart-bar" style="font-size:28px;color:var(--border2)"></i><span style="font-size:11px;color:var(--text3)">Belum ada data material</span></div></div>
         </div>
         <div class="chart-wrap">
           <div class="chart-title"><i class="ti ti-chart-donut" style="font-size:16px;color:var(--c2)"></i> Penggunaan Material</div>
@@ -2556,7 +2604,7 @@ textarea{resize:none;height:72px;line-height:1.6}
         </div>
         <div class="card c2">
           <div class="sec-t c2"><i class="ti ti-clock"></i> Aktivitas Terbaru</div>
-          <div id="recent-m" class="recent-list"><div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px"></i><p style="font-size:12px">Belum ada data</p></div></div>
+          <div id="recent-m" class="recent-list"><div class="dash-empty" style="margin-bottom:0"><div class="dash-empty-icon c2"><i class="ti ti-package"></i></div><div class="dash-empty-title">Belum Ada Data Material</div><div class="dash-empty-sub">Input material akan tampil di sini setelah data pertama disimpan.</div><button class="dash-empty-btn c2" onclick="goInputMode('m',null)"><i class="ti ti-plus"></i> Input Material</button></div></div>
         </div>
       </div>
       <!-- DASHBOARD DISMANTLE -->
@@ -2572,7 +2620,7 @@ textarea{resize:none;height:72px;line-height:1.6}
         </div>
         <div class="card" style="border-color:rgba(167,139,250,.2)">
           <div class="sec-t" style="color:var(--pu)"><i class="ti ti-clock"></i> Aktivitas Terbaru</div>
-          <div id="recent-d" class="recent-list"><div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px"></i><p style="font-size:12px">Belum ada data</p></div></div>
+          <div id="recent-d" class="recent-list"><div class="dash-empty" style="margin-bottom:0"><div class="dash-empty-icon pu"><i class="ti ti-replace"></i></div><div class="dash-empty-title">Belum Ada Data Maintenance</div><div class="dash-empty-sub">Riwayat maintenance akan tampil di sini.</div><button class="dash-empty-btn pu" onclick="goInputMode('d',null)"><i class="ti ti-plus"></i> Input Maintenance</button></div></div>
         </div>
       </div>
       <!-- DASHBOARD DISMANTLE MODE X -->
@@ -2588,7 +2636,7 @@ textarea{resize:none;height:72px;line-height:1.6}
         </div>
         <div class="card" style="border-color:rgba(240,84,84,.2)">
           <div class="sec-t" style="color:var(--red)"><i class="ti ti-clock"></i> Aktivitas Dismantle Terbaru</div>
-          <div id="recent-x" class="recent-list"><div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px"></i><p style="font-size:12px">Belum ada data dismantle</p></div></div>
+          <div id="recent-x" class="recent-list"><div class="dash-empty" style="margin-bottom:0"><div class="dash-empty-icon rd"><i class="ti ti-tool"></i></div><div class="dash-empty-title">Belum Ada Data Dismantle</div><div class="dash-empty-sub">Riwayat dismantle pelanggan akan muncul di sini.</div><button class="dash-empty-btn rd" onclick="goInputMode('x',null)"><i class="ti ti-plus"></i> Input Dismantle</button></div></div>
         </div>
       </div>
       <!-- DASHBOARD SALES -->
@@ -2599,12 +2647,12 @@ textarea{resize:none;height:72px;line-height:1.6}
         <!-- Summary stats -->
         <div class="dash-grid">
           <div class="dstat" style="border-color:rgba(16,217,160,.25)">
-            <div class="dstat-n gr" id="ds-sales-total">1</div>
+            <div class="dstat-n gr" id="ds-sales-total">0</div>
             <div class="dstat-l">Total Pelanggan Baru</div>
             <div class="dstat-trend up" id="ds-sales-today"><i class="ti ti-trending-up"></i> 1 hari ini</div>
           </div>
           <div class="dstat" style="border-color:rgba(16,217,160,.2)">
-            <div class="dstat-n gr" id="ds-sales-fee" style="font-size:18px">Rp 35.000</div>
+            <div class="dstat-n gr" id="ds-sales-fee" style="font-size:18px">Rp 0</div>
             <div class="dstat-l">Total Fee OTF</div>
             <div class="dstat-trend up" style="color:var(--green)"><i class="ti ti-cash"></i> Rp 35.000/pelanggan</div>
           </div>
@@ -2617,7 +2665,7 @@ textarea{resize:none;height:72px;line-height:1.6}
             <div class="otf-stat-l">Total Dibayar</div>
           </div>
           <div class="otf-stat rd">
-            <div class="otf-stat-n rd" id="otf-total-belum">Rp 35.000</div>
+            <div class="otf-stat-n rd" id="otf-total-belum">Rp 0</div>
             <div class="otf-stat-l">Belum Dibayar</div>
           </div>
         </div>
@@ -2685,7 +2733,7 @@ textarea{resize:none;height:72px;line-height:1.6}
         <!-- Recent sales activity -->
         <div class="card" style="border-color:rgba(16,217,160,.2)">
           <div class="sec-t gr"><i class="ti ti-clock"></i> Aktivitas Sales Terbaru</div>
-          <div id="recent-s" class="recent-list"><div class="ritem"><div class="ritem-av" style="background:rgba(16,217,160,.12);color:var(--green)">UU</div><div style="flex:1;min-width:0"><div class="ritem-name">UUNK</div><div class="ritem-sub">RT 001 / RW 001 — Kel. Purwasar</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:12px;font-weight:700;color:var(--green)">Rp 35.000</div><div style="font-size:9px;color:var(--text3);margin-top:2px;font-family:&#39;JetBrains Mono&#39;,monospace">2026-06-01</div></div></div></div>
+          <div id="recent-s" class="recent-list"><div class="dash-empty" style="margin-bottom:0"><div class="dash-empty-icon gr"><i class="ti ti-cash"></i></div><div class="dash-empty-title">Belum Ada Data Sales OTF</div><div class="dash-empty-sub">Aktivitas pembayaran OTF sales akan tampil di sini.</div><button class="dash-empty-btn gr" onclick="goInputMode('s',null)"><i class="ti ti-plus"></i> Input OTF Sales</button></div></div>
         </div>
       </div>
     </div>
@@ -6357,6 +6405,30 @@ function setTab(t,btn){
     var sbTarget=document.getElementById(sbMap[t]);
     if(sbTarget) sbTarget.classList.add('on');
   }
+  // Auto-open group pada sidebar
+  document.querySelectorAll('.sb-group-body').forEach(function(b){ b.classList.remove('open'); });
+  document.querySelectorAll('.sb-group-hd').forEach(function(b){ b.classList.remove('open'); });
+  if(t==='dash'){
+    var dg2=document.getElementById('dash-group');var dh2=document.getElementById('sb-d');
+    if(dg2)dg2.classList.add('open');if(dh2)dh2.classList.add('open');
+    // Highlight sub-item aktif
+    document.querySelectorAll('.sb-sub').forEach(function(b){b.classList.remove('on');});
+    var curDashSub=document.getElementById('sb-dash-p');
+    // Cari sub-item yang cocok dengan mode aktif
+    var curMode=['p','m','d','x','s'].find(function(m){
+      var el=document.getElementById('dash-'+m);
+      return el&&el.style.display!=='none';
+    })||'p';
+    var activeSub=document.getElementById('sb-dash-'+curMode);
+    if(activeSub)activeSub.classList.add('on');
+    else if(curDashSub)curDashSub.classList.add('on');
+  } else if(t==='form'){
+    var ig2=document.getElementById('input-group');var ih2=document.getElementById('sb-f');
+    if(ig2)ig2.classList.add('open');if(ih2)ih2.classList.add('open');
+  } else if(t==='data'){
+    var dg3=document.getElementById('data-group');var dh3=document.getElementById('sb-l');
+    if(dg3)dg3.classList.add('open');if(dh3)dh3.classList.add('open');
+  }
   // Tutup sidebar di mobile setiap kali tab berpindah
   if(typeof closeSidebar==='function') closeSidebar();
 }
@@ -9011,7 +9083,7 @@ function updSalesDash(){
     recentSrc.sort(function(a,b){ return (a.tgl||'').localeCompare(b.tgl||''); });
     var recent = recentSrc.slice(-5).reverse();
     if(!recent.length){
-      rEl.innerHTML = '<div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px;opacity:.2"></i><p style="font-size:12px">Belum ada data pelanggan</p></div>';
+      rEl.innerHTML = '<div class="dash-empty" style="margin-bottom:0"><div class="dash-empty-icon gr"><i class="ti ti-cash"></i></div><div class="dash-empty-title">Belum Ada Data Sales OTF</div><div class="dash-empty-sub">Aktivitas pembayaran OTF sales akan tampil di sini.</div><button class="dash-empty-btn gr" onclick="goInputMode(\'s\',null)"><i class="ti ti-plus"></i> Input OTF Sales</button></div>';
     } else {
       var rHtml = '';
       recent.forEach(function(d){
@@ -10603,7 +10675,7 @@ function updDash(){
   });
   recsAll.sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');});
   var recs=recsAll.slice(-5).reverse();
-  if(!recs.length){rp.innerHTML='<div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px"></i><p style="font-size:12px">Belum ada data</p></div>';return;}
+  if(!recs.length){rp.innerHTML='<div class="dash-empty"><div class="dash-empty-icon c1"><i class="ti ti-users"></i></div><div class="dash-empty-title">Belum Ada Data Pelanggan</div><div class="dash-empty-sub">Data pelanggan akan muncul di sini setelah kamu menginput data baru atau sinkronisasi dari Sheets.</div><button class="dash-empty-btn c1" onclick="goInputMode(\'p\',null)"><i class="ti ti-plus"></i> Input Pelanggan Baru</button></div>';return;}
   rp.innerHTML=recs.map(function(d){
     var op=d.operator?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+d.operator):(d.teknisi||'');
     return '<div class="ritem"><div class="ritem-av c1">'+ini(d.nama)+'</div><div style="flex:1;min-width:0"><div class="ritem-name">'+d.nama+'</div><div class="ritem-sub">'+d.cid+' · '+d.tgl+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
@@ -10651,7 +10723,7 @@ function updDash(){
   // RECENT MATERIAL — 5 terbaru berdasarkan tanggal (semua periode)
   var rm=document.getElementById('recent-m');
   var rmsrc=matOnly.slice().sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');}).slice(-5).reverse();
-  if(!rmsrc.length){rm.innerHTML='<div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px"></i><p style="font-size:12px">Belum ada data</p></div>';}
+  if(!rmsrc.length){rm.innerHTML='<div class="dash-empty"><div class="dash-empty-icon c2"><i class="ti ti-package"></i></div><div class="dash-empty-title">Belum Ada Data Material</div><div class="dash-empty-sub">Input material akan tampil di sini setelah data pertama disimpan.</div><button class="dash-empty-btn c2" onclick="goInputMode(\'m\',null)"><i class="ti ti-plus"></i> Input Material</button></div>';}
   else{rm.innerHTML=rmsrc.map(function(d){
     var op=d.operator?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+d.operator):(d.amb||'');
     return '<div class="ritem"><div class="ritem-av c2"><i class="ti ti-package" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+d.item+'</div><div class="ritem-sub">Qty: '+d.qty+' · '+d.tgl+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
@@ -10687,7 +10759,7 @@ function updDash(){
   // RECENT DISMANTLE — 5 terbaru berdasarkan tanggal (semua periode)
   var rd=document.getElementById('recent-d');
   var rdsrc=dOnly.slice().sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');}).slice(-5).reverse();
-  if(!rdsrc.length){rd.innerHTML='<div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px"></i><p style="font-size:12px">Belum ada data</p></div>';}
+  if(!rdsrc.length){rd.innerHTML='<div class="dash-empty"><div class="dash-empty-icon pu"><i class="ti ti-replace"></i></div><div class="dash-empty-title">Belum Ada Data Maintenance</div><div class="dash-empty-sub">Riwayat maintenance akan tampil di sini setelah ada data yang diinput.</div><button class="dash-empty-btn pu" onclick="goInputMode(\'d\',null)"><i class="ti ti-plus"></i> Input Maintenance</button></div>';}
   else{rd.innerHTML=rdsrc.map(function(d){
     var op=d.operator?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+d.operator):(d.teknisi||'');
     return '<div class="ritem"><div class="ritem-av" style="background:rgba(167,139,250,.15);color:var(--pu)"><i class="ti ti-replace" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+(d.nama||'—')+' · '+d.item+'</div><div class="ritem-sub">'+d.snLama+' → '+d.snBaru+' · '+d.tgl+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
@@ -10719,7 +10791,7 @@ function updDash(){
   var rxEl=document.getElementById('recent-x');
   if(rxEl){
     var rxsrc=xOnly.slice().sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');}).slice(-5).reverse();
-    if(!rxsrc.length){rxEl.innerHTML='<div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px"></i><p style="font-size:12px">Belum ada data dismantle</p></div>';}
+    if(!rxsrc.length){rxEl.innerHTML='<div class="dash-empty"><div class="dash-empty-icon rd"><i class="ti ti-tool"></i></div><div class="dash-empty-title">Belum Ada Data Dismantle</div><div class="dash-empty-sub">Riwayat dismantle pelanggan akan muncul di sini.</div><button class="dash-empty-btn rd" onclick="goInputMode(\'x\',null)"><i class="ti ti-plus"></i> Input Dismantle</button></div>';}
     else{rxEl.innerHTML=rxsrc.map(function(d){
       var op=d.operator?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+d.operator):(d.teknisi||'');
       return '<div class="ritem"><div class="ritem-av" style="background:rgba(240,84,84,.15);color:var(--red)"><i class="ti ti-tool" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+(d.nama||'—')+'</div><div class="ritem-sub">'+d.cid+' · Port: '+(d.port||'—')+' → Kosong · '+d.tgl+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
@@ -10746,7 +10818,7 @@ var AREA_COLORS=[
 function renderBar(id,map,cls){
   var el=document.getElementById(id);if(!el)return;
   var entries=Object.entries(map).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-  if(!entries.length){el.innerHTML='<div style="font-size:11px;color:var(--text3);text-align:center;width:100%;align-self:center">Belum ada data</div>';return;}
+  if(!entries.length){el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:6px;padding:16px 0"><i class="ti ti-chart-bar" style="font-size:28px;color:var(--border2)"></i><span style="font-size:11px;color:var(--text3)">Belum ada data</span></div>';return;}
   var max=Math.max.apply(null,entries.map(function(e){return e[1];}));
   // Jika hanya 1 area dan cls diberikan, fallback ke warna kelas semula
   el.innerHTML=entries.map(function(e,i){
@@ -15278,10 +15350,18 @@ function goDataMode(mode, el) {
 
 /* Auto-open input group on init */
 document.addEventListener('DOMContentLoaded', function(){
+  // Auto-open dash group by default (Dashboard is first tab)
+  var dashBody = document.getElementById('dash-group');
+  var dashHd = document.getElementById('sb-d');
+  if(dashBody){ dashBody.classList.add('open'); }
+  if(dashHd){ dashHd.classList.add('open'); }
+  // Also keep input group open
   var body = document.getElementById('input-group');
   var hd = document.getElementById('sb-f');
   if(body){ body.classList.add('open'); }
   if(hd){ hd.classList.add('open'); }
+  // Refresh dashboard data from localStorage on load
+  if(typeof updDash === 'function') setTimeout(updDash, 300);
 });
 
 /* ── SUPABASE CONFIG UI FUNCTIONS ── */
@@ -15386,7 +15466,13 @@ function updateSbFromTab(id) {
   // Auto-open correct group based on tab
   document.querySelectorAll('.sb-group-body').forEach(function(b){ b.classList.remove('open'); });
   document.querySelectorAll('.sb-group-hd').forEach(function(b){ b.classList.remove('open'); });
-  if(id === 'form'){
+  if(id === 'dash'){
+    var dg2 = document.getElementById('dash-group'); var dh2 = document.getElementById('sb-d');
+    if(dg2) dg2.classList.add('open'); if(dh2) dh2.classList.add('open');
+    // Highlight first sub-item (Pelanggan) by default
+    var firstSub = document.getElementById('sb-dash-p');
+    if(firstSub){ document.querySelectorAll('.sb-sub').forEach(function(b){b.classList.remove('on');}); firstSub.classList.add('on'); }
+  } else if(id === 'form'){
     var ig = document.getElementById('input-group'); var ih = document.getElementById('sb-f');
     if(ig) ig.classList.add('open'); if(ih) ih.classList.add('open');
   } else if(id === 'data'){
@@ -15409,6 +15495,58 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Sidebar highlight sync sudah ditangani langsung di setTab & setSbActive
 });
+
+/* ── DASHBOARD MODE SWITCHER ── */
+function switchDashMode(mode, btn) {
+  if(!currentRole){showLogin();return;}
+  // Sembunyikan semua dashboard section
+  var modes = ['p','m','d','x','s'];
+  modes.forEach(function(m){
+    var el = document.getElementById('dash-'+m);
+    if(el) el.style.display = 'none';
+    var pill = document.getElementById('dash-pill-'+m);
+    if(pill){
+      pill.classList.remove('on');
+      pill.className = 'mpill ' + m;
+    }
+  });
+  // Tampilkan yang dipilih
+  var target = document.getElementById('dash-'+mode);
+  if(target) target.style.display = 'block';
+  if(btn){
+    btn.classList.add('on');
+  }
+  // Update updDash juga agar data fresh
+  if(typeof updDash === 'function') updDash();
+}
+
+/* Navigate to Dashboard with a specific mode */
+function goDashMode(mode, el) {
+  if(!currentRole){showLogin();return;}
+  // Switch to dash tab
+  var bnD = document.getElementById('sb-d');
+  if(typeof setTab === 'function') setTab('dash', bnD);
+  // Switch dashboard mode (pill + section)
+  if(typeof switchDashMode === 'function') switchDashMode(mode, null);
+  // Sync pill buttons in the dashboard mode row
+  var modes = ['p','m','d','x','s'];
+  modes.forEach(function(m){
+    var pill = document.getElementById('dash-pill-'+m);
+    if(pill){ pill.classList.remove('on'); pill.className = 'mpill ' + m; }
+  });
+  var activePill = document.getElementById('dash-pill-'+mode);
+  if(activePill) activePill.classList.add('on');
+  // Highlight sidebar sub-items
+  document.querySelectorAll('.sb-sub').forEach(function(b){ b.classList.remove('on'); });
+  if(el) el.classList.add('on');
+  // Keep group header highlighted
+  document.querySelectorAll('.sb-item').forEach(function(b){
+    if(!b.classList.contains('sb-sub') && !b.classList.contains('sb-group-hd')) b.classList.remove('on');
+  });
+  var gHd = document.getElementById('sb-d');
+  if(gHd) gHd.classList.add('on');
+  closeSidebar();
+}
 
 /* ── COMING SOON ── */
 function showComingSoon(menuName, btn) {
