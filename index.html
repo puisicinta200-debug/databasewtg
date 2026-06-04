@@ -4951,10 +4951,12 @@ function enterApp(role){
 
   // Restore dulu dari IndexedDB ke localStorage
   restoreFromIDB(function(){
-    // Load Supabase config
+    // Load Supabase config — prioritas localStorage/IDB → baked SB_CFG
     try{
-      var sbUrl=localStorage.getItem(K_SB_URL)||SB_CFG.url||'';
-      var sbKey=localStorage.getItem(K_SB_KEY)||SB_CFG.key||'';
+      var lsUrl=(localStorage.getItem(K_SB_URL)||'').trim();
+      var lsKey=(localStorage.getItem(K_SB_KEY)||'').trim();
+      var sbUrl=lsUrl||SB_CFG.url||'';
+      var sbKey=lsKey||SB_CFG.key||'';
       if(sbUrl)SB_CFG.url=sbUrl;
       if(sbKey)SB_CFG.key=sbKey;
       _sbReset();
@@ -5515,9 +5517,16 @@ var _sbClient = null;
 function _sbGetClient() {
   if (_sbClient) return _sbClient;
   try {
-    var url = localStorage.getItem(K_SB_URL) || SB_CFG.url || '';
-    var key = localStorage.getItem(K_SB_KEY) || SB_CFG.key || '';
+    // Prioritas: localStorage (nilai user/pulled) → SB_CFG baked-in
+    var lsUrl=''; var lsKey='';
+    try{ lsUrl=(localStorage.getItem(K_SB_URL)||'').trim(); lsKey=(localStorage.getItem(K_SB_KEY)||'').trim(); }catch(e){}
+    var url = lsUrl || SB_CFG.url || '';
+    var key = lsKey || SB_CFG.key || '';
     if (!url || !key) return null;
+    // Sync dua arah agar SB_CFG & localStorage selalu konsisten
+    SB_CFG.url = url; SB_CFG.key = key;
+    try{ localStorage.setItem(K_SB_URL, url); localStorage.setItem(K_SB_KEY, key); }catch(e){}
+    idbSet(K_SB_URL, url); idbSet(K_SB_KEY, key);
     if (typeof supabase !== 'undefined' && supabase.createClient) {
       _sbClient = supabase.createClient(url, key);
     }
@@ -5639,10 +5648,18 @@ async function sbPullAllSettings() {
     if (error) { _sbSetStatus('err'); return false; }
     if (data && data.length) {
       data.forEach(function(row) {
-        if (row.key && row.value) {
+        if (row.key && row.value !== undefined && row.value !== null) {
           try { localStorage.setItem(row.key, row.value); } catch(e) {}
+          idbSet(row.key, row.value);
         }
       });
+      // Jika Supabase KV membawa URL/key baru → konek ulang otomatis
+      try {
+        var newUrl=(localStorage.getItem(K_SB_URL)||'').trim();
+        var newKey=(localStorage.getItem(K_SB_KEY)||'').trim();
+        if(newUrl && newUrl !== SB_CFG.url){ SB_CFG.url=newUrl; _sbReset(); _sbGetClient(); }
+        if(newKey && newKey !== SB_CFG.key){ SB_CFG.key=newKey; _sbReset(); _sbGetClient(); }
+      }catch(e){}
     }
     _sbSetStatus('ok');
     return true;
@@ -5717,33 +5734,55 @@ var SB_SETUP_SQL = `-- Jalankan SQL ini di Supabase SQL Editor\n\nCREATE TABLE I
 // SUPABASE REALTIME — Auto-sync antar semua device
 // ═══════════════════════════════════════════════════════════════
 var _sbRealtimeChannel = null;
+var _sbRealtimeRetryTimer = null;
 
 function sbStartRealtime() {
   var sb = _sbGetClient();
-  if (!sb || _sbRealtimeChannel) return;
+  if (!sb) return;
+  if (_sbRealtimeChannel) return; // sudah aktif
+  clearTimeout(_sbRealtimeRetryTimer);
   try {
     _sbRealtimeChannel = sb
-      .channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_rows' }, function(payload) {
-        // Ada perubahan di app_rows — reload data rows
-        sbLoadRows().then(function() {
-          _syncFullRefresh('realtime-rows');
-          updCounts(); updDash();
-        });
+      .channel('db-changes-v2')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'app_rows' }, function(payload) {
+        sbLoadRows().then(function() { _syncFullRefresh('rt-insert'); updCounts(); updDash(); });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_rows' }, function(payload) {
+        sbLoadRows().then(function() { _syncFullRefresh('rt-update'); updCounts(); updDash(); });
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'app_rows' }, function(payload) {
+        var delId = payload.old && payload.old.id;
+        if (delId) {
+          db.p = db.p.filter(function(e){ return e.ts !== delId; });
+          db.m = db.m.filter(function(e){ return e.ts !== delId; });
+          try{ localStorage.setItem(K.p, JSON.stringify(db.p)); }catch(ex){}
+          try{ localStorage.setItem(K.m, JSON.stringify(db.m)); }catch(ex){}
+        } else {
+          sbLoadRows();
+        }
+        _syncFullRefresh('rt-delete'); updCounts(); updDash();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_kv' }, function(payload) {
-        // Ada perubahan di app_kv — reload settings
-        sbPullAllSettings().then(function() {
-          _syncFullRefresh('realtime-kv');
-        });
+        sbPullAllSettings().then(function() { _syncFullRefresh('rt-kv'); });
       })
       .subscribe(function(status) {
         if (status === 'SUBSCRIBED') {
+          clearTimeout(_sbRealtimeRetryTimer);
           var dot = document.getElementById('sb-status-dot');
-          if (dot) dot.style.animation = 'blink 1.5s infinite';
+          if (dot) { dot.style.background='var(--green)'; dot.style.animation = 'blink 1.5s infinite'; }
+          _sbSetStatus('ok');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          _sbRealtimeChannel = null;
+          _sbSetStatus('err');
+          clearTimeout(_sbRealtimeRetryTimer);
+          _sbRealtimeRetryTimer = setTimeout(function(){ sbStartRealtime(); }, 5000);
         }
       });
-  } catch(e) { _sbRealtimeChannel = null; }
+  } catch(e) {
+    _sbRealtimeChannel = null;
+    clearTimeout(_sbRealtimeRetryTimer);
+    _sbRealtimeRetryTimer = setTimeout(function(){ sbStartRealtime(); }, 8000);
+  }
 }
 
 function sbStopRealtime() {
@@ -5755,40 +5794,76 @@ function sbStopRealtime() {
 
 // ── Auto-sync saat pertama connect: pull semua data dari Supabase ──
 var _sbAutoSyncDone = false;
+var _sbAutoSyncRetryTimer = null;
 async function sbAutoSync() {
-  if (_sbAutoSyncDone) return;
   var sb = _sbGetClient();
-  if (!sb) return;
+  if (!sb) {
+    // Tidak ada koneksi — retry otomatis tiap 5 detik
+    clearTimeout(_sbAutoSyncRetryTimer);
+    _sbAutoSyncRetryTimer = setTimeout(sbAutoSync, 5000);
+    return;
+  }
+  if (_sbAutoSyncDone) return;
   _sbAutoSyncDone = true;
   try {
     await Promise.all([sbPullAllSettings(), sbLoadRows()]);
     _sbSetStatus('ok');
     _syncFullRefresh('auto-sync');
-    updCounts(); updDash();
-    sbStartRealtime(); // mulai realtime setelah sync selesai
+    if(typeof updCounts==='function') updCounts();
+    if(typeof updDash==='function') updDash();
+    sbStartRealtime();
   } catch(e) {
     _sbAutoSyncDone = false;
     _sbSetStatus('err');
+    clearTimeout(_sbAutoSyncRetryTimer);
+    _sbAutoSyncRetryTimer = setTimeout(sbAutoSync, 8000);
   }
 }
 
-// ── Override lss: tulis ke localStorage DAN Supabase (async, non-blocking) ──
-var _origLss = null; // akan diisi setelah lss di-define
-var _sbKvQueue = {}; // debounce writes per key
+// ── AUTO-BOOTSTRAP: koneksi otomatis tanpa perlu Setting di device manapun ──
+// URL & key sudah baked-in di SB_CFG. Device baru langsung konek & pull data.
+(function _sbBootstrap(){
+  try {
+    function _tryInit(){
+      if(typeof supabase !== 'undefined' && supabase.createClient){
+        // Cek localStorage/IDB dulu (nilai yang pernah disimpan user)
+        var lsUrl=''; var lsKey='';
+        try{ lsUrl=(localStorage.getItem(K_SB_URL)||'').trim(); lsKey=(localStorage.getItem(K_SB_KEY)||'').trim(); }catch(e){}
+        // Fallback ke baked-in jika localStorage kosong
+        var url = lsUrl || SB_CFG.url || '';
+        var key = lsKey || SB_CFG.key || '';
+        if(!url || !key){ return; } // tidak ada config sama sekali
+        // Paksa sync semua storage dengan nilai final
+        SB_CFG.url = url; SB_CFG.key = key;
+        try{ localStorage.setItem(K_SB_URL, url); localStorage.setItem(K_SB_KEY, key); }catch(e){}
+        idbSet(K_SB_URL, url); idbSet(K_SB_KEY, key);
+        _sbGetClient();
+        // Mulai auto-sync setelah 400ms (beri waktu DOM/script lain siap)
+        setTimeout(function(){ sbAutoSync(); }, 400);
+      } else {
+        setTimeout(_tryInit, 200);
+      }
+    }
+    // Tunggu IndexedDB siap dulu (untuk restore nilai user), lalu init
+    idbGet(K_SB_URL, function(idbUrl){
+      idbGet(K_SB_KEY, function(idbKey){
+        if(idbUrl){ try{ if(!localStorage.getItem(K_SB_URL)) localStorage.setItem(K_SB_URL, idbUrl); }catch(e){} }
+        if(idbKey){ try{ if(!localStorage.getItem(K_SB_KEY)) localStorage.setItem(K_SB_KEY, idbKey); }catch(e){} }
+        _tryInit();
+      });
+    });
+  } catch(e){ }
+})();
 
+var _sbKvQueue = {};
 function _sbDebouncedKvWrite(key, value) {
-  // Hanya sync key pengaturan (bukan data entry besar)
-  var settingsKeys = [
-    K_PERM, K_ACCTS||'acct_list', K_CUSTOM_PINS,
-    K_SALES_LIST, K_DOWNLINE, 'sales_addr_detail',
-    K_OTF, 'odcoдp_list', 'wilayah_data',
-    'pin_admin','pin_tek','pin_gudang','pin_tamu',
-    K.up, K.um, K.ur, K.ua, K.pa, K.pt
-  ];
-  if (settingsKeys.indexOf(key) < 0) return;
+  // Jangan sync data entry besar lewat KV (sudah lewat app_rows)
+  var skipKeys = [K.p, K.m, K.pc];
+  if (skipKeys.indexOf(key) >= 0) return;
+  // Semua key lain (pengaturan, pin, URL, dll) otomatis sync ke Supabase KV
   clearTimeout(_sbKvQueue[key]);
   _sbKvQueue[key] = setTimeout(function() {
-    sbSetKV(key, value).catch(function(){});
+    if(_sbGetClient()) sbSetKV(key, value).catch(function(){});
   }, 800);
 }
 
@@ -5873,10 +5948,15 @@ function _syncInit(){
 
   // Re-sync saat tab kembali aktif (focus/visible)
   document.addEventListener('visibilitychange',function(){
-    if(document.visibilityState==='visible') _syncFullRefresh('visibility');
+    if(document.visibilityState==='visible'){
+      _syncFullRefresh('visibility');
+      // Reconnect realtime jika terputus
+      if(!_sbRealtimeChannel && _sbGetClient() && isOn()){ sbStartRealtime(); }
+    }
   });
   window.addEventListener('focus',function(){
     _syncFullRefresh('focus');
+    if(!_sbRealtimeChannel && _sbGetClient() && isOn()){ sbStartRealtime(); }
   });
 }
 
@@ -6078,12 +6158,13 @@ window.addEventListener('offline',function(){updNet();document.getElementById('w
 function init(){
   _syncInit(); // Aktifkan reactive sync engine
 
-  // Load Supabase config dari localStorage
-  var sbUrl = '';
-  var sbKey = '';
-  try { sbUrl = localStorage.getItem(K_SB_URL)||''; sbKey = localStorage.getItem(K_SB_KEY)||''; } catch(e){}
-  if (sbUrl) SB_CFG.url = sbUrl;
-  if (sbKey) SB_CFG.key = sbKey;
+  // Load Supabase config dari localStorage (prioritas) → baked SB_CFG
+  try {
+    var lsUrl2=(localStorage.getItem(K_SB_URL)||'').trim();
+    var lsKey2=(localStorage.getItem(K_SB_KEY)||'').trim();
+    if(lsUrl2) SB_CFG.url=lsUrl2;
+    if(lsKey2) SB_CFG.key=lsKey2;
+  } catch(e){}
 
   // Coba load dari Supabase, fallback ke localStorage
   function _afterSupabaseLoad(){
@@ -6123,10 +6204,10 @@ function init(){
       fetchPelDB(false);
     }
   },30000);
-  // Supabase periodic sync: push pending rows setiap 60 detik
+  // Realtime health-check: reconnect jika channel terputus
   setInterval(function(){
-    if(_sbGetClient()&&isOn()) sbPushAllRows();
-  },60000);
+    if(_sbGetClient() && isOn() && !_sbRealtimeChannel){ sbStartRealtime(); }
+  },15000);
   // Sync guard: polling localStorage setiap 2 detik untuk memastikan semua tab sinkron
   // (menangkap perubahan dari service worker, iframe, atau browser tanpa BroadcastChannel)
   var _syncPollSnapshot={};
@@ -10445,14 +10526,14 @@ document.addEventListener('click',function(e){
 
 var svP=function(entryToSync){
   lss(K.p,JSON.stringify(db.p));
-  // Sync ke Supabase: jika ada entry spesifik, upsert itu saja; kalau tidak, upsert semua
   if(_sbGetClient()){
     if(entryToSync){
+      // Entry baru/diedit — upsert langsung ke Supabase (realtime ke device lain)
       sbUpsertRow(entryToSync).catch(function(){});
     } else {
-      // Debounce bulk sync 1 detik
+      // Tanpa entry spesifik (hapus/bulk edit) — debounce push semua dalam 600ms
       clearTimeout(svP._t);
-      svP._t=setTimeout(function(){ sbPushAllRows(); },1000);
+      svP._t=setTimeout(function(){ sbPushAllRows(); }, 600);
     }
   }
 };
@@ -10463,7 +10544,7 @@ var svM=function(entryToSync){
       sbUpsertRow(entryToSync).catch(function(){});
     } else {
       clearTimeout(svM._t);
-      svM._t=setTimeout(function(){ sbPushAllRows(); },1000);
+      svM._t=setTimeout(function(){ sbPushAllRows(); }, 600);
     }
   }
 };
@@ -14832,9 +14913,12 @@ function deleteEntry(type,idx){
       '<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+label+'</div>'+
       '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+sub+'</div></div></div>',
     onConfirm:function(){
+      var deletedTs = d && d.ts;
       if(type==='p'){db.p.splice(idx,1);svP();}
       else if(type==='s'){if(db.s)db.s.splice(idx,1);svS&&svS();}
       else{db.m.splice(idx,1);svM();}
+      // Hapus dari Supabase → realtime broadcast ke semua device
+      if(deletedTs && _sbGetClient()){ sbDeleteRow(deletedTs).catch(function(){}); }
       renderList();updDash();updCounts();
       toast('Data '+typeLabel+' berhasil dihapus','ok');
     }
@@ -15251,15 +15335,17 @@ function copySbSql(){
 }
 
 function _sbInitUI(){
-  // Load saved config ke input
   var urlEl=document.getElementById('sb-url-inp');
   var keyEl=document.getElementById('sb-key-inp');
   var sqlEl=document.getElementById('sb-sql-pre');
   try{
-    if(urlEl)urlEl.value=localStorage.getItem(K_SB_URL)||SB_CFG.url||'';
-    if(keyEl)keyEl.value=localStorage.getItem(K_SB_KEY)||SB_CFG.key||'';
+    // Prioritas: localStorage → baked SB_CFG
+    var dispUrl=(localStorage.getItem(K_SB_URL)||'').trim()||SB_CFG.url||'';
+    var dispKey=(localStorage.getItem(K_SB_KEY)||'').trim()||SB_CFG.key||'';
+    if(urlEl) urlEl.value=dispUrl;
+    if(keyEl) keyEl.value=dispKey;
   }catch(e){}
-  if(sqlEl)sqlEl.textContent=SB_SETUP_SQL;
+  if(sqlEl) sqlEl.textContent=SB_SETUP_SQL;
   _sbSetStatus(_sbGetClient()?'unknown':'off');
 }
 
