@@ -52,6 +52,8 @@ html{height:100%;height:-webkit-fill-available;overflow:hidden}body{height:100%;
    OFFLINE WALL
 ═══════════════════════════════ */
 #wall{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;display:none}
+/* ── SUPABASE LOAD BANNER ── */
+#sb-load-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(26,86,219,.92);color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:99999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(26,86,219,.4);backdrop-filter:blur(8px)}
 .wall-icon{width:90px;height:90px;border-radius:24px;background:var(--rg);border:1px solid rgba(240,84,84,.3);display:flex;align-items:center;justify-content:center;margin-bottom:24px}
 .wall-icon i{font-size:44px;color:var(--red)}
 #wall h2{font-size:22px;font-weight:800;margin-bottom:10px;text-align:center}
@@ -2504,7 +2506,7 @@ p, span, div, label, td, th, li {
         </div>
       </div>
       <button class="sb-item" id="sb-odp-mon" onclick="setTab('odp',this)" style="color:var(--red)"><i class="ti ti-antenna-bars-5" style="color:var(--red)"></i><span>Monitor ODP</span></button>
-      <button class="sb-item" id="sb-overview" onclick="showComingSoon('Overview', this)"><i class="ti ti-chart-line"></i><span>Overview</span></button>
+      <button class="sb-item" id="sb-overview" onclick="setTab('overview',this,'sb')"><i class="ti ti-chart-line"></i><span>Overview</span></button>
 
       <!-- ── INPUT DATA GROUP ── -->
       <div class="sb-group">
@@ -2569,6 +2571,111 @@ p, span, div, label, td, th, li {
     </div>
 
   <div class="scroll padded" id="scr">
+
+    <!-- ═══ OVERVIEW PANE ═══ -->
+    <div class="pane" id="pane-overview">
+      <!-- Live badge header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Overview Semua Data</div>
+        <div id="ov-live-badge" style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--green);background:rgba(15,212,148,.1);border:1px solid rgba(15,212,148,.25);border-radius:20px;padding:4px 10px">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 1.5s infinite"></span>
+          LIVE
+        </div>
+      </div>
+
+      <!-- ── 4 SUMMARY CARDS ── -->
+      <div class="dash-grid" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+        <!-- Pelanggan Aktif -->
+        <div class="dstat c1" style="cursor:pointer" onclick="goDashMode('p',null)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--c1b);display:flex;align-items:center;justify-content:center"><i class="ti ti-users" style="font-size:15px;color:var(--c1)"></i></div>
+            <span style="font-size:9px;font-weight:700;color:var(--c1);background:var(--c1b);padding:2px 7px;border-radius:20px">AKTIF</span>
+          </div>
+          <div class="dstat-n c1" id="ov-pel-aktif">0</div>
+          <div class="dstat-l">Pelanggan Aktif</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">Total: <span id="ov-pel-total" style="font-weight:700">0</span> &minus; Dismantle: <span id="ov-pel-dis" style="font-weight:700;color:var(--red)">0</span></div>
+        </div>
+        <!-- Material -->
+        <div class="dstat c2" style="cursor:pointer" onclick="goDashMode('m',null)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--c2b);display:flex;align-items:center;justify-content:center"><i class="ti ti-package" style="font-size:15px;color:var(--c2)"></i></div>
+            <span style="font-size:9px;font-weight:700;color:var(--c2);background:var(--c2b);padding:2px 7px;border-radius:20px">STOK</span>
+          </div>
+          <div class="dstat-n c2" id="ov-mat-stok">0</div>
+          <div class="dstat-l">Stok Material</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">Masuk: <span id="ov-mat-masuk" style="font-weight:700;color:var(--green)">0</span> &minus; Keluar: <span id="ov-mat-keluar" style="font-weight:700;color:var(--red)">0</span></div>
+        </div>
+        <!-- ODP Aktif -->
+        <div class="dstat" style="border-color:rgba(157,128,250,.2);cursor:pointer" onclick="setTab('odp',document.getElementById('sb-odp-mon'))">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--pug);display:flex;align-items:center;justify-content:center"><i class="ti ti-antenna-bars-5" style="font-size:15px;color:var(--pu)"></i></div>
+            <span style="font-size:9px;font-weight:700;color:var(--pu);background:var(--pug);padding:2px 7px;border-radius:20px">ODP</span>
+          </div>
+          <div class="dstat-n pu" id="ov-odp-total">0</div>
+          <div class="dstat-l">Total ODP Aktif</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">Penuh: <span id="ov-odp-penuh" style="font-weight:700;color:var(--red)">0</span> &bull; Kosong: <span id="ov-odp-kosong" style="font-weight:700;color:var(--green)">0</span></div>
+        </div>
+        <!-- Sales -->
+        <div class="dstat" style="border-color:rgba(16,217,160,.2);cursor:pointer" onclick="goDashMode('s',null)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--gng2);display:flex;align-items:center;justify-content:center"><i class="ti ti-cash" style="font-size:15px;color:var(--green)"></i></div>
+            <span style="font-size:9px;font-weight:700;color:var(--green);background:var(--gng2);padding:2px 7px;border-radius:20px">SALES</span>
+          </div>
+          <div class="dstat-n gr" id="ov-sales-total">0</div>
+          <div class="dstat-l">Total Sales</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">Pelanggan via sales terdaftar</div>
+        </div>
+      </div>
+
+      <!-- ── PELANGGAN PER AREA (Cicurug, Cibadak, Parungkuda, dll) ── -->
+      <div class="card" style="margin-bottom:12px;border-color:rgba(26,86,219,.2)">
+        <div class="sec-t c1" style="margin-bottom:12px"><i class="ti ti-map-pin"></i> Pelanggan Aktif per Area</div>
+        <div id="ov-area-cards" style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Memuat...</div>
+        </div>
+      </div>
+
+      <!-- ── GRAFIK HARIAN AKUMULATIF REALTIME ── -->
+      <div class="card" style="margin-bottom:12px;border-color:rgba(26,86,219,.2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="sec-t c1" style="margin-bottom:0"><i class="ti ti-chart-line"></i> Grafik Harian (Akumulatif)</div>
+          <div style="display:flex;gap:5px">
+            <button onclick="switchOvChart('p')" id="ov-chart-btn-p" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;background:var(--c1);color:#fff;border:none;font-family:'Sora',sans-serif">Pel</button>
+            <button onclick="switchOvChart('m')" id="ov-chart-btn-m" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;background:var(--bg4);color:var(--text3);border:1px solid var(--border2);font-family:'Sora',sans-serif">Mat</button>
+            <button onclick="switchOvChart('x')" id="ov-chart-btn-x" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;background:var(--bg4);color:var(--text3);border:1px solid var(--border2);font-family:'Sora',sans-serif">Dis</button>
+          </div>
+        </div>
+        <div style="font-size:9px;color:var(--text3);margin-bottom:8px">Hitungan akumulatif harian bulan berjalan (tambahan per hari = +baru, grafik naik terus)</div>
+        <div id="ov-daily-chart" style="height:120px;display:flex;align-items:flex-end;gap:3px;padding:0 2px">
+          <div style="width:100%;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px">Memuat grafik...</div>
+        </div>
+        <div id="ov-daily-labels" style="display:flex;gap:3px;margin-top:4px;padding:0 2px"></div>
+      </div>
+
+      <!-- ── MATERIAL PER AREA ── -->
+      <div class="card" style="margin-bottom:12px;border-color:rgba(249,115,22,.2)">
+        <div class="sec-t c2" style="margin-bottom:12px"><i class="ti ti-package"></i> Material per Area</div>
+        <div id="ov-mat-area-bars" style="display:flex;flex-direction:column;gap:7px">
+          <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Memuat...</div>
+        </div>
+      </div>
+
+      <!-- ── ODP PER AREA (quick view) ── -->
+      <div class="card" style="margin-bottom:12px;border-color:rgba(157,128,250,.2)">
+        <div class="sec-t" style="color:var(--pu);margin-bottom:12px"><i class="ti ti-antenna-bars-5"></i> ODP per Area</div>
+        <div id="ov-odp-area-bars" style="display:flex;flex-direction:column;gap:7px">
+          <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Memuat...</div>
+        </div>
+      </div>
+
+      <!-- ── SALES per AREA ── -->
+      <div class="card" style="margin-bottom:12px;border-color:rgba(16,217,160,.2)">
+        <div class="sec-t" style="color:var(--green);margin-bottom:12px"><i class="ti ti-cash"></i> Sales per Area</div>
+        <div id="ov-sales-area-bars" style="display:flex;flex-direction:column;gap:7px">
+          <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Memuat...</div>
+        </div>
+      </div>
+    </div><!-- end pane-overview -->
 
     <!-- ═══ COMING SOON PANE ═══ -->
     <div class="pane" id="pane-coming">
@@ -2996,11 +3103,6 @@ p, span, div, label, td, th, li {
         </div>
         <div class="card c1">
           <div class="sec-t c1"><i class="ti ti-map-pin"></i> Alamat</div>
-          <div class="field"><label>Area <span class="req">*</span>
-            <span id="p-area-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:none;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Nama dulu</span>
-          </label>
-            <select id="p-area" onchange="onAreaChange()"><option value="">Pilih area</option></select>
-          </div>
           <div class="field"><label>Kota/Kab <span class="req">*</span>
             <span id="p-kota-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Area dulu</span>
           </label><input type="text" id="p-kota" placeholder="Sukabumi" oninput="onKotaInput(this.value)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></div>
@@ -3016,20 +3118,25 @@ p, span, div, label, td, th, li {
               <select id="p-kel" onchange="validateKelInput(this.value)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"><option value="">Pilih area dulu</option></select>
             </div>
           </div>
+          <div class="r2">
+            <div class="field"><label>RT
+              <span id="p-rt-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Kecamatan dulu</span>
+            </label><input type="text" id="p-rt" placeholder="001" maxlength="5" inputmode="numeric" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></div>
+            <div class="field"><label>RW
+              <span id="p-rw-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Kecamatan dulu</span>
+            </label><input type="text" id="p-rw" placeholder="002" maxlength="5" inputmode="numeric" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></div>
+          </div>
           <div class="field"><label>Alamat Lengkap <span class="req">*</span>
             <span id="p-alamat-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Kecamatan dulu</span>
           </label><textarea id="p-alamat" placeholder="Jl. ..." disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></textarea></div>
-          <div class="r2">
-            <div class="field"><label>RT
-              <span id="p-rt-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i></span>
-            </label><input type="text" id="p-rt" placeholder="001" maxlength="5" inputmode="numeric" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></div>
-            <div class="field"><label>RW
-              <span id="p-rw-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i></span>
-            </label><input type="text" id="p-rw" placeholder="002" maxlength="5" inputmode="numeric" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></div>
-          </div>
         </div>
         <div class="card c1">
           <div class="sec-t c1"><i class="ti ti-cpu"></i> Data Teknis</div>
+          <div class="field"><label>Area <span class="req">*</span>
+            <span id="p-area-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:none;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Nama dulu</span>
+          </label>
+            <select id="p-area" onchange="onAreaChange()"><option value="">Pilih area</option></select>
+          </div>
           <div class="r2">
             <div class="field"><label>CID <span class="req">*</span>
               <span id="p-cid-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Alamat dulu</span>
@@ -3172,9 +3279,22 @@ p, span, div, label, td, th, li {
             <label>Nama Sales <span class="req">*</span>
               <span id="p-sales-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Teknisi dulu</span>
             </label>
-            <select id="p-sales" onchange="onSalesChange()" style="border-color:rgba(16,217,160,.3)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed">
-              <option value="">Pilih sales / agen</option>
-            </select>
+            <div style="position:relative" id="p-sales-wrap">
+              <div style="position:relative">
+                <i class="ti ti-search" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text3);pointer-events:none;z-index:1"></i>
+                <input type="text" id="p-sales-input" placeholder="Cari nama atau kode akun sales..." autocomplete="off"
+                  style="padding-left:40px;border-color:rgba(16,217,160,.3);opacity:.45;pointer-events:none;cursor:not-allowed"
+                  oninput="onSalesSearchInput()"
+                  onfocus="onSalesSearchFocus()"
+                  onblur="onSalesSearchBlur()"
+                  disabled>
+                <span id="p-sales-clear" onclick="clearSalesSearch()" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;color:var(--text3);z-index:2;line-height:1">×</span>
+              </div>
+              <!-- Hidden input to hold actual value -->
+              <input type="hidden" id="p-sales" value="">
+              <!-- Dropdown results -->
+              <div id="p-sales-results" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid rgba(16,217,160,.5);border-radius:var(--rs);z-index:999;overflow:hidden;box-shadow:0 8px 32px rgba(26,86,219,.18);max-height:220px;overflow-y:auto"></div>
+            </div>
           </div>
 
           <!-- Sales info box (muncul setelah pilih sales) -->
@@ -3185,42 +3305,6 @@ p, span, div, label, td, th, li {
               <span style="margin-left:auto;background:rgba(16,217,160,.15);color:var(--green);font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px" id="p-sales-info-count">0 pelanggan</span>
             </div>
             <div style="font-size:11px;color:var(--text3)" id="p-sales-info-sub">Fee akan dihitung otomatis setelah data disimpan.</div>
-          </div>
-
-          <!-- Divider: Paket & Transaksi -->
-          <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
-            <div style="width:28px;height:28px;border-radius:8px;background:var(--c2b);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="ti ti-receipt" style="font-size:14px;color:var(--c2)"></i>
-            </div>
-            <div style="font-size:11px;font-weight:700;color:var(--c2);letter-spacing:.4px;text-transform:uppercase">Paket &amp; Nilai</div>
-            <div style="flex:1;height:1px;background:rgba(249,115,22,.15)"></div>
-          </div>
-          <div class="r2">
-            <div class="field">
-              <label>Nominal / Harga Paket (Rp)
-                <span id="p-nominal-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Sales dulu</span>
-              </label>
-              <input type="number" id="p-nominal" placeholder="0" inputmode="numeric" min="0" style="border-color:rgba(249,115,22,.25);opacity:.45;pointer-events:none;cursor:not-allowed" disabled>
-            </div>
-            <div class="field">
-              <label>Metode Daftar
-                <span id="p-reg-method-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Sales dulu</span>
-              </label>
-              <select id="p-reg-method" style="border-color:rgba(249,115,22,.25);opacity:.45;pointer-events:none;cursor:not-allowed" disabled>
-                <option value="">Pilih</option>
-                <option>Walk-in</option>
-                <option>Via Sales</option>
-                <option>Referral</option>
-                <option>Online</option>
-                <option>Cold Call</option>
-              </select>
-            </div>
-          </div>
-          <div class="field">
-            <label>Keterangan / Catatan CRM
-              <span id="p-ket-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Nominal dulu</span>
-            </label>
-            <textarea id="p-ket" placeholder="Catatan internal, permintaan khusus, kondisi lokasi, dsb..." style="border-color:rgba(26,86,219,.15);opacity:.45;pointer-events:none;cursor:not-allowed" disabled></textarea>
           </div>
         </div>
 
@@ -3418,8 +3502,8 @@ p, span, div, label, td, th, li {
           <div class="field">
             <label>Nama ODC <span class="req">*</span></label>
             <div style="position:relative">
-              <input type="text" id="d-odc-input" placeholder="Ketik nama ODC untuk mencari..." autocomplete="off"
-                oninput="onOdcMaintSearch(this.value)" onblur="setTimeout(function(){document.getElementById('d-odc-drop').style.display='none'},200)"
+              <input type="text" id="d-odc-input" placeholder="Ketik atau klik untuk pilih ODC..." autocomplete="off"
+                oninput="onOdcMaintSearch(this.value)" onfocus="onOdcMaintFocus()" onblur="setTimeout(function(){document.getElementById('d-odc-drop').style.display='none'},200)"
                 style="border-color:rgba(157,128,250,.35);padding-right:36px">
               <i class="ti ti-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
               <div id="d-odc-drop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:1.5px solid rgba(157,128,250,.3);border-radius:var(--rs);z-index:9999;max-height:180px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
@@ -3445,8 +3529,8 @@ p, span, div, label, td, th, li {
           <div class="field">
             <label>Nama ODP <span class="req">*</span></label>
             <div style="position:relative">
-              <input type="text" id="d-odp-input" placeholder="Ketik nama ODP untuk mencari..." autocomplete="off"
-                oninput="onOdpMaintSearch(this.value)" onblur="setTimeout(function(){document.getElementById('d-odp-drop').style.display='none'},200)"
+              <input type="text" id="d-odp-input" placeholder="Ketik atau klik untuk pilih ODP..." autocomplete="off"
+                oninput="onOdpMaintSearch(this.value)" onfocus="onOdpMaintFocus()" onblur="setTimeout(function(){document.getElementById('d-odp-drop').style.display='none'},200)"
                 style="border-color:rgba(157,128,250,.35);padding-right:36px">
               <i class="ti ti-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
               <div id="d-odp-drop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:1.5px solid rgba(157,128,250,.3);border-radius:var(--rs);z-index:9999;max-height:180px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
@@ -3913,7 +3997,7 @@ p, span, div, label, td, th, li {
             <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.9px;display:flex;align-items:center;gap:6px">
               <i class="ti ti-antenna-bars-5" style="font-size:14px"></i> Rekap ODP
             </div>
-            <button onclick="renderOdpRekap()" style="background:rgba(255,82,82,.1);color:var(--red);border:1px solid rgba(255,82,82,.25);border-radius:7px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;display:flex;align-items:center;gap:4px"><i class="ti ti-refresh" style="font-size:12px"></i> Refresh</button>
+            <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--green);background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:20px;padding:4px 10px"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 1.5s infinite"></span> Auto Sync</div>
           </div>
 
           <!-- Total keseluruhan -->
@@ -3982,7 +4066,7 @@ p, span, div, label, td, th, li {
             <!-- Search Per ODC -->
             <div id="rekap-odc-search-wrap" style="display:none;margin-bottom:8px;position:relative">
               <i class="ti ti-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
-              <input id="rekap-odc-search" type="text" placeholder="Cari nama ODC..." oninput="renderOdpRekap()" style="width:100%;padding:10px 12px 10px 34px;background:var(--bg3);border:1.5px solid rgba(157,128,250,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
+              <input id="rekap-odc-search" type="text" placeholder="Cari nama ODC..." oninput="_rekapState.odc.search=this.value;renderOdpRekap()" style="width:100%;padding:10px 12px 10px 34px;background:var(--bg3);border:1.5px solid rgba(157,128,250,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
             </div>
             <!-- Tombol Reset Filter Per ODC -->
             <div id="rekap-odc-reset-wrap" style="display:none;margin-bottom:10px">
@@ -4012,7 +4096,7 @@ p, span, div, label, td, th, li {
             <!-- Search Per ODP -->
             <div id="rekap-odp-search-wrap" style="display:none;margin-bottom:8px;position:relative">
               <i class="ti ti-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
-              <input id="rekap-odp-search" type="text" placeholder="Cari nama ODP..." oninput="renderOdpRekap()" style="width:100%;padding:10px 12px 10px 34px;background:var(--bg3);border:1.5px solid rgba(255,82,82,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
+              <input id="rekap-odp-search" type="text" placeholder="Cari nama ODP..." oninput="_rekapState.odp.search=this.value;renderOdpRekap()" style="width:100%;padding:10px 12px 10px 34px;background:var(--bg3);border:1.5px solid rgba(255,82,82,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none">
             </div>
             <!-- Tombol Reset Filter Per ODP -->
             <div id="rekap-odp-reset-wrap" style="display:none;margin-bottom:10px">
@@ -4516,7 +4600,7 @@ p, span, div, label, td, th, li {
             <div><div style="font-size:13px;font-weight:700;color:var(--c2)">Sheets Material <span style="font-size:9px;background:rgba(249,115,22,.2);color:var(--c2);padding:2px 7px;border-radius:10px;margin-left:4px">WRITE</span></div><div style="font-size:10px;color:var(--text3);margin-top:1px">URL Web App Apps Script untuk menyimpan data material</div></div>
           </div>
           <input class="url-inp" type="url" id="s-m" placeholder="https://script.google.com/macros/s/..." style="border-color:rgba(249,115,22,.35);margin-bottom:7px">
-          <div class="url-saved-badge" id="badge-m" style="display:flex;margin-bottom:8px"><i class="ti ti-shield-check"></i> Tersimpan permanen — aman dari clear cache</div>
+          <div class="url-saved-badge" id="badge-m" style="display:flex;margin-bottom:8px"><i class="ti ti-shield-check"></i> Tersimpan di Database — aman dari clear cache &amp; ganti device</div>
           <div style="display:flex;gap:7px">
             <button onclick="sURL('m')" style="flex:1;padding:10px;background:var(--c2);color:#fff;border:none;border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-device-floppy"></i> Simpan</button>
             <button onclick="tURL('m')" style="flex:1;padding:10px;background:transparent;color:var(--c2);border:1.5px solid rgba(249,115,22,.35);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-plug"></i> Test</button>
@@ -4530,7 +4614,7 @@ p, span, div, label, td, th, li {
             <div><div style="font-size:13px;font-weight:700;color:var(--green)">Sheets Read Pelanggan <span style="font-size:9px;background:rgba(16,217,160,.18);color:var(--green);padding:2px 7px;border-radius:10px;margin-left:4px">READ</span></div><div style="font-size:10px;color:var(--text3);margin-top:1px">Digunakan untuk sinkron &amp; pencarian CID oleh teknisi</div></div>
           </div>
           <input class="url-inp" type="url" id="s-read" placeholder="https://script.google.com/macros/s/..." style="border-color:rgba(16,217,160,.35);margin-bottom:7px">
-          <div class="url-saved-badge" id="badge-read" style="display:flex;margin-bottom:8px"><i class="ti ti-shield-check"></i> Tersimpan permanen — aman dari clear cache</div>
+          <div class="url-saved-badge" id="badge-read" style="display:flex;margin-bottom:8px"><i class="ti ti-shield-check"></i> Tersimpan di Database — aman dari clear cache &amp; ganti device</div>
           <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:9px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
             <div><div style="font-size:10px;font-weight:700;color:var(--green)"><i class="ti ti-cloud-download" style="margin-right:3px"></i>Status Sinkron</div><div style="font-size:11px;color:var(--text3);margin-top:2px" id="sync-pel-status">Tidak ada data di Sheets</div></div>
             <button id="btn-sync-pel" onclick="fetchPelDB(true)" style="padding:7px 12px;background:var(--green);color:#001a0f;border:none;border-radius:7px;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="ti ti-refresh"></i> Sync</button>
@@ -4548,7 +4632,7 @@ p, span, div, label, td, th, li {
             <div><div style="font-size:13px;font-weight:700;color:var(--c1)">URL Hosting Aplikasi</div><div style="font-size:10px;color:var(--text3);margin-top:1px">Untuk berbagi link ke anggota tim</div></div>
           </div>
           <input class="url-inp" type="url" id="s-app" placeholder="https://namakamu.netlify.app" style="border-color:rgba(61,142,248,.25);margin-bottom:7px">
-          <div class="url-saved-badge" id="badge-app" style="display:flex;margin-bottom:8px"><i class="ti ti-shield-check"></i> Tersimpan permanen — aman dari clear cache</div>
+          <div class="url-saved-badge" id="badge-app" style="display:flex;margin-bottom:8px"><i class="ti ti-shield-check"></i> Tersimpan di Database — aman dari clear cache &amp; ganti device</div>
           <button onclick="sAppURL()" style="width:100%;padding:10px;background:var(--c1);color:#fff;border:none;border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-device-floppy"></i> Simpan URL Aplikasi</button>
         </div>
 
@@ -5591,61 +5675,56 @@ function enterApp(role){
   }
   currentRole=effectiveRole||role;
 
-  // Sembunyikan login-wall, tampilkan loading overlay (bukan app dulu)
+  // Sembunyikan login-wall, tampilkan loading overlay
   document.getElementById('login-wall').style.display='none';
   _showLoadingOverlay();
 
-  // Restore dulu dari IndexedDB ke localStorage
-  restoreFromIDB(function(){
-    // Load Supabase config
-    try{
-      var sbUrl=localStorage.getItem(K_SB_URL)||SB_CFG.url||'';
-      var sbKey=localStorage.getItem(K_SB_KEY)||SB_CFG.key||'';
-      if(sbUrl)SB_CFG.url=sbUrl;
-      if(sbKey)SB_CFG.key=sbKey;
-      _sbReset();
-    }catch(e){}
+  // ONLINE-FIRST: SB_CFG sudah ter-baked, tidak perlu restore dari IDB untuk URL/Key
+  // Langsung pastikan koneksi Supabase aktif
+  try{
+    // SB_CFG.url & SB_CFG.key sudah ter-set oleh _sbPreload, tidak perlu localStorage
+    _sbReset(); _sbGetClient();
+  }catch(e){}
 
-    var needsConfig=(role!=='admin')&&(!ls(K.up)||!ls(K.um));
-    var cfgUrlFromParam=getCfgUrlFromParam();
+  function _showApp(){
+    _hideLoadingOverlay();
+    document.getElementById('app-shell').style.display='flex';
+    applyRoleUI();
+  }
 
-    function _showApp(){
-      _hideLoadingOverlay();
-      document.getElementById('app-shell').style.display='flex';
-      applyRoleUI();
-    }
-
-    function _doInit(){
-      // Auto-sync dari Supabase sebelum init (non-blocking jika gagal)
+  function _doInit(){
+    // Restore setting non-Supabase dari IDB (PIN, akun dll yang belum di-pull)
+    restoreFromIDB(function(){
+      // ONLINE-FIRST: Selalu pull settings dari Supabase saat login
+      // Ini memastikan semua device (termasuk yang baru clear cache) langsung sinkron
       if(_sbGetClient()&&isOn()){
-        _sbAutoSyncDone=false;
-        sbAutoSync().then(function(){ _showApp(); init(); }).catch(function(){ _showApp(); init(); });
+        showCfgBanner('Memuat konfigurasi dari Database...');
+        sbPullAllSettings().then(function(ok){
+          hideCfgBanner();
+          if(ok){ toast('Data dimuat dari Database ✓','ok'); }
+          _sbAutoSyncDone=false;
+          sbAutoSync();
+          _showApp(); init();
+        }).catch(function(){
+          hideCfgBanner();
+          _showApp(); init();
+        });
       } else {
-        _showApp();
-        init();
+        // Offline fallback: pakai cache lokal
+        _showApp(); init();
       }
-    }
+    });
+  }
 
-    if(needsConfig&&cfgUrlFromParam){
-      U.read=cfgUrlFromParam;
-      lss(K.ur,U.read);
-      showCfgBanner('Memuat konfigurasi dari server...');
-      fetchConfigFromServer(cfgUrlFromParam,function(ok){
-        hideCfgBanner();
-        if(ok)toast('Konfigurasi berhasil dimuat otomatis!','ok');
-        _doInit();
-      });
-    } else if(needsConfig&&ls(K.ur)){
-      showCfgBanner('Memuat konfigurasi dari server...');
-      fetchConfigFromServer(ls(K.ur),function(ok){
-        hideCfgBanner();
-        if(ok){toast('Konfigurasi diperbarui dari server','ok');}
-        _doInit();
-      });
-    } else {
-      _doInit();
-    }
-  });
+  // Jika ada ?r= param untuk URL Read Sheets, simpan dulu
+  var cfgUrlFromParam=getCfgUrlFromParam();
+  if(cfgUrlFromParam && !ls(K.ur)){
+    U.read=cfgUrlFromParam;
+    lss(K.ur,U.read);
+    // Push ke Supabase KV agar tersimpan permanen
+    if(_sbGetClient()) sbSetKV(K.ur, U.read).catch(function(){});
+  }
+  _doInit();
 }
 
 function getCfgUrlFromParam(){
@@ -6153,15 +6232,8 @@ function updPmDots(){
 // ═══════════════════════════════
 // UTILS
 // ═══════════════════════════════
-// BAKED-IN URL (admin isi sekali, tertanam permanen di file)
-// Isi URL di sini untuk deployment — kosongkan ('') jika tidak dipakai
-// ═══════════════════════════════
-var BAKED={
-  url_p:    '',   // URL Apps Script Pelanggan (write)
-  url_m:    '',   // URL Apps Script Material (write)
-  url_read: '',   // URL Apps Script Read Pelanggan
-  url_app:  ''    // URL Hosting Aplikasi
-};
+// ── BAKED tidak lagi dipakai — Supabase adalah sumber kebenaran utama ──
+var BAKED={url_p:'',url_m:'',url_read:'',url_app:''};
 // ═══════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
@@ -6169,18 +6241,23 @@ var BAKED={
 // Google Sheets tetap berjalan sebagai cadangan (write-only backup)
 // ═══════════════════════════════════════════════════════════════
 
-// ── Konfigurasi Database (diisi Admin di Setting → Koneksi) ──
+// ── Konfigurasi Database — URL & Key tertanam permanen di kode ──
+// ═══════════════════════════════════════════════════════════════
+// ONLINE-FIRST: Supabase adalah satu-satunya sumber kebenaran.
+// Clear cache browser = TIDAK ADA DATA YANG HILANG.
+// Admin baru cukup buka URL web → langsung konek tanpa setup apapun.
+// ═══════════════════════════════════════════════════════════════
 var SB_CFG = {
   url:  'https://foambnxappwgchnjkojr.supabase.co',
   key:  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvYW1ibnhhcHB3Z2Nobmprb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NjYyMTEsImV4cCI6MjA5NjE0MjIxMX0.Rpqles8_DsDZqNpwCjJWx-ofNWlN2jb_v6u4ZCe6r9k'
 };
-// Tulis baked config ke localStorage/IDB seketika saat script diload
-// sehingga _sbInitUI() dan semua fungsi lain langsung dapat nilainya
+// ── Preload: SELALU tulis dari kode ke localStorage (unconditional) ──
+// Tidak pakai kondisi "jika belum ada" — selalu overwrite dari SB_CFG.
+// Ini memastikan setelah clear cache pun koneksi Supabase langsung aktif.
 (function _sbPreload(){
   try {
-    var _bu = SB_CFG.url, _bk = SB_CFG.key;
-    if(_bu && !localStorage.getItem('sb_url')) localStorage.setItem('sb_url', _bu);
-    if(_bk && !localStorage.getItem('sb_anon_key')) localStorage.setItem('sb_anon_key', _bk);
+    localStorage.setItem('sb_url',      SB_CFG.url);
+    localStorage.setItem('sb_anon_key', SB_CFG.key);
   } catch(e) {}
 })();
 
@@ -6194,14 +6271,16 @@ var _sbClient = null;
 function _sbGetClient() {
   if (_sbClient) return _sbClient;
   try {
-    // Prioritas: localStorage (bisa dari user input atau baked preload) → SB_CFG
-    var lsUrl='', lsKey='';
-    try{ lsUrl=(localStorage.getItem(K_SB_URL)||'').trim(); lsKey=(localStorage.getItem(K_SB_KEY)||'').trim(); }catch(e){}
-    var url = lsUrl || SB_CFG.url || '';
-    var key = lsKey || SB_CFG.key || '';
+    // ONLINE-FIRST: selalu gunakan SB_CFG baked sebagai sumber utama.
+    // localStorage hanya sebagai cache — bukan sumber kebenaran.
+    // Jika admin ubah URL di UI, tulis ke SB_CFG juga (lihat _sbSaveConfig).
+    var url = SB_CFG.url || '';
+    var key = SB_CFG.key || '';
+    // Fallback ke localStorage jika SB_CFG kosong (tidak seharusnya terjadi)
+    if (!url) { try{ url=(localStorage.getItem(K_SB_URL)||'').trim(); }catch(e){} }
+    if (!key) { try{ key=(localStorage.getItem(K_SB_KEY)||'').trim(); }catch(e){} }
     if (!url || !key) return null;
-    // Selalu sync dua arah agar konsisten
-    SB_CFG.url = url; SB_CFG.key = key;
+    // Pastikan localStorage & IDB selalu sinkron dengan nilai aktif
     try { localStorage.setItem(K_SB_URL, url); localStorage.setItem(K_SB_KEY, key); } catch(e) {}
     idbSet(K_SB_URL, url); idbSet(K_SB_KEY, key);
     if (typeof supabase !== 'undefined' && supabase.createClient) {
@@ -6212,6 +6291,24 @@ function _sbGetClient() {
 }
 
 function _sbReset() { _sbClient = null; }
+
+// ── Simpan konfigurasi Supabase baru dari UI Setting ──
+// ONLINE-FIRST: Update SB_CFG in-memory (baked) saat admin ganti URL/Key
+function _sbSaveConfig(){
+  if(currentRole!=='admin'){toast('Hanya Admin yang bisa ubah config Database','err');return;}
+  var newUrl=(document.getElementById('sb-url-inp')||{}).value||'';
+  var newKey=(document.getElementById('sb-key-inp')||{}).value||'';
+  newUrl=newUrl.trim(); newKey=newKey.trim();
+  if(!newUrl||!newKey){toast('URL dan Key tidak boleh kosong','err');return;}
+  // Update SB_CFG in-memory
+  SB_CFG.url=newUrl; SB_CFG.key=newKey;
+  // Update localStorage & IDB
+  try{localStorage.setItem(K_SB_URL,newUrl);localStorage.setItem(K_SB_KEY,newKey);}catch(e){}
+  idbSet(K_SB_URL,newUrl); idbSet(K_SB_KEY,newKey);
+  // Reset client agar reconnect dengan config baru
+  _sbReset(); _sbGetClient();
+  toast('Konfigurasi Database diperbarui — klik Test untuk verifikasi','ok');
+}
 
 // ── Status indikator Supabase ──
 var _sbStatus = 'unknown'; // 'ok' | 'err' | 'off' | 'unknown'
@@ -6311,25 +6408,34 @@ async function sbDeleteRow(ts) {
 }
 
 // ── Sync semua KV settings ke Supabase ──
+// ONLINE-FIRST: Push SEMUA config (PIN, akun, wilayah, ODC/ODP, URL Sheets)
+// ke Supabase agar tersedia di semua device tanpa perlu setting manual.
+// sb_url dan sb_anon_key tidak di-push ke KV karena sudah ter-baked di kode.
 async function sbPushAllSettings() {
   var sb = _sbGetClient();
   if (!sb) return;
   var keys = [
     K_PERM, K_ACCTS, K_CUSTOM_PINS, K_SALES_LIST, K_DOWNLINE,
     K_SALES_ADDR||'sales_addr_detail', K_OTF, K_ODCOДP||'odcoдp_list',
-    K_WILAYAH||'wilayah_data', K.pa, K.pt, 'pin_gudang', 'pin_tamu'
+    K_WILAYAH||'wilayah_data', K.pa, K.pt, 'pin_gudang', 'pin_tamu',
+    K.up, K.um, K.ur, K.ua  // URL Sheets juga di-push ke Supabase
   ];
   for (var i = 0; i < keys.length; i++) {
     var k = keys[i]; if (!k) continue;
+    // Jangan push sb_url dan sb_anon_key — sudah baked di kode
+    if (k === K_SB_URL || k === K_SB_KEY) continue;
     var v = '';
     try { v = localStorage.getItem(k) || ''; } catch(e) {}
     if (v) await sbSetKV(k, v);
   }
   _sbSetStatus('ok');
-  toast('Semua pengaturan tersimpan ke Database ✓', 'ok');
+  toast('Semua pengaturan tersimpan ke Database ✓ — semua device akan sinkron otomatis', 'ok');
 }
 
 // ── Load semua KV settings dari Supabase ke localStorage ──
+// ONLINE-FIRST: Ini adalah operasi utama. Semua setting (PIN, akun, wilayah,
+// ODC/ODP, URL Sheets, dll) diambil dari Supabase dan diterapkan ke app.
+// localStorage hanya menjadi cache lokal dari data Supabase.
 async function sbPullAllSettings() {
   var sb = _sbGetClient();
   if (!sb) { _sbSetStatus('off'); return false; }
@@ -6338,18 +6444,12 @@ async function sbPullAllSettings() {
     if (error) { _sbSetStatus('err'); return false; }
     if (data && data.length) {
       data.forEach(function(row) {
-        if (row.key && row.value !== undefined && row.value !== null) {
-          try { localStorage.setItem(row.key, row.value); } catch(e) {}
-          idbSet(row.key, row.value);
-        }
+        if (!row.key || row.value === undefined || row.value === null) return;
+        // Jangan overwrite sb_url dan sb_anon_key — selalu pakai yang baked di SB_CFG
+        if (row.key === K_SB_URL || row.key === K_SB_KEY) return;
+        try { localStorage.setItem(row.key, row.value); } catch(e) {}
+        idbSet(row.key, row.value);
       });
-      // Jika Supabase KV membawa URL/key baru → reconnect otomatis
-      try {
-        var newUrl=(localStorage.getItem(K_SB_URL)||'').trim();
-        var newKey=(localStorage.getItem(K_SB_KEY)||'').trim();
-        if(newUrl && newUrl!==SB_CFG.url){ SB_CFG.url=newUrl; _sbReset(); _sbGetClient(); }
-        if(newKey && newKey!==SB_CFG.key){ SB_CFG.key=newKey; _sbReset(); _sbGetClient(); }
-      }catch(e){}
     }
     _sbSetStatus('ok');
     return true;
@@ -6746,27 +6846,21 @@ async function sbAutoSync() {
 }
 
 // ── AUTO-BOOTSTRAP: koneksi otomatis ke Supabase saat halaman load ──
+// ONLINE-FIRST: SB_CFG sudah ter-baked di kode, langsung konek tanpa perlu restore IDB
 (function _sbBootstrap(){
   try {
     function _tryInit(){
       if(typeof supabase !== 'undefined' && supabase.createClient){
-        // localStorage sudah berisi nilai baked (dari _sbPreload) atau nilai user
+        // SB_CFG sudah ter-baked dan localStorage sudah di-set oleh _sbPreload
+        // Tidak perlu restore dari IDB untuk URL/Key Supabase
         _sbGetClient();
         setTimeout(function(){ sbAutoSync(); }, 400);
       } else {
         setTimeout(_tryInit, 200);
       }
     }
-    // Restore dari IDB dulu (untuk device yang clear localStorage)
-    idbGet(K_SB_URL, function(idbUrl){
-      idbGet(K_SB_KEY, function(idbKey){
-        try {
-          if(idbUrl && !localStorage.getItem(K_SB_URL)) localStorage.setItem(K_SB_URL, idbUrl);
-          if(idbKey && !localStorage.getItem(K_SB_KEY)) localStorage.setItem(K_SB_KEY, idbKey);
-        } catch(e){}
-        _tryInit();
-      });
-    });
+    // Langsung init — tidak perlu tunggu IDB untuk URL/Key karena sudah baked
+    _tryInit();
   } catch(e){}
 })();
 
@@ -6979,8 +7073,10 @@ function _syncFullRefresh(reason){
 function _showSyncIndicator(){}
 
 // Restore dari IndexedDB ke localStorage saat start (jika localStorage kosong)
+// ONLINE-FIRST: sb_url dan sb_anon_key SELALU dari SB_CFG baked, tidak dari IDB
 function restoreFromIDB(cb){
-  var urlKeys=[K.up,K.um,K.ur,K.ua,K.pa,K.pt,'pin_gudang',K_PERM,K_TEK,K_ACCTS,K_SB_URL,K_SB_KEY];
+  var urlKeys=[K.up,K.um,K.ur,K.ua,K.pa,K.pt,'pin_gudang',K_PERM,K_TEK,K_ACCTS];
+  // sb_url & sb_anon_key selalu di-set dari SB_CFG baked di _sbPreload — skip dari IDB
   var done=0;
   function next(){done++;if(done>=urlKeys.length&&cb)cb();}
   urlKeys.forEach(function(k){
@@ -7123,7 +7219,7 @@ function init(){
   renderAccessManager();
   // Always start at dashboard
   var _bnD=document.getElementById('bn-d'); setTab('dash',_bnD||{classList:{add:function(){},remove:function(){}}});
-  setInterval(function(){updTime();if(curTab==='dash')updDash();if(curTab==='odp'){renderOdpMonitor&&renderOdpMonitor();}odpMonLivePulse();},3000);
+  setInterval(function(){updTime();if(curTab==='dash')updDash();if(curTab==='odp'){renderOdpMonitor&&renderOdpMonitor();}if(curTab==='data'&&typeof renderOdpRekap==='function'){renderOdpRekap();}odpMonLivePulse();},3000);
   // Live update: fetch ulang data dari Sheets setiap 30 detik (lebih responsif)
   setInterval(function(){
     if(U.read&&isOn()&&!pelFetching){
@@ -7155,21 +7251,32 @@ function init(){
   if(_sbGetClient()) sbStartRealtime();
   }// end _afterSupabaseLoad
 
-  // Load dari Supabase dulu jika tersedia, lalu jalankan init
+  // ONLINE-FIRST: Selalu pull dari Supabase saat init.
+  // Jika tidak ada koneksi, fallback ke localStorage/IDB cache.
   var sb = _sbGetClient();
   if (sb && isOn()) {
+    // Tampilkan loading indicator
+    var _lwall = document.getElementById('login-wall');
+    var _loadMsg = document.createElement('div');
+    _loadMsg.id = 'sb-load-banner';
+    _loadMsg.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(26,86,219,.9);color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:99999;display:flex;align-items:center;gap:8px';
+    _loadMsg.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite"></span> Memuat data dari Database...';
+    document.body.appendChild(_loadMsg);
     Promise.all([sbPullAllSettings(), sbLoadRows()])
       .then(function(results){
         var ok = results[0] || results[1];
         if(ok){ _sbSetStatus('ok'); }
         else { _sbSetStatus('err'); }
+        try{ var b=document.getElementById('sb-load-banner'); if(b) b.remove(); }catch(e){}
         _afterSupabaseLoad();
       })
       .catch(function(){
         _sbSetStatus('err');
+        try{ var b=document.getElementById('sb-load-banner'); if(b) b.remove(); }catch(e){}
         _afterSupabaseLoad();
       });
   } else {
+    // Fallback: tidak ada koneksi, pakai cache lokal
     _afterSupabaseLoad();
   }
 }
@@ -7246,7 +7353,7 @@ function setTab(t,btn,skipDataReset){
     var canAnyInput=rolePerm('input_pel')||rolePerm('input_mat')||rolePerm('input_maint');
     if(!canAnyInput){toast('Peran '+(currentRole||'?')+' tidak punya akses input data','err');return;}
   }
-  ['dash','form','data','share','set','coming','odp'].forEach(function(id){var _pe=document.getElementById('pane-'+id);if(_pe)_pe.classList.remove('on');});
+  ['dash','form','data','share','set','coming','odp','overview'].forEach(function(id){var _pe=document.getElementById('pane-'+id);if(_pe)_pe.classList.remove('on');});
   document.querySelectorAll('.bni').forEach(function(b){b.classList.remove('on');});
   document.querySelectorAll('.sb-item').forEach(function(b){b.classList.remove('on');});
   document.getElementById('pane-'+t).classList.add('on');
@@ -7271,6 +7378,7 @@ function setTab(t,btn,skipDataReset){
     }
   }
   
+  if(t==='overview'){setTimeout(function(){if(typeof updOverview==='function')updOverview();},80);}
   if(t==='share')updShare();
   if(t==='dash')updDash();
   if(t==='odp'){updOdpMonitor&&updOdpMonitor();}
@@ -7287,7 +7395,7 @@ function setTab(t,btn,skipDataReset){
     _sbInitUI(); // Refresh Supabase config UI
   }
   // Sync sidebar highlight untuk tab menu (bukan mode item)
-  var sbMap={dash:'sb-d',form:'sb-f',data:'sb-l',share:'sb-share',set:'sb-c',coming:'sb-coming',odp:'sb-odp-mon'};
+  var sbMap={dash:'sb-d',form:'sb-f',data:'sb-l',share:'sb-share',set:'sb-c',coming:'sb-coming',odp:'sb-odp-mon',overview:'sb-overview'};
   if(sbMap[t]){
     document.querySelectorAll('.sb-item').forEach(function(b){b.classList.remove('on');});
     var sbTarget=document.getElementById(sbMap[t]);
@@ -7781,7 +7889,9 @@ function saveOdcOdpData(data){
 // Dipanggil saat area berubah — update datalist ODC & ODP, reset nilai lama
 // ─── Helper: set enabled/disabled state + hint untuk ODC/ODP/Port ───
 function _setFieldLocked(inputId, hintId, locked){
-  var el = document.getElementById(inputId);
+  // p-sales khusus: target ke p-sales-input (textbox), bukan hidden
+  var actualId = (inputId === 'p-sales') ? 'p-sales-input' : inputId;
+  var el = document.getElementById(actualId);
   var hint = document.getElementById(hintId);
   if(!el) return;
   if(locked){
@@ -7790,6 +7900,8 @@ function _setFieldLocked(inputId, hintId, locked){
     el.style.pointerEvents = 'none';
     el.style.cursor = 'not-allowed';
     if(hint) hint.style.display = 'inline-flex';
+    // Tutup dropdown jika ada
+    if(inputId==='p-sales'){ var r=document.getElementById('p-sales-results'); if(r) r.style.display='none'; }
   } else {
     el.disabled = false;
     el.style.opacity = '';
@@ -7812,7 +7924,7 @@ function onAreaChange(){
     }).join('');
   }
 
-  // Reset ODP datalist (dikosongkan dulu — isi setelah ODC dipilih)
+  // Reset ODP datalist
   var odpList = document.getElementById('odp-list');
   if(odpList) odpList.innerHTML = '';
 
@@ -7820,67 +7932,55 @@ function onAreaChange(){
   var odcEl = document.getElementById('p-odc');
   var odpEl = document.getElementById('p-odp');
   var portEl = document.getElementById('p-port');
-  if(odcEl){ odcEl.value=''; }
-  if(odpEl){ odpEl.value=''; }
-  if(portEl){ portEl.value=''; }
+  if(odcEl) odcEl.value = '';
+  if(odpEl) odpEl.value = '';
+  if(portEl) portEl.value = '';
   var ob = document.getElementById('odp-monitor-box');
   if(ob) ob.style.display = 'none';
 
-  // Reset semua field alamat di bawah area
-  var kotaEl = document.getElementById('p-kota');
-  if(kotaEl) kotaEl.value = '';
-  var kecEl = document.getElementById('p-kec');
-  var kelEl = document.getElementById('p-kel');
-  var alamatEl = document.getElementById('p-alamat');
-  var rtEl = document.getElementById('p-rt');
-  var rwEl = document.getElementById('p-rw');
-  if(rtEl) rtEl.value='';
-  if(rwEl) rwEl.value='';
-  if(alamatEl) alamatEl.value='';
-
   if(!area){
-    // Kunci semua
-    _setFieldLocked('p-kota','p-kota-lock-hint',true);
-    _setFieldLocked('p-kec','p-kec-lock-hint',true);
-    _setFieldLocked('p-kel','p-kel-lock-hint',true);
-    _setFieldLocked('p-alamat','p-alamat-lock-hint',true);
-    _setFieldLocked('p-rt','p-rt-lock-hint',true);
-    _setFieldLocked('p-rw','p-rw-lock-hint',true);
+    // Area kosong: kunci semua field alamat dan teknis
+    _setFieldLocked('p-kota',   'p-kota-lock-hint',   true);
+    _setFieldLocked('p-kec',    'p-kec-lock-hint',     true);
+    _setFieldLocked('p-kel',    'p-kel-lock-hint',     true);
+    _setFieldLocked('p-rt',     'p-rt-lock-hint',      true);
+    _setFieldLocked('p-rw',     'p-rw-lock-hint',      true);
+    _setFieldLocked('p-alamat', 'p-alamat-lock-hint',  true);
+    _setFieldLocked('p-cid',    'p-cid-lock-hint',     true);
+    _setFieldLocked('p-odc',    'p-odc-lock-hint',     true);
+    _setFieldLocked('p-odp',    'p-odp-lock-hint',     true);
+    _setFieldLocked('p-port',   'p-port-lock-hint',    true);
+    // Reset nilai alamat
+    var kotaEl = document.getElementById('p-kota'); if(kotaEl) kotaEl.value='';
+    var kecEl  = document.getElementById('p-kec');  if(kecEl){ kecEl.value=''; kecEl.innerHTML='<option value="">Pilih area dulu</option>'; }
+    var kelEl  = document.getElementById('p-kel');  if(kelEl){ kelEl.value=''; kelEl.innerHTML='<option value="">Pilih kecamatan dulu</option>'; }
+    var alamEl = document.getElementById('p-alamat'); if(alamEl) alamEl.value='';
+    var rtEl   = document.getElementById('p-rt');  if(rtEl) rtEl.value='';
+    var rwEl   = document.getElementById('p-rw');  if(rwEl) rwEl.value='';
   } else {
-    // Area dipilih: buka Kota, kunci sisanya
-    _setFieldLocked('p-kota','p-kota-lock-hint',false);
-    _setFieldLocked('p-kec','p-kec-lock-hint',true);
-    _setFieldLocked('p-kel','p-kel-lock-hint',true);
-    _setFieldLocked('p-alamat','p-alamat-lock-hint',true);
-    _setFieldLocked('p-rt','p-rt-lock-hint',true);
-    _setFieldLocked('p-rw','p-rw-lock-hint',true);
-  }
+    // Area dipilih: buka Kota, kunci sisanya (akan terbuka bertahap via _evalFormSteps)
+    _setFieldLocked('p-kota', 'p-kota-lock-hint', false);
+    // Kec/Kel/RT/RW/Alamat tetap dikunci sampai Kota diisi — dihandle _evalFormSteps
+    // ODC langsung bisa diakses setelah area dipilih
+    _setFieldLocked('p-odc', 'p-odc-lock-hint', false);
+    _setFieldLocked('p-odp', 'p-odp-lock-hint', true);
+    _setFieldLocked('p-port','p-port-lock-hint', true);
 
-  // Lock/unlock ODC berurutan: ODC unlock hanya jika kecamatan juga sudah diisi (dihandle oleh onKecChange)
-  _setFieldLocked('p-odc', 'p-odc-lock-hint', true);
-  _setFieldLocked('p-odp', 'p-odp-lock-hint', true);
-  _setFieldLocked('p-port', 'p-port-lock-hint', true);
-
-  var odcHint = document.getElementById('p-odc-lock-hint');
-  if(odcHint) odcHint.innerHTML = '<i class="ti ti-lock" style="font-size:11px"></i> Pilih Area dulu';
-
-  // ── Update Kecamatan sesuai area (tapi masih terkunci sampai Kota diisi) ──
-  var wilData = getWilayahData();
-  var areaWil = wilData[area] || {kec:[], kel:[]};
-  if(kecEl){
-    if(!area){
-      kecEl.innerHTML='<option value="">Pilih area dulu</option>';
-    } else if((areaWil.kec||[]).length){
-      kecEl.innerHTML='<option value="">Pilih kecamatan</option>'+
-        areaWil.kec.map(function(k){return '<option>'+k+'</option>';}).join('');
-    } else {
-      kecEl.innerHTML='<option value="">— belum ada data kecamatan —</option>';
+    // Update dropdown Kecamatan sesuai area
+    var wilData = getWilayahData();
+    var areaWil = wilData[area] || {kec:[], kel:[]};
+    var kecEl2 = document.getElementById('p-kec');
+    if(kecEl2){
+      if((areaWil.kec||[]).length){
+        kecEl2.innerHTML='<option value="">Pilih kecamatan</option>'+
+          areaWil.kec.map(function(k){return '<option>'+k+'</option>';}).join('');
+      } else {
+        kecEl2.innerHTML='<option value="">— belum ada data kecamatan —</option>';
+      }
+      kecEl2.value='';
     }
-    kecEl.value='';
-  }
-  if(kelEl){
-    kelEl.innerHTML='<option value="">Pilih kecamatan dulu</option>';
-    kelEl.value='';
+    var kelEl2 = document.getElementById('p-kel');
+    if(kelEl2){ kelEl2.innerHTML='<option value="">Pilih kecamatan dulu</option>'; kelEl2.value=''; }
   }
   _evalFormSteps();
 }
@@ -7972,32 +8072,30 @@ function onStatusChange(){
 // Definisi urutan field dan syarat unlock-nya
 var _FORM_STEPS = [
   { id:'p-nama',       hint:'p-nama-lock-hint',       need: function(){ return !!gv('p-tgl'); },                                         msg:'⚠️ Isi Tanggal dulu sebelum mengisi Nama!' },
-  { id:'p-area',       hint:null,                      need: function(){ return !!gv('p-nama'); },                                        msg:'⚠️ Isi Nama Pelanggan dulu sebelum memilih Area!' },
-  { id:'p-kota',       hint:'p-kota-lock-hint',        need: function(){ return !!gv('p-area'); },                                        msg:'⚠️ Pilih Area dulu sebelum mengisi Kota/Kab!' },
-  { id:'p-kec',        hint:'p-kec-lock-hint',         need: function(){ return !!(gv('p-kota')&&gv('p-kota').trim()); },                 msg:'⚠️ Isi Kota/Kab dulu sebelum memilih Kecamatan!' },
-  { id:'p-kel',        hint:'p-kel-lock-hint',         need: function(){ return !!gv('p-kec'); },                                         msg:'⚠️ Pilih Kecamatan dulu sebelum memilih Kelurahan!' },
-  { id:'p-alamat',     hint:'p-alamat-lock-hint',      need: function(){ return !!gv('p-kec'); },                                         msg:'⚠️ Pilih Kecamatan dulu sebelum mengisi Alamat!' },
-  { id:'p-rt',         hint:'p-rt-lock-hint',          need: function(){ return !!(gv('p-alamat')&&gv('p-alamat').trim()); },             msg:'⚠️ Isi Alamat Lengkap dulu sebelum mengisi RT!' },
-  { id:'p-rw',         hint:'p-rw-lock-hint',          need: function(){ return !!(gv('p-alamat')&&gv('p-alamat').trim()); },             msg:'⚠️ Isi Alamat Lengkap dulu sebelum mengisi RW!' },
-  { id:'p-cid',        hint:'p-cid-lock-hint',         need: function(){ return !!(gv('p-alamat')&&gv('p-alamat').trim()); },             msg:'⚠️ Isi Alamat Lengkap dulu sebelum mengisi CID!' },
-  { id:'p-snont',      hint:'p-snont-lock-hint',       need: function(){ return !!(gv('p-cid')&&gv('p-cid').trim()); },                  msg:'⚠️ Isi CID dulu sebelum mengisi SN ONT!' },
-  { id:'p-odc',        hint:'p-odc-lock-hint',         need: function(){ return !!gv('p-kec'); },                                         msg:'⚠️ Pilih Kecamatan dulu sebelum memilih ODC!' },
-  { id:'p-odp',        hint:'p-odp-lock-hint',         need: function(){ return !!(gv('p-odc')&&gv('p-odc').trim()); },                  msg:'⚠️ Pilih ODC dulu sebelum memilih ODP!' },
-  { id:'p-port',       hint:'p-port-lock-hint',        need: function(){ return !!(gv('p-odp')&&gv('p-odp').trim()); },                  msg:'⚠️ Pilih ODP dulu sebelum memilih Port!' },
-  { id:'p-ont',        hint:'p-ont-lock-hint',         need: function(){ return !!gv('p-port'); },                                        msg:'⚠️ Pilih Port ODP dulu sebelum memilih Jenis ONT!' },
-  { id:'p-precon',     hint:'p-precon-lock-hint',      need: function(){ return !!gv('p-ont'); },                                         msg:'⚠️ Pilih Jenis ONT dulu sebelum memilih Kabel Precon!' },
-  { id:'p-status',     hint:'p-status-lock-hint',      need: function(){ return !!gv('p-precon'); },                                      msg:'⚠️ Pilih Kabel Precon dulu sebelum memilih Status!' },
-  { id:'p-teknisi',    hint:'p-teknisi-lock-hint',     need: function(){ return !!gv('p-status'); },                                      msg:'⚠️ Pilih Status dulu sebelum memilih Teknisi!' },
-  { id:'p-sales',      hint:'p-sales-lock-hint',       need: function(){ return !!gv('p-teknisi'); },                                     msg:'⚠️ Pilih Teknisi dulu sebelum memilih Sales!' },
-  { id:'p-nominal',    hint:'p-nominal-lock-hint',     need: function(){ return !!gv('p-sales'); },                                       msg:'⚠️ Pilih Sales dulu sebelum mengisi Nominal!' },
-  { id:'p-reg-method', hint:'p-reg-method-lock-hint',  need: function(){ return !!gv('p-sales'); },                                       msg:'⚠️ Pilih Sales dulu sebelum memilih Metode Daftar!' },
-  { id:'p-ket',        hint:'p-ket-lock-hint',         need: function(){ return true; },                                                   msg:'' }
+  { id:'p-area',       hint:null,                      need: function(){ return !!(gv('p-nama')&&gv('p-nama').trim()); },                msg:'⚠️ Isi Nama Pelanggan dulu sebelum memilih Area!' },
+  { id:'p-kota',       hint:'p-kota-lock-hint',        need: function(){ return !!gv('p-area'); },                                       msg:'⚠️ Pilih Area dulu sebelum mengisi Kota/Kab!' },
+  { id:'p-kec',        hint:'p-kec-lock-hint',         need: function(){ return !!(gv('p-kota')&&gv('p-kota').trim()); },                msg:'⚠️ Isi Kota/Kab dulu sebelum memilih Kecamatan!' },
+  { id:'p-kel',        hint:'p-kel-lock-hint',         need: function(){ return !!gv('p-kec'); },                                        msg:'⚠️ Pilih Kecamatan dulu sebelum memilih Kelurahan!' },
+  { id:'p-rt',         hint:'p-rt-lock-hint',          need: function(){ return !!gv('p-kec'); },                                        msg:'⚠️ Pilih Kecamatan dulu sebelum mengisi RT!' },
+  { id:'p-rw',         hint:'p-rw-lock-hint',          need: function(){ return !!gv('p-kec'); },                                        msg:'⚠️ Pilih Kecamatan dulu sebelum mengisi RW!' },
+  { id:'p-alamat',     hint:'p-alamat-lock-hint',      need: function(){ return !!gv('p-kec'); },                                        msg:'⚠️ Pilih Kecamatan dulu sebelum mengisi Alamat!' },
+  { id:'p-cid',        hint:'p-cid-lock-hint',         need: function(){ return !!(gv('p-alamat')&&gv('p-alamat').trim()); },            msg:'⚠️ Isi Alamat Lengkap dulu sebelum mengisi CID!' },
+  { id:'p-snont',      hint:'p-snont-lock-hint',       need: function(){ return !!(gv('p-cid')&&gv('p-cid').trim()); },                 msg:'⚠️ Isi CID dulu sebelum mengisi SN ONT!' },
+  { id:'p-odc',        hint:'p-odc-lock-hint',         need: function(){ return !!gv('p-area'); },                                       msg:'⚠️ Pilih Area dulu sebelum memilih ODC!' },
+  { id:'p-odp',        hint:'p-odp-lock-hint',         need: function(){ return !!(gv('p-odc')&&gv('p-odc').trim()); },                 msg:'⚠️ Pilih ODC dulu sebelum memilih ODP!' },
+  { id:'p-port',       hint:'p-port-lock-hint',        need: function(){ return !!(gv('p-odp')&&gv('p-odp').trim()); },                 msg:'⚠️ Pilih ODP dulu sebelum memilih Port!' },
+  { id:'p-ont',        hint:'p-ont-lock-hint',         need: function(){ return !!gv('p-port'); },                                       msg:'⚠️ Pilih Port ODP dulu sebelum memilih Jenis ONT!' },
+  { id:'p-precon',     hint:'p-precon-lock-hint',      need: function(){ return !!gv('p-ont'); },                                        msg:'⚠️ Pilih Jenis ONT dulu sebelum memilih Kabel Precon!' },
+  { id:'p-status',     hint:'p-status-lock-hint',      need: function(){ return !!gv('p-precon'); },                                     msg:'⚠️ Pilih Kabel Precon dulu sebelum memilih Status!' },
+  { id:'p-teknisi',    hint:'p-teknisi-lock-hint',     need: function(){ return !!gv('p-status'); },                                     msg:'⚠️ Pilih Status dulu sebelum memilih Teknisi!' },
+  { id:'p-sales',      hint:'p-sales-lock-hint',       need: function(){ return !!gv('p-teknisi'); },                                    msg:'⚠️ Pilih Teknisi dulu sebelum memilih Sales!' }
 ];
 
 // Pasang event listener "bubble saat klik field terkunci" untuk semua field
 function _setupFormStepGuard(){
   _FORM_STEPS.forEach(function(step){
-    var el = document.getElementById(step.id);
+    var actualId = (step.id === 'p-sales') ? 'p-sales-input' : step.id;
+    var el = document.getElementById(actualId);
     if(!el) return;
     // Gunakan mousedown + touchstart agar intersep sebelum focus
     ['mousedown','touchstart'].forEach(function(evt){
@@ -8005,7 +8103,7 @@ function _setupFormStepGuard(){
         if(el.disabled){
           e.preventDefault();
           e.stopPropagation();
-          if(step.msg) showBubbleWarn(step.id, step.msg);
+          if(step.msg) showBubbleWarn(actualId, step.msg);
         }
       }, {passive:false});
     });
@@ -9003,20 +9101,109 @@ function getDownlines(salesName){
 
 // Update dropdown sales di form pelanggan
 function updateSalesDropdowns(){
-  var list=getSalesList();
-  var sel=document.getElementById('p-sales');
-  if(sel){
-    var cur=sel.value;
-    sel.innerHTML='<option value="">Pilih sales</option>'+
-      list.map(function(s){return '<option'+(s===cur?' selected':'')+'>'+s+'</option>';}).join('');
-  }
+  // p-sales sekarang pakai textbox+autocomplete, tidak perlu populate select
   var otfSel=document.getElementById('otf-sales-select');
   if(otfSel){
+    var list=getSalesList();
     var cur2=otfSel.value;
     otfSel.innerHTML='<option value="">-- Pilih Sales --</option>'+
       list.map(function(s){return '<option'+(s===cur2?' selected':'')+'>'+s+'</option>';}).join('');
   }
 }
+
+// ─── SALES SEARCH TEXTBOX FUNCTIONS ───
+function _getSalesOptions(){
+  // Ambil dari akun role=sales (dengan kode), fallback ke legacy list
+  var accts = typeof getAccts==='function' ? getAccts() : [];
+  var fromAccts = accts.filter(function(a){ return a.role==='sales'; });
+  if(fromAccts.length){
+    return fromAccts.map(function(a){ return {name:a.name, kode:a.kode||''}; });
+  }
+  // Legacy fallback: hanya nama, tanpa kode
+  var list = getSalesList();
+  return list.map(function(s){ return {name:s, kode:''}; });
+}
+
+function onSalesSearchInput(){
+  var inp = document.getElementById('p-sales-input');
+  if(!inp) return;
+  var q = inp.value.toLowerCase().trim();
+  // Jika diisi manual tapi belum pilih dari dropdown, clear hidden value
+  var hidden = document.getElementById('p-sales');
+  if(hidden) hidden.value = '';
+  var clrBtn = document.getElementById('p-sales-clear');
+  if(clrBtn) clrBtn.style.display = inp.value ? 'block' : 'none';
+  _renderSalesResults(q);
+  onSalesChange();
+}
+
+function onSalesSearchFocus(){
+  var inp = document.getElementById('p-sales-input');
+  var q = inp ? inp.value.toLowerCase().trim() : '';
+  _renderSalesResults(q);
+}
+
+function onSalesSearchBlur(){
+  // Delay sedikit agar klik item sempat terpanggil
+  setTimeout(function(){
+    var res = document.getElementById('p-sales-results');
+    if(res) res.style.display='none';
+    // Jika hidden value kosong, reset input juga
+    var hidden = document.getElementById('p-sales');
+    var inp = document.getElementById('p-sales-input');
+    if(hidden && inp && !hidden.value) inp.value='';
+    var clrBtn = document.getElementById('p-sales-clear');
+    if(clrBtn) clrBtn.style.display = (inp&&inp.value)?'block':'none';
+  }, 200);
+}
+
+function _renderSalesResults(q){
+  var res = document.getElementById('p-sales-results');
+  if(!res) return;
+  var opts = _getSalesOptions();
+  var filtered = q ? opts.filter(function(o){
+    return o.name.toLowerCase().indexOf(q)>=0 || (o.kode && o.kode.toLowerCase().indexOf(q)>=0);
+  }) : opts;
+  if(!filtered.length){
+    res.innerHTML='<div style="padding:12px 14px;text-align:center;font-size:12px;color:var(--text3)">Tidak ada hasil untuk "'+escHtml(q)+'"</div>';
+    res.style.display='block';
+    return;
+  }
+  var ini2 = function(n){if(!n)return '??';var p=n.trim().split(' ').filter(Boolean);return p.length===1?p[0].substring(0,2).toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();};
+  res.innerHTML = filtered.map(function(o){
+    var kodeHtml = o.kode ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--green);background:rgba(16,217,160,.12);padding:1px 6px;border-radius:8px;margin-top:2px;display:inline-block">#'+escHtml(o.kode)+'</span>' : '';
+    return '<div class="sales-search-item" onmousedown="selectSalesOption(\''+escAttr(o.name)+'\')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;transition:background .15s" onmouseover="this.style.background=\'rgba(16,217,160,.07)\'" onmouseout="this.style.background=\'\'">'
+      + '<div style="width:34px;height:34px;border-radius:9px;background:rgba(16,217,160,.12);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;font-family:\'JetBrains Mono\',monospace">'+ini2(o.name)+'</div>'
+      + '<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+escHtml(o.name)+'</div>'+(kodeHtml||'<span style="font-size:10px;color:var(--text3)">Tidak ada kode</span>')+'</div>'
+      + '</div>';
+  }).join('');
+  res.style.display='block';
+}
+
+function selectSalesOption(name){
+  var inp = document.getElementById('p-sales-input');
+  var hidden = document.getElementById('p-sales');
+  var res = document.getElementById('p-sales-results');
+  var clrBtn = document.getElementById('p-sales-clear');
+  if(inp) inp.value = name;
+  if(hidden) hidden.value = name;
+  if(res) res.style.display='none';
+  if(clrBtn) clrBtn.style.display = name ? 'block' : 'none';
+  onSalesChange();
+}
+
+function clearSalesSearch(){
+  var inp = document.getElementById('p-sales-input');
+  var hidden = document.getElementById('p-sales');
+  var res = document.getElementById('p-sales-results');
+  var clrBtn = document.getElementById('p-sales-clear');
+  if(inp){ inp.value=''; inp.focus(); }
+  if(hidden) hidden.value='';
+  if(res) res.style.display='none';
+  if(clrBtn) clrBtn.style.display='none';
+  onSalesChange();
+}
+
 
 function onSalesChange(){
   var salesName = (document.getElementById("p-sales")||{}).value||"";
@@ -11359,11 +11546,22 @@ function setTipePerbaikan(tipe){
   }
 }
 
-// ── Helpers: kumpulkan daftar ODC & ODP dari db.p + pelDB, difilter per area ──
+// ── Helpers: kumpulkan daftar ODC & ODP dari Setting Wilayah + db.p + pelDB ──
 function getAllOdcList(){
-  var src = pelDB.length ? pelDB : db.p;
   var area = getMaintArea();
   var odcs = [];
+  // 1. Dari Setting Wilayah (sumber utama)
+  var settingData = typeof getOdcOdpData === 'function' ? getOdcOdpData() : {};
+  if(area){
+    var areaData = settingData[area] || {};
+    (areaData.odc || []).forEach(function(o){ if(o && odcs.indexOf(o)<0) odcs.push(o); });
+  } else {
+    Object.keys(settingData).forEach(function(a){
+      ((settingData[a]||{}).odc||[]).forEach(function(o){ if(o && odcs.indexOf(o)<0) odcs.push(o); });
+    });
+  }
+  // 2. Merge dari data pelanggan
+  var src = pelDB.length ? pelDB : db.p;
   src.forEach(function(d){
     if(area && d.area !== area) return;
     if(d.odc && odcs.indexOf(d.odc) < 0) odcs.push(d.odc);
@@ -11373,9 +11571,24 @@ function getAllOdcList(){
 }
 
 function getAllOdpList(){
-  var src = pelDB.length ? pelDB : db.p;
   var area = getMaintArea();
   var odps = [];
+  // 1. Dari Setting Wilayah — generate ODP dari ODC + daftar manual
+  var settingData = typeof getOdcOdpData === 'function' ? getOdcOdpData() : {};
+  var genOdp = typeof generateOdpFromOdc === 'function' ? generateOdpFromOdc : function(){ return []; };
+  if(area){
+    var areaData = settingData[area] || {};
+    genOdp(areaData.odc || []).forEach(function(o){ if(o && odps.indexOf(o)<0) odps.push(o); });
+    (areaData.odp || []).forEach(function(o){ if(o && odps.indexOf(o)<0) odps.push(o); });
+  } else {
+    Object.keys(settingData).forEach(function(a){
+      var ad = settingData[a] || {};
+      genOdp(ad.odc || []).forEach(function(o){ if(o && odps.indexOf(o)<0) odps.push(o); });
+      (ad.odp || []).forEach(function(o){ if(o && odps.indexOf(o)<0) odps.push(o); });
+    });
+  }
+  // 2. Merge dari data pelanggan
+  var src = pelDB.length ? pelDB : db.p;
   src.forEach(function(d){
     if(area && d.area !== area) return;
     if(d.odp && odps.indexOf(d.odp) < 0) odps.push(d.odp);
@@ -11394,9 +11607,21 @@ function getPelByOdp(odpName){
 }
 
 function getOdpByOdc(odcName){
-  var src = pelDB.length ? pelDB : db.p;
   var area = getMaintArea();
   var odps = [];
+  // 1. Dari Setting Wilayah: generate ODP berdasarkan ODC ini
+  var settingData = typeof getOdcOdpData === 'function' ? getOdcOdpData() : {};
+  var genOdp = typeof generateOdpFromOdc === 'function' ? generateOdpFromOdc : function(){ return []; };
+  // generate dari [odcName] saja lalu filter yang berawalan odcName
+  var areaKeys = area ? [area] : Object.keys(settingData);
+  areaKeys.forEach(function(a){
+    var ad = settingData[a] || {};
+    // Hanya generate ODP dari ODC yang sesuai nama
+    var matchOdc = (ad.odc || []).filter(function(o){ return o === odcName; });
+    genOdp(matchOdc).forEach(function(o){ if(o && odps.indexOf(o)<0) odps.push(o); });
+  });
+  // 2. Dari data pelanggan
+  var src = pelDB.length ? pelDB : db.p;
   src.forEach(function(d){
     if(area && d.area !== area) return;
     if(d.odc === odcName && d.odp && odps.indexOf(d.odp) < 0) odps.push(d.odp);
@@ -11407,16 +11632,23 @@ function getOdpByOdc(odcName){
 
 // ── ODC dropdown ──
 function initOdcMaintDropdown(){
-  // hanya reset, tidak langsung tampilkan dropdown
   var drop = document.getElementById('d-odc-drop');
   if(drop) drop.style.display = 'none';
+}
+
+function onOdcMaintFocus(){
+  // Tampilkan semua ODC saat field diklik
+  var inp = document.getElementById('d-odc-input');
+  var q = inp ? inp.value.trim().toLowerCase() : '';
+  var list = q ? getAllOdcList().filter(function(o){ return o.toLowerCase().indexOf(q)>=0; }) : getAllOdcList();
+  renderOdcDrop(list);
 }
 
 function renderOdcDrop(list){
   var drop = document.getElementById('d-odc-drop');
   if(!drop) return;
   if(!list.length){
-    drop.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text3)">Tidak ada data ODC. Muat Sheets terlebih dahulu.</div>';
+    drop.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text3)">Tidak ada data ODC untuk area ini. Tambahkan ODC di Setting → Wilayah.</div>';
     drop.style.display = 'block';
     return;
   }
@@ -11433,11 +11665,7 @@ function renderOdcDrop(list){
 
 function onOdcMaintSearch(val){
   var q = val.trim().toLowerCase();
-  if(!q){
-    document.getElementById('d-odc-drop').style.display = 'none';
-    return;
-  }
-  var list = getAllOdcList().filter(function(o){ return o.toLowerCase().indexOf(q) >= 0; });
+  var list = q ? getAllOdcList().filter(function(o){ return o.toLowerCase().indexOf(q) >= 0; }) : getAllOdcList();
   renderOdcDrop(list);
   // clear selection bila user mengedit
   document.getElementById('d-odc-val').value = '';
@@ -11469,16 +11697,23 @@ function selectOdcMaint(odc){
 
 // ── ODP dropdown ──
 function initOdpMaintDropdown(){
-  // hanya reset, tidak langsung tampilkan dropdown
   var drop = document.getElementById('d-odp-drop');
   if(drop) drop.style.display = 'none';
+}
+
+function onOdpMaintFocus(){
+  // Tampilkan semua ODP saat field diklik
+  var inp = document.getElementById('d-odp-input');
+  var q = inp ? inp.value.trim().toLowerCase() : '';
+  var list = q ? getAllOdpList().filter(function(o){ return o.toLowerCase().indexOf(q)>=0; }) : getAllOdpList();
+  renderOdpDrop(list);
 }
 
 function renderOdpDrop(list){
   var drop = document.getElementById('d-odp-drop');
   if(!drop) return;
   if(!list.length){
-    drop.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text3)">Tidak ada data ODP. Muat Sheets terlebih dahulu.</div>';
+    drop.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--text3)">Tidak ada data ODP untuk area ini. Tambahkan ODC di Setting → Wilayah.</div>';
     drop.style.display = 'block';
     return;
   }
@@ -11494,11 +11729,7 @@ function renderOdpDrop(list){
 
 function onOdpMaintSearch(val){
   var q = val.trim().toLowerCase();
-  if(!q){
-    document.getElementById('d-odp-drop').style.display = 'none';
-    return;
-  }
-  var list = getAllOdpList().filter(function(o){ return o.toLowerCase().indexOf(q) >= 0; });
+  var list = q ? getAllOdpList().filter(function(o){ return o.toLowerCase().indexOf(q) >= 0; }) : getAllOdpList();
   renderOdpDrop(list);
   // clear selection bila user mengedit
   document.getElementById('d-odp-val').value = '';
@@ -11939,20 +12170,24 @@ var svM=function(entryToSync){
     }
   }
 };
-function rstPel(){['p-nama','p-area','p-kota','p-alamat','p-rt','p-rw','p-kec','p-kel','p-cid','p-snont','p-odc','p-odp','p-port','p-ont','p-precon','p-status','p-teknisi','p-sales','p-nominal','p-ket','p-reg-method'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('p-tgl').value=today();var w=document.getElementById('cid-warn');if(w)w.style.display='none';var ob=document.getElementById('odp-monitor-box');if(ob)ob.style.display='none';var si=document.getElementById('p-sales-info');if(si)si.style.display='none';var kelEl=document.getElementById('p-kel');if(kelEl)kelEl.innerHTML='<option value="">Pilih area dulu</option>';initOdcOdpDatalist();_evalFormSteps();}
+function rstPel(){['p-nama','p-area','p-kota','p-alamat','p-rt','p-rw','p-kec','p-kel','p-cid','p-snont','p-odc','p-odp','p-port','p-ont','p-precon','p-status','p-teknisi','p-sales'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+// Reset sales textbox
+var salesInp=document.getElementById('p-sales-input');if(salesInp)salesInp.value='';
+var salesClr=document.getElementById('p-sales-clear');if(salesClr)salesClr.style.display='none';
+var salesRes=document.getElementById('p-sales-results');if(salesRes)salesRes.style.display='none';
+document.getElementById('p-tgl').value=today();var w=document.getElementById('cid-warn');if(w)w.style.display='none';var ob=document.getElementById('odp-monitor-box');if(ob)ob.style.display='none';var si=document.getElementById('p-sales-info');if(si)si.style.display='none';var kelEl=document.getElementById('p-kel');if(kelEl)kelEl.innerHTML='<option value="">Pilih area dulu</option>';initOdcOdpDatalist();_evalFormSteps();}
 function rstMat(){['m-pgn-nama','m-cid','m-qty','m-sn','m-amb','m-stat','m-area','m-pgn','m-ket'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});var mi=document.getElementById('m-item');if(mi)mi.value='';document.getElementById('m-tgl').value=today();clearCidSearch();}
 
 // ═══════════════════════════════
 // DASHBOARD — merged pelDB (Sheets) + db.p (lokal)
 // ═══════════════════════════════
 function getMergedPel(){
-  // Gabungkan db.p (lokal/Supabase) dengan pelDB (Sheets cache)
-  // db.p MENANG: data lokal selalu prioritas, pelDB hanya sebagai tambahan
+  // Gabungkan pelDB (dari Sheets) dengan db.p (lokal), deduplicate by CID
   var seen={},merged=[];
-  // Data lokal/Supabase dulu sebagai base (import masuk ke sini)
-  (db.p||[]).forEach(function(d){if(d.cid&&!seen[d.cid]){seen[d.cid]=1;merged.push(d);}else if(!d.cid){merged.push(d);}});
-  // Tambahkan data Sheets yang belum ada di lokal
+  // Sheets data dulu sebagai base
   (pelDB||[]).forEach(function(d){if(d.cid&&!seen[d.cid]){seen[d.cid]=1;merged.push(d);}else if(!d.cid){merged.push(d);}});
+  // Tambahkan data lokal yang belum ada di Sheets
+  (db.p||[]).forEach(function(d){if(d.cid&&!seen[d.cid]){seen[d.cid]=1;merged.push(d);}else if(!d.cid){merged.push(d);}});
   return merged;
 }
 
@@ -13163,7 +13398,66 @@ function renderOdpRekapDebounced() {
   _rekapRenderTimer = setTimeout(function(){ renderOdpRekap(); }, 50);
 }
 
+// State memory per tab — supaya filter/search tidak reset saat pindah tab
+var _rekapState = {
+  odc: { area: '', search: '' },
+  odp: { area: '', odc: '', search: '' }
+};
+
+function _rekapSaveState() {
+  var odcArea   = document.getElementById('rekap-odc-filter-area');
+  var odcSearch = document.getElementById('rekap-odc-search');
+  var odpArea   = document.getElementById('rekap-odp-filter-area');
+  var odpOdc    = document.getElementById('rekap-odp-filter-odc');
+  var odpSearch = document.getElementById('rekap-odp-search');
+  if (odcArea)   _rekapState.odc.area   = odcArea.value;
+  if (odcSearch) _rekapState.odc.search = odcSearch.value;
+  if (odpArea)   _rekapState.odp.area   = odpArea.value;
+  if (odpOdc)    _rekapState.odp.odc    = odpOdc.value;
+  if (odpSearch) _rekapState.odp.search = odpSearch.value;
+}
+
+function _rekapRestoreState(tab) {
+  if (tab === 'odc') {
+    var odcArea   = document.getElementById('rekap-odc-filter-area');
+    var odcSearch = document.getElementById('rekap-odc-search');
+    var swrap     = document.getElementById('rekap-odc-search-wrap');
+    var resetWrap = document.getElementById('rekap-odc-reset-wrap');
+    if (odcArea && _rekapState.odc.area) odcArea.value = _rekapState.odc.area;
+    if (odcSearch) odcSearch.value = _rekapState.odc.search;
+    var hasArea = odcArea && odcArea.value;
+    if (swrap)     swrap.style.display     = hasArea ? '' : 'none';
+    if (resetWrap) resetWrap.style.display = hasArea ? '' : 'none';
+  }
+  if (tab === 'odp') {
+    var odpArea   = document.getElementById('rekap-odp-filter-area');
+    var odpOdc    = document.getElementById('rekap-odp-filter-odc');
+    var odpSearch = document.getElementById('rekap-odp-search');
+    var odcWrap   = document.getElementById('rekap-odp-odc-wrap');
+    var swrap2    = document.getElementById('rekap-odp-search-wrap');
+    var resetWrap2= document.getElementById('rekap-odp-reset-wrap');
+    if (odpArea && _rekapState.odp.area) odpArea.value = _rekapState.odp.area;
+    var hasArea2 = odpArea && odpArea.value;
+    if (odcWrap)    odcWrap.style.display    = hasArea2 ? '' : 'none';
+    if (swrap2)     swrap2.style.display     = hasArea2 ? '' : 'none';
+    if (resetWrap2) resetWrap2.style.display = hasArea2 ? '' : 'none';
+    // Restore ODC dropdown options dulu baru set value
+    if (odpArea && odpArea.value) {
+      var settingData2 = getOdcOdpData();
+      var odcList2 = ((settingData2[odpArea.value]||{}).odc||[]).sort();
+      if (odpOdc) {
+        odpOdc.innerHTML = '<option value="">-- Semua ODC --</option>' +
+          odcList2.map(function(o){ return '<option value="'+escHtml(o)+'">'+escHtml(o)+'</option>'; }).join('');
+        if (_rekapState.odp.odc) odpOdc.value = _rekapState.odp.odc;
+      }
+    }
+    if (odpSearch) odpSearch.value = _rekapState.odp.search;
+  }
+}
+
 function switchRekapTab(tab) {
+  // Simpan state tab yang sedang aktif sebelum pindah
+  _rekapSaveState();
   rekapOdpTab = tab;
   var btnArea = document.getElementById('rekap-tab-area');
   var btnOdc  = document.getElementById('rekap-tab-odc');
@@ -13182,6 +13476,8 @@ function switchRekapTab(tab) {
   if (tab==='odc') populateRekapOdcAreaDropdown();
   if (tab==='odp') populateRekapOdpAreaDropdown();
   _rekapPopulating = false;
+  // Restore state filter/search tab yang dibuka
+  _rekapRestoreState(tab);
   renderOdpRekapDebounced();
 }
 
@@ -13212,8 +13508,13 @@ function onRekapOdcAreaChange(){
   var resetWrap = document.getElementById('rekap-odc-reset-wrap');
   if(swrap) swrap.style.display = area ? '' : 'none';
   if(resetWrap) resetWrap.style.display = area ? '' : 'none';
-  var inp = document.getElementById('rekap-odc-search');
-  if(inp) inp.value = '';
+  // Reset search hanya jika area benar-benar berubah dari state tersimpan
+  if(area !== _rekapState.odc.area){
+    var inp = document.getElementById('rekap-odc-search');
+    if(inp) inp.value = '';
+    _rekapState.odc.search = '';
+  }
+  _rekapState.odc.area = area;
   renderOdpRekapDebounced();
 }
 
@@ -13240,13 +13541,21 @@ function onRekapOdpAreaChange(){
     }
     _rekapPopulating = false;
   }
-  var inp = document.getElementById('rekap-odp-search');
-  if(inp) inp.value = '';
+  // Reset search dan ODC filter hanya jika area benar-benar berubah
+  if(area !== _rekapState.odp.area){
+    var inp = document.getElementById('rekap-odp-search');
+    if(inp) inp.value = '';
+    _rekapState.odp.search = '';
+    _rekapState.odp.odc = '';
+  }
+  _rekapState.odp.area = area;
   renderOdpRekapDebounced();
 }
 
 function onRekapOdpOdcChange(){
   if (_rekapPopulating) return;
+  var odcSel = document.getElementById('rekap-odp-filter-odc');
+  if (odcSel) _rekapState.odp.odc = odcSel.value;
   renderOdpRekapDebounced();
 }
 
@@ -13914,6 +14223,7 @@ function resetFilterPerOdp() {
   if (odcWrap)   odcWrap.style.display   = 'none';
   if (srchWrap)  srchWrap.style.display  = 'none';
   if (resetWrap) resetWrap.style.display = 'none';
+  _rekapState.odp = { area: '', odc: '', search: '' };
   renderOdpRekap();
 }
 
@@ -13927,6 +14237,7 @@ function resetFilterPerOdc() {
   if (srch)  srch.value  = '';
   if (srchWrap)  srchWrap.style.display  = 'none';
   if (resetWrap) resetWrap.style.display = 'none';
+  _rekapState.odc = { area: '', search: '' };
   renderOdpRekap();
 }
 
@@ -15066,11 +15377,25 @@ function sURL(t){
   else if(t==='r'){U.read=gv('s-read');lss(K.ur,U.read);updUrlBadge('s-read',U.read);if(U.read)fetchPelDB(true);inp=document.getElementById('s-read');}
   // Flash animation pada input yang baru disimpan
   if(inp){inp.classList.add('saved-flash');setTimeout(function(){inp.classList.remove('saved-flash');},700);}
-  updConn();toast('URL tersimpan permanen ✓','ok');
+  // ONLINE-FIRST: Push URL ke Supabase KV agar tersedia di semua device
+  var keyMap={p:K.up,m:K.um,r:K.ur};
+  if(keyMap[t] && _sbGetClient()){
+    sbSetKV(keyMap[t], t==='p'?U.p:t==='m'?U.m:U.read).then(function(){
+      toast('URL tersimpan ke Database ✓ — semua device terupdate','ok');
+    }).catch(function(){
+      toast('URL tersimpan lokal ✓','ok');
+    });
+  } else {
+    toast('URL tersimpan ✓','ok');
+  }
+  updConn();
 }
 function sAppURL(){
   if(currentRole!=='admin'){toast('Hanya Admin yang bisa ubah URL','err');return;}
-  U.app=gv('s-app');lss(K.ua,U.app);updUrlBadge('s-app',U.app);updShare();toast('URL aplikasi tersimpan permanen ✓','ok');
+  U.app=gv('s-app');lss(K.ua,U.app);updUrlBadge('s-app',U.app);updShare();
+  // ONLINE-FIRST: Push ke Supabase KV
+  if(_sbGetClient()) sbSetKV(K.ua, U.app).catch(function(){});
+  toast('URL aplikasi tersimpan ke Database ✓','ok');
 }
 function updUrlBadge(inputId,val){
   var inp=document.getElementById(inputId);
@@ -15117,33 +15442,27 @@ function applyConfig(cfg){
 
 function pushConfigToServer(){
   if(currentRole!=='admin'){toast('Hanya Admin yang bisa push config','err');return;}
-  if(!U.read){toast('URL Read Sheets belum diset','err');return;}
-  var cfg=getConfigObject();
+  // ONLINE-FIRST: Push semua config ke Supabase KV — tidak bergantung Google Sheets
   var btn=document.getElementById('cfg-push-btn');
-  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> Mengirim...';}
-  var payload=JSON.stringify({_action:'setConfig',config:cfg});
-  function onDone(ok){
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> Menyimpan ke Database...';}
+  sbPushAllSettings().then(function(){
     var now=new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-cloud-upload"></i> Push Config ke Server Sekarang';}
-    if(ok){
-      lss(K_CFG_STATUS,now);
-      var st=document.getElementById('cfg-push-status');if(st)st.textContent='Berhasil push: '+now;
-      var ic=document.getElementById('cfg-push-icon');if(ic){ic.className='ti ti-cloud-check';ic.style.color='var(--green)';}
-      toast('Config berhasil di-push! Semua device akan auto-sync','ok');
-    }else{
-      var st2=document.getElementById('cfg-push-status');if(st2)st2.textContent='Gagal push — coba lagi';
-      toast('Gagal push config','err');
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-cloud-upload"></i> Push Config ke Semua Device';}
+    lss(K_CFG_STATUS,now);
+    // Juga push ke Supabase KV agar status tersimpan
+    if(_sbGetClient()) sbSetKV(K_CFG_STATUS, now).catch(function(){});
+    var st=document.getElementById('cfg-push-status');if(st)st.textContent='Berhasil push: '+now;
+    var ic=document.getElementById('cfg-push-icon');if(ic){ic.className='ti ti-cloud-check';ic.style.color='var(--green)';}
+    // Jika URL Sheets Pelanggan juga ada, push juga ke sana sebagai cadangan
+    if(U.p && isOn()){
+      var cfg=getConfigObject();
+      var payload=JSON.stringify({_action:'setConfig',config:cfg});
+      fetch(U.p,{method:'POST',body:payload,mode:'no-cors'}).catch(function(){});
     }
-  }
-  // Push ke URL Pelanggan (write) — bukan read
-  var pushUrl=U.p||U.read;
-  if(!pushUrl){toast('URL Sheets Pelanggan belum diset','err');if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-cloud-upload"></i> Push Config ke Server Sekarang';}return;}
-  fetch(pushUrl,{method:'POST',body:payload,headers:{'Content-Type':'text/plain'}})
-    .then(function(r){if(r.type==='opaque'||r.ok){onDone(true);return;}return r.text().then(function(t){try{var j=JSON.parse(t);onDone(j.result==='ok'||j.action==='setConfig');}catch(e){onDone(r.ok);}});})
-    .catch(function(){
-      fetch(pushUrl,{method:'POST',body:payload,mode:'no-cors'})
-        .then(function(){onDone(true);}).catch(function(){onDone(false);});
-    });
+  }).catch(function(){
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-cloud-upload"></i> Push Config ke Semua Device';}
+    toast('Gagal push config ke Database — periksa koneksi','err');
+  });
 }
 
 // Pull config dari GAS (dipanggil saat login non-admin jika URL belum ada)
@@ -15289,7 +15608,7 @@ function doImportCSV(file){
         if(type==='p'){
           var obj={type:'p',ts:new Date().toISOString(),sent:false,tgl:cols[1]||'',nama:cols[2]||'',area:cols[3]||'',kota:cols[4]||'',alamat:cols[5]||'',rt:cols[6]||'',rw:cols[7]||'',cid:cols[8]||'',snont:cols[9]||'',odc:cols[10]||'',odp:cols[11]||'',port:cols[12]||'',ont:cols[13]||'',precon:cols[14]||'',status:cols[15]||'',teknisi:cols[16]||''};
           if(!obj.cid&&!obj.nama){skipped++;continue;}
-          // Skip duplikat CID di db.p saja (pelDB tidak jadi halangan import)
+          // Skip duplikat CID
           if(obj.cid&&db.p.find(function(d){return d.cid===obj.cid;})){skipped++;continue;}
           db.p.push(obj);imported++;
         }
@@ -15300,7 +15619,6 @@ function doImportCSV(file){
         var cid=colMap['cid']||'';
         var nama=colMap['nama']||'';
         if(!cid&&!nama){skipped++;continue;}
-        // Skip duplikat di db.p saja, bukan pelDB
         if(cid&&db.p.find(function(d){return d.cid===cid;})){skipped++;continue;}
         var obj2={type:'p',ts:new Date().toISOString(),sent:false,
           tgl:colMap['tanggal']||colMap['tgl']||'',
@@ -15351,6 +15669,7 @@ function parseCSVLine(line){
 // ═══════════════════════════════
 function triggerImportJSON(){
   if(currentRole!=='admin'){toast('Hanya Admin yang bisa import data','err');return;}
+  // Selalu buat ulang agar event change selalu terpicu
   var old=document.getElementById('imp-file-json');
   if(old) old.parentNode.removeChild(old);
   var inp=document.createElement('input');inp.type='file';inp.id='imp-file-json';inp.accept='.json';inp.style.display='none';
@@ -15368,7 +15687,6 @@ function doImportJSON(file){
       var addP=0,addM=0,skipP=0,skipM=0;
       if(Array.isArray(parsed.pelanggan)){
         parsed.pelanggan.forEach(function(d){
-          // Skip duplikat di db.p saja — data dari pelDB (Sheets) tidak menghalangi import
           if(d.cid&&db.p.find(function(x){return x.cid===d.cid;})){skipP++;return;}
           d.sent=false;db.p.push(d);addP++;
         });
@@ -15470,6 +15788,9 @@ function impDataSection(section){
   var inputId='imp-sec-'+section;
   var old=document.getElementById(inputId);
   if(old) old.parentNode.removeChild(old);
+  // Hapus juga input dari modal jika ada
+  var oldModal=document.getElementById('imp-sec-modal-'+section);
+  if(oldModal) oldModal.parentNode.removeChild(oldModal);
   var inp=document.createElement('input');inp.type='file';inp.id=inputId;
   inp.accept='.csv,.json';inp.style.display='none';
   inp.addEventListener('change',function(){doImpDataSection(section,this.files[0]);this.value='';});
@@ -15491,12 +15812,19 @@ function doImpDataSection(section,file){
         if(section==='pelanggan'||section==='dismantle'){
           arr.forEach(function(d){
             if(d.cid&&db.p.find(function(x){return x.cid===d.cid;})){skipped++;return;}
-            d.sent=false;d.type='p';db.p.push(d);imported++;
+            d.sent=false;
+            // Pertahankan type asli (misalnya 'd'/'x') jika ada, default 'p'
+            if(!d.type) d.type='p';
+            db.p.push(d);imported++;
           });svP();
         } else if(section==='maintenance'||section==='material'){
           arr.forEach(function(d){
-            if(d.ts&&db.m.find(function(x){return x.ts===d.ts;})){skipped++;return;}
-            d.sent=false;db.m.push(d);imported++;
+            // Hanya skip jika ada ts yang sama (jika tidak ada ts, selalu masukkan)
+            if(d.ts&&db.m.find(function(x){return x.ts===d.ts&&x.type===d.type;})){skipped++;return;}
+            d.sent=false;
+            // Pastikan type sesuai section jika tidak ada
+            if(!d.type) d.type=(section==='maintenance'?'d':'m');
+            db.m.push(d);imported++;
           });svM();
         } else if(section==='sales'){
           var list=getSalesList();
@@ -15524,7 +15852,7 @@ function doImpDataSection(section,file){
         if(typeof renderList==='function') renderList();
         if(typeof _syncFullRefresh==='function') _syncFullRefresh('imp-section-json');
         toast('Import '+section+': +'+imported+' data, '+skipped+' dilewati','ok');
-      }catch(err){toast('File JSON tidak valid','err');}
+      }catch(err){toast('File JSON tidak valid: '+(err.message||err),'err');}
     } else {
       // CSV import
       var lines=content.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -17426,15 +17754,18 @@ function saveSbConfig(){
   var key=(document.getElementById('sb-key-inp')||{}).value||'';
   url=url.trim();key=key.trim();
   if(!url||!key){toast('URL dan Anon Key Database wajib diisi','err');return;}
+  // ONLINE-FIRST: Update SB_CFG in-memory sebagai sumber kebenaran utama
+  SB_CFG.url=url; SB_CFG.key=key;
   try{
     localStorage.setItem(K_SB_URL,url);
     localStorage.setItem(K_SB_KEY,key);
     idbSet(K_SB_URL,url);idbSet(K_SB_KEY,key);
   }catch(e){}
-  SB_CFG.url=url;SB_CFG.key=key;
   _sbReset();
   _sbSetStatus('unknown');
-  toast('Konfigurasi Database disimpan — klik Test untuk verifikasi','ok');
+  toast('Konfigurasi Database diperbarui — klik Test untuk verifikasi','ok');
+  // Catatan untuk admin: URL ini perlu juga diperbarui di kode (SB_CFG)
+  // agar permanen setelah clear cache. Hubungi developer untuk update kode.
 }
 
 function sbPullAndReload(){
@@ -17466,11 +17797,18 @@ function _sbInitUI(){
   var keyEl=document.getElementById('sb-key-inp');
   var sqlEl=document.getElementById('sb-sql-pre');
   try{
-    // Ambil nilai: localStorage → SB_CFG baked (keduanya sudah di-sync oleh _sbPreload)
-    var dispUrl=(localStorage.getItem(K_SB_URL)||'').trim()||SB_CFG.url||'';
-    var dispKey=(localStorage.getItem(K_SB_KEY)||'').trim()||SB_CFG.key||'';
-    if(urlEl) urlEl.value=dispUrl;
-    if(keyEl) keyEl.value=dispKey;
+    // ONLINE-FIRST: Selalu tampilkan nilai dari SB_CFG baked
+    if(urlEl){ urlEl.value=SB_CFG.url||''; urlEl.style.borderColor='rgba(62,207,142,.6)'; }
+    if(keyEl){ keyEl.value=SB_CFG.key||''; keyEl.style.borderColor='rgba(62,207,142,.6)'; }
+    // Info badge: config sudah baked permanen
+    var bakeInfo=document.getElementById('sb-baked-info');
+    if(!bakeInfo && urlEl){
+      bakeInfo=document.createElement('div');
+      bakeInfo.id='sb-baked-info';
+      bakeInfo.style.cssText='margin-top:6px;padding:7px 10px;background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.3);border-radius:8px;font-size:11px;color:#3ecf8e;font-weight:600;display:flex;align-items:center;gap:6px';
+      bakeInfo.innerHTML='<i class="ti ti-shield-check"></i> Config Database tertanam permanen di kode — aman dari clear cache & ganti admin';
+      try{ urlEl.closest('.card, div[style]') ? urlEl.parentNode.insertAdjacentElement('afterend',bakeInfo) : urlEl.parentNode.parentNode.insertBefore(bakeInfo, urlEl.parentNode.nextSibling); }catch(e){}
+    }
   }catch(e){}
   if(sqlEl) sqlEl.textContent=SB_SETUP_SQL;
   _sbSetStatus(_sbGetClient()?'unknown':'off');
@@ -17711,17 +18049,28 @@ function closeImportModal(){
   setTimeout(function(){ var m=document.getElementById('modal-import'); if(m) m.style.display='none'; },300);
 }
 function doImportFromModal(fmt){
-  closeImportModal();
   var f = datFilt || 'p';
   var info = _EI_MAP[f] || _EI_MAP.p;
   var sec = info.sec;
-  // Hapus input lama agar event change selalu terpicu (termasuk file yang sama)
-  var oldInp = document.getElementById('imp-sec-'+sec);
+  // Buat file input SEBELUM menutup modal agar masih dalam user gesture
+  var accept = (fmt === 'csv') ? '.csv' : (fmt === 'json') ? '.json' : '.csv,.json';
+  var inputId = 'imp-sec-modal-' + sec;
+  var oldInp = document.getElementById(inputId);
   if(oldInp) oldInp.parentNode.removeChild(oldInp);
-  // Langsung panggil setelah animasi modal selesai (300ms)
-  setTimeout(function(){
-    impDataSection(sec);
-  }, 320);
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.id = inputId;
+  inp.accept = accept;
+  inp.style.display = 'none';
+  inp.addEventListener('change', function(){
+    doImpDataSection(sec, this.files[0]);
+    this.value = '';
+  });
+  document.body.appendChild(inp);
+  // Trigger klik langsung — masih dalam user gesture (onclick)
+  inp.click();
+  // Tutup modal setelah trigger klik
+  closeImportModal();
 }
 
 /* ── EXPORT ALL — CSV (pelanggan + material dalam 1 file) ── */
@@ -17775,56 +18124,56 @@ function expFullBackupJSON(){
 var _restoreAllPending = null;
 function triggerFullRestoreJSON(){
   if(currentRole!=='admin'){ toast('Hanya Admin yang bisa restore data','err'); return; }
-  var inp = document.getElementById('imp-restore-all-json');
-  if(!inp){
-    inp = document.createElement('input'); inp.type='file'; inp.id='imp-restore-all-json';
-    inp.accept='.json'; inp.style.display='none';
-    inp.addEventListener('change', function(){
-      if(!this.files[0]) return;
-      var reader = new FileReader();
-      reader.onload = function(e){
-        try{
-          var parsed = JSON.parse(e.target.result);
-          _restoreAllPending = { type:'json', data: parsed };
-          var desc = document.getElementById('modal-restore-all-desc');
-          var cnt = (parsed.pelanggan||[]).length + (parsed.material||[]).length;
-          if(desc) desc.innerHTML = 'File berisi <b>'+cnt+' data</b> ('+((parsed.pelanggan||[]).length)+' pelanggan + '+((parsed.material||[]).length)+' material). Semua data aplikasi akan <b style="color:var(--red)">diganti permanen</b>.';
-          var m = document.getElementById('modal-restore-all');
-          if(m){ m.style.display='flex'; m.style.alignItems='center'; m.style.justifyContent='center'; }
-        }catch(err){ toast('File JSON tidak valid','err'); }
-      };
-      reader.readAsText(this.files[0]);
-      this.value='';
-    });
-    document.body.appendChild(inp);
-  }
+  // Selalu buat ulang input agar event change terpicu meski file sama
+  var old = document.getElementById('imp-restore-all-json');
+  if(old) old.parentNode.removeChild(old);
+  var inp = document.createElement('input'); inp.type='file'; inp.id='imp-restore-all-json';
+  inp.accept='.json'; inp.style.display='none';
+  inp.addEventListener('change', function(){
+    if(!this.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        var parsed = JSON.parse(e.target.result);
+        _restoreAllPending = { type:'json', data: parsed };
+        var desc = document.getElementById('modal-restore-all-desc');
+        var cnt = (parsed.pelanggan||[]).length + (parsed.material||[]).length;
+        if(desc) desc.innerHTML = 'File berisi <b>'+cnt+' data</b> ('+((parsed.pelanggan||[]).length)+' pelanggan + '+((parsed.material||[]).length)+' material). Semua data aplikasi akan <b style="color:var(--red)">diganti permanen</b>.';
+        var m = document.getElementById('modal-restore-all');
+        if(m){ m.style.display='flex'; m.style.alignItems='center'; m.style.justifyContent='center'; }
+      }catch(err){ toast('File JSON tidak valid: '+(err.message||err),'err'); }
+    };
+    reader.readAsText(this.files[0]);
+    this.value='';
+  });
+  document.body.appendChild(inp);
   inp.click();
 }
 
 function triggerFullRestoreCSV(){
   if(currentRole!=='admin'){ toast('Hanya Admin yang bisa restore data','err'); return; }
-  var inp = document.getElementById('imp-restore-all-csv');
-  if(!inp){
-    inp = document.createElement('input'); inp.type='file'; inp.id='imp-restore-all-csv';
-    inp.accept='.csv'; inp.style.display='none';
-    inp.addEventListener('change', function(){
-      if(!this.files[0]) return;
-      var file = this.files[0];
-      var reader = new FileReader();
-      reader.onload = function(e){
-        var lines = e.target.result.split('\n').map(function(l){return l.trim();}).filter(Boolean);
-        if(lines.length < 2){ toast('File CSV kosong','err'); return; }
-        _restoreAllPending = { type:'csv', content: e.target.result };
-        var desc = document.getElementById('modal-restore-all-desc');
-        if(desc) desc.innerHTML = 'File berisi <b>'+(lines.length-1)+' baris data</b>. Semua data aplikasi akan <b style="color:var(--red)">diganti permanen</b>.';
-        var m = document.getElementById('modal-restore-all');
-        if(m){ m.style.display='flex'; m.style.alignItems='center'; m.style.justifyContent='center'; }
-      };
-      reader.readAsText(file);
-      this.value='';
-    });
-    document.body.appendChild(inp);
-  }
+  // Selalu buat ulang input agar event change terpicu meski file sama
+  var old = document.getElementById('imp-restore-all-csv');
+  if(old) old.parentNode.removeChild(old);
+  var inp = document.createElement('input'); inp.type='file'; inp.id='imp-restore-all-csv';
+  inp.accept='.csv'; inp.style.display='none';
+  inp.addEventListener('change', function(){
+    if(!this.files[0]) return;
+    var file = this.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var lines = e.target.result.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+      if(lines.length < 2){ toast('File CSV kosong','err'); return; }
+      _restoreAllPending = { type:'csv', content: e.target.result };
+      var desc = document.getElementById('modal-restore-all-desc');
+      if(desc) desc.innerHTML = 'File berisi <b>'+(lines.length-1)+' baris data</b>. Semua data aplikasi akan <b style="color:var(--red)">diganti permanen</b>.';
+      var m = document.getElementById('modal-restore-all');
+      if(m){ m.style.display='flex'; m.style.alignItems='center'; m.style.justifyContent='center'; }
+    };
+    reader.readAsText(file);
+    this.value='';
+  });
+  document.body.appendChild(inp);
   inp.click();
 }
 
@@ -17998,7 +18347,309 @@ function setDpWilFilter(kec){
   if(sel){ sel.value=kec; _updDpResetBtn(); onDpAreaFilterChange(); }
 }
 
-/* Cek apakah suatu pane/div benar-benar kosong (hanya whitespace / tidak ada child element nyata) */
+/* ═══════════════════════════════
+   OVERVIEW DASHBOARD
+═══════════════════════════════ */
+var _ovChartMode = 'p'; // 'p' = pelanggan, 'm' = material, 'x' = dismantle
+
+function switchOvChart(mode){
+  _ovChartMode = mode;
+  var btns = {p:'ov-chart-btn-p', m:'ov-chart-btn-m', x:'ov-chart-btn-x'};
+  var colors = {p:'var(--c1)', m:'var(--c2)', x:'var(--red)'};
+  Object.keys(btns).forEach(function(k){
+    var b = document.getElementById(btns[k]);
+    if(!b) return;
+    if(k === mode){
+      b.style.background = colors[k];
+      b.style.color = '#fff';
+      b.style.border = 'none';
+    } else {
+      b.style.background = 'var(--bg4)';
+      b.style.color = 'var(--text3)';
+      b.style.border = '1px solid var(--border2)';
+    }
+  });
+  renderOvDailyChart();
+}
+
+function updOverview(){
+  var allP = getMergedPel ? getMergedPel() : (db.p || []);
+  var allM = db.m || [];
+
+  // ── 1. Hitung summary ──
+  var totalPel = allP.length;
+  var dismantlePel = allP.filter(function(d){ return (d.status||'').toLowerCase() === 'dismantle'; }).length;
+  var aktifPel = totalPel - dismantlePel;
+
+  var matMasuk = allM.filter(function(d){ return d.type === 'm' && ['Masuk','Teknisi','Pasang Baru'].indexOf(d.stat||'') >= 0; }).length;
+  var matKeluar = allM.filter(function(d){ return d.type === 'm' && ['Keluar','Rusak'].indexOf(d.stat||'') >= 0; }).length;
+  var matStok = matMasuk - matKeluar;
+
+  // ODP usage
+  var odpMap = {};
+  allP.filter(function(d){ return d.status !== 'Dismantle'; }).forEach(function(d){
+    var odp = (d.odp||'').trim().toLowerCase();
+    if(!odp) return;
+    if(!odpMap[odp]) odpMap[odp] = 0;
+    odpMap[odp]++;
+  });
+  var odpKeys = Object.keys(odpMap);
+  var odpPenuh = odpKeys.filter(function(k){ return odpMap[k] >= 8; }).length;
+  var odpKosong = odpKeys.filter(function(k){ return odpMap[k] < 8; }).length;
+  var odpTotal = odpKeys.length;
+
+  // Sales count (pelanggan aktif yang punya sales)
+  var salesTotal = allP.filter(function(d){ return d.sales && d.sales.trim() && d.status !== 'Dismantle'; }).length;
+
+  // Update DOM
+  function set(id,val){ var e=document.getElementById(id); if(e) e.textContent=val; }
+  set('ov-pel-aktif', aktifPel.toLocaleString('id-ID'));
+  set('ov-pel-total', totalPel.toLocaleString('id-ID'));
+  set('ov-pel-dis', dismantlePel.toLocaleString('id-ID'));
+  set('ov-mat-stok', Math.max(0,matStok).toLocaleString('id-ID'));
+  set('ov-mat-masuk', matMasuk.toLocaleString('id-ID'));
+  set('ov-mat-keluar', matKeluar.toLocaleString('id-ID'));
+  set('ov-odp-total', odpTotal.toLocaleString('id-ID'));
+  set('ov-odp-penuh', odpPenuh.toLocaleString('id-ID'));
+  set('ov-odp-kosong', odpKosong.toLocaleString('id-ID'));
+  set('ov-sales-total', salesTotal.toLocaleString('id-ID'));
+
+  // ── 2. Pelanggan aktif per area ──
+  renderOvAreaCards(allP, dismantlePel);
+
+  // ── 3. Grafik harian akumulatif ──
+  renderOvDailyChart();
+
+  // ── 4. Material per area ──
+  renderOvMatAreaBars(allM);
+
+  // ── 5. ODP per area ──
+  renderOvOdpAreaBars(allP);
+
+  // ── 6. Sales per area ──
+  renderOvSalesAreaBars(allP);
+}
+
+function renderOvAreaCards(allP, totalDis){
+  var el = document.getElementById('ov-area-cards');
+  if(!el) return;
+  // Ambil semua area dari setting + data aktual
+  var areas = typeof getWilayahAreas === 'function' ? getWilayahAreas() : [];
+  // Tambah area dari data yang tidak ada di setting
+  allP.forEach(function(d){ if(d.area && areas.indexOf(d.area) < 0) areas.push(d.area); });
+  if(!areas.length){ el.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Belum ada area tersetting</div>'; return; }
+
+  var areaStats = areas.map(function(area){
+    var pAll = allP.filter(function(d){ return d.area === area; });
+    var pDis = pAll.filter(function(d){ return (d.status||'').toLowerCase() === 'dismantle'; }).length;
+    var pAktif = pAll.length - pDis;
+    var pTotal = pAll.length;
+    return { area: area, aktif: pAktif, total: pTotal, dis: pDis };
+  }).filter(function(a){ return a.total > 0; });
+
+  var grandTotal = areaStats.reduce(function(s,a){ return s + a.aktif; }, 0);
+
+  if(!areaStats.length){ el.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Belum ada data pelanggan</div>'; return; }
+
+  el.innerHTML = areaStats.map(function(a){
+    var pct = grandTotal > 0 ? Math.round(a.aktif / grandTotal * 100) : 0;
+    var barW = a.aktif > 0 ? Math.round(a.aktif / (areaStats.reduce(function(s,x){ return Math.max(s,x.aktif); },1)) * 100) : 0;
+    return '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px 12px;border:1px solid var(--border2)">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<div style="width:30px;height:30px;border-radius:8px;background:var(--c1b);display:flex;align-items:center;justify-content:center"><i class="ti ti-map-pin" style="font-size:14px;color:var(--c1)"></i></div>' +
+          '<div>' +
+            '<div style="font-size:13px;font-weight:700;color:var(--text)">' + escHtml(a.area) + '</div>' +
+            '<div style="font-size:10px;color:var(--text3)">Total: ' + a.total + ' &bull; Dismantle: <span style="color:var(--red)">' + a.dis + '</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="font-size:22px;font-weight:800;color:var(--c1);line-height:1">' + a.aktif + '</div>' +
+          '<div style="font-size:9px;color:var(--text3)">aktif (' + pct + '%)</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">' +
+        '<div style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--c1),rgba(26,86,219,.4));width:' + barW + '%;transition:width .6s"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderOvDailyChart(){
+  var chartEl = document.getElementById('ov-daily-chart');
+  var labelsEl = document.getElementById('ov-daily-labels');
+  if(!chartEl || !labelsEl) return;
+
+  var mode = _ovChartMode;
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();
+  var today = now.getDate();
+  var daysInMonth = new Date(year, month+1, 0).getDate();
+
+  // Build daily count array — untuk hari ini ke-N di bulan berjalan
+  var dailyCount = {};
+  var monthStr = year + '-' + (month+1 < 10 ? '0' : '') + (month+1);
+
+  var sourceData;
+  var colorVar, colorRgba;
+  if(mode === 'p'){
+    sourceData = getMergedPel ? getMergedPel().filter(function(d){ return d.type !== 'x' && d.status !== 'Dismantle'; }) : (db.p || []);
+    colorVar = 'var(--c1)'; colorRgba = 'rgba(26,86,219,.35)';
+  } else if(mode === 'm'){
+    sourceData = (db.m || []).filter(function(d){ return d.type === 'm'; });
+    colorVar = 'var(--c2)'; colorRgba = 'rgba(249,115,22,.35)';
+  } else {
+    // Dismantle: pelanggan dengan status Dismantle
+    sourceData = getMergedPel ? getMergedPel().filter(function(d){ return (d.status||'').toLowerCase() === 'dismantle'; }) : [];
+    colorVar = 'var(--red)'; colorRgba = 'rgba(220,38,38,.35)';
+  }
+
+  // Count entries per day for current month
+  sourceData.forEach(function(d){
+    var tgl = (d.tgl||d.ts||'').substring(0,10);
+    if(tgl.startsWith(monthStr)){
+      var day = parseInt(tgl.substring(8,10),10);
+      if(day >= 1 && day <= daysInMonth){
+        dailyCount[day] = (dailyCount[day]||0) + 1;
+      }
+    }
+  });
+
+  // Build accumulative array from day 1 to today
+  var accum = [];
+  var running = 0;
+  for(var d = 1; d <= today; d++){
+    running += (dailyCount[d] || 0);
+    accum.push({ day: d, val: running, add: dailyCount[d]||0 });
+  }
+
+  if(!accum.length || accum[accum.length-1].val === 0){
+    chartEl.innerHTML = '<div style="width:100%;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px">Belum ada data bulan ini</div>';
+    labelsEl.innerHTML = '';
+    return;
+  }
+
+  var maxVal = Math.max.apply(null, accum.map(function(a){ return a.val; }));
+  var chartH = 100; // px available for bars
+
+  // Only show a subset of labels if too many days
+  var showEvery = today > 20 ? 5 : today > 10 ? 3 : 1;
+
+  var barsHtml = accum.map(function(a){
+    var h = maxVal > 0 ? Math.max(4, Math.round(a.val / maxVal * chartH)) : 4;
+    var isToday = a.day === today;
+    var bg = isToday
+      ? 'background:' + colorVar
+      : 'background:linear-gradient(180deg,' + colorVar + ',' + colorRgba + ')';
+    var addLabel = a.add > 0 ? '<div style="font-size:7px;color:' + colorVar + ';font-weight:700;margin-bottom:2px">+' + a.add + '</div>' : '<div style="font-size:7px;color:transparent">0</div>';
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">' +
+      addLabel +
+      '<div style="width:100%;border-radius:3px 3px 0 0;min-height:4px;' + bg + ';height:' + h + 'px;' + (isToday ? 'box-shadow:0 0 6px ' + colorRgba : '') + '"></div>' +
+    '</div>';
+  }).join('');
+
+  var labelsHtml = accum.map(function(a){
+    var show = (a.day % showEvery === 0 || a.day === 1 || a.day === today);
+    return '<div style="flex:1;text-align:center;font-size:8px;color:' + (a.day===today?colorVar:'var(--text3)') + ';font-weight:' + (a.day===today?'700':'400') + '">' + (show?a.day:'') + '</div>';
+  }).join('');
+
+  chartEl.innerHTML = barsHtml;
+  labelsEl.innerHTML = labelsHtml;
+}
+
+function renderOvMatAreaBars(allM){
+  var el = document.getElementById('ov-mat-area-bars');
+  if(!el) return;
+  var areaMap = {};
+  allM.filter(function(d){ return d.type === 'm'; }).forEach(function(d){
+    var a = d.area || 'Tidak diketahui';
+    areaMap[a] = (areaMap[a]||0) + 1;
+  });
+  var areas = Object.keys(areaMap).sort(function(a,b){ return areaMap[b]-areaMap[a]; });
+  if(!areas.length){ el.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Belum ada data material</div>'; return; }
+  var maxV = Math.max.apply(null, areas.map(function(a){ return areaMap[a]; }));
+  el.innerHTML = areas.slice(0,8).map(function(a){
+    var v = areaMap[a];
+    var w = Math.round(v/maxV*100);
+    return '<div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px"><span style="font-weight:600;color:var(--text)">' + escHtml(a) + '</span><span style="font-weight:700;color:var(--c2)">' + v + '</span></div>' +
+      '<div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--c2),rgba(249,115,22,.3));width:' + w + '%;transition:width .6s"></div></div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderOvOdpAreaBars(allP){
+  var el = document.getElementById('ov-odp-area-bars');
+  if(!el) return;
+  var areaOdp = {};
+  allP.filter(function(d){ return d.status !== 'Dismantle'; }).forEach(function(d){
+    var a = d.area || 'Tidak diketahui';
+    var odp = (d.odp||'').trim().toLowerCase();
+    if(!odp) return;
+    if(!areaOdp[a]) areaOdp[a] = {};
+    areaOdp[a][odp] = (areaOdp[a][odp]||0) + 1;
+  });
+  var areas = Object.keys(areaOdp).sort();
+  if(!areas.length){ el.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Belum ada data ODP</div>'; return; }
+  el.innerHTML = areas.map(function(a){
+    var odpList = Object.keys(areaOdp[a]);
+    var penuh = odpList.filter(function(o){ return areaOdp[a][o] >= 8; }).length;
+    var kritis = odpList.filter(function(o){ return areaOdp[a][o] >= 6 && areaOdp[a][o] < 8; }).length;
+    var aman = odpList.length - penuh - kritis;
+    var total = odpList.length;
+    return '<div style="background:var(--bg3);border-radius:var(--rs);padding:9px 12px;border:1px solid var(--border)">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+        '<span style="font-size:12px;font-weight:700;color:var(--text)">' + escHtml(a) + '</span>' +
+        '<span style="font-size:11px;font-weight:700;color:var(--pu)">' + total + ' ODP</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<div style="flex:1;text-align:center;background:rgba(220,38,38,.08);border-radius:7px;padding:5px 4px">' +
+          '<div style="font-size:14px;font-weight:800;color:var(--red)">' + penuh + '</div>' +
+          '<div style="font-size:8px;color:var(--text3)">Penuh</div>' +
+        '</div>' +
+        '<div style="flex:1;text-align:center;background:rgba(217,119,6,.08);border-radius:7px;padding:5px 4px">' +
+          '<div style="font-size:14px;font-weight:800;color:var(--yellow)">' + kritis + '</div>' +
+          '<div style="font-size:8px;color:var(--text3)">Kritis</div>' +
+        '</div>' +
+        '<div style="flex:1;text-align:center;background:rgba(5,150,105,.08);border-radius:7px;padding:5px 4px">' +
+          '<div style="font-size:14px;font-weight:800;color:var(--green)">' + aman + '</div>' +
+          '<div style="font-size:8px;color:var(--text3)">Aman</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderOvSalesAreaBars(allP){
+  var el = document.getElementById('ov-sales-area-bars');
+  if(!el) return;
+  var salesArea = {};
+  allP.filter(function(d){ return d.status !== 'Dismantle' && d.sales && d.sales.trim(); }).forEach(function(d){
+    var a = d.area || 'Tidak diketahui';
+    salesArea[a] = (salesArea[a]||0) + 1;
+  });
+  var areas = Object.keys(salesArea).sort(function(a,b){ return salesArea[b]-salesArea[a]; });
+  if(!areas.length){ el.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Belum ada data sales per area</div>'; return; }
+  var maxV = Math.max.apply(null, areas.map(function(a){ return salesArea[a]; }));
+  el.innerHTML = areas.slice(0,8).map(function(a){
+    var v = salesArea[a];
+    var w = Math.round(v/maxV*100);
+    return '<div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px"><span style="font-weight:600;color:var(--text)">' + escHtml(a) + '</span><span style="font-weight:700;color:var(--green)">' + v + '</span></div>' +
+      '<div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),rgba(5,150,105,.3));width:' + w + '%;transition:width .6s"></div></div>' +
+    '</div>';
+  }).join('');
+}
+
+/* Auto-refresh overview setiap 30 detik jika sedang aktif */
+setInterval(function(){
+  var pane = document.getElementById('pane-overview');
+  if(pane && pane.classList.contains('on')){
+    if(typeof updOverview === 'function') updOverview();
+  }
+}, 30000);
+
 function paneIsEmpty(el) {
   if (!el) return false;
   var clone = el.cloneNode(true);
