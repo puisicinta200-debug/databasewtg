@@ -2600,7 +2600,7 @@ p, span, div, label, td, th, li {
     <div class="pane" id="pane-odp">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Dashboard ODP</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--green);background:rgba(15,212,148,.1);border:1px solid rgba(15,212,148,.25);border-radius:20px;padding:4px 10px">
+        <div id="odp-live-badge" style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--green);background:rgba(15,212,148,.1);border:1px solid rgba(15,212,148,.25);border-radius:20px;padding:4px 10px">
           <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 1.5s infinite"></span>
           LIVE
         </div>
@@ -2801,25 +2801,6 @@ p, span, div, label, td, th, li {
           </div>
         </div>
 
-
-
-        <!-- ═══ MONITORING ODP shortcut ═══ -->
-        <div class="card" style="border-color:rgba(255,82,82,.25);background:rgba(255,82,82,.03);margin-bottom:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
-            <div class="sec-t" style="color:var(--red);margin-bottom:0"><i class="ti ti-antenna-bars-5" style="font-size:16px"></i> Monitoring ODP</div>
-            <div id="odp-live-badge" style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--green);background:rgba(15,212,148,.1);border:1px solid rgba(15,212,148,.25);border-radius:20px;padding:4px 10px">
-              <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 1.5s infinite"></span>
-              LIVE
-            </div>
-          </div>
-          <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-            <div style="font-size:12px;color:var(--text2);line-height:1.5">Monitor kapasitas port ODP, filter per area / ODC, dan distribusi status seluruh jaringan.</div>
-            <button onclick="setTab('odp',document.getElementById('sb-odp-mon'))" style="width:100%;padding:13px 16px;background:rgba(255,82,82,.08);color:var(--red);border:1.5px solid rgba(255,82,82,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
-              <i class="ti ti-antenna-bars-5" style="font-size:18px"></i> Buka Dashboard ODP
-            </button>
-          </div>
-        </div>
-        <!-- ═══ END MONITORING ODP ═══ -->
 
         <!-- ══ LIVE ACTIVITY FEED (multi-device) ══ -->
         <div class="card" style="border-color:rgba(16,217,160,.2);margin-bottom:12px">
@@ -3044,15 +3025,25 @@ p, span, div, label, td, th, li {
               </div>
             </div>
           </div>
-          <div class="r2">
-            <div class="field"><label>ODC <span class="req">*</span></label>
-              <input type="text" id="p-odc" placeholder="Pilih atau ketik ODC" list="odc-list" autocomplete="off" oninput="onOdcChange(this.value)" onblur="validateOdcInput(this.value)">
-              <datalist id="odc-list"></datalist>
-            </div>
-            <div class="field"><label>ODP <span class="req">*</span></label>
-              <input type="text" id="p-odp" placeholder="Pilih atau ketik ODP" list="odp-list" autocomplete="off" oninput="checkOdpMonitor(this.value)" onchange="checkOdpMonitor(this.value);validateOdpInput(this.value)" onblur="validateOdpInput(this.value)">
-              <datalist id="odp-list"></datalist>
-            </div>
+          <!-- ODC — aktif setelah Area dipilih -->
+          <div class="field" id="p-odc-wrap">
+            <label>ODC <span class="req">*</span>
+              <span id="p-odc-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Area dulu</span>
+            </label>
+            <input type="text" id="p-odc" placeholder="Pilih atau ketik ODC" list="odc-list" autocomplete="off"
+              oninput="onOdcChange(this.value)" onblur="validateOdcInput(this.value)"
+              disabled style="opacity:.45;pointer-events:none;cursor:not-allowed">
+            <datalist id="odc-list"></datalist>
+          </div>
+          <!-- ODP — aktif setelah ODC dipilih -->
+          <div class="field" id="p-odp-wrap">
+            <label>ODP <span class="req">*</span>
+              <span id="p-odp-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih ODC dulu</span>
+            </label>
+            <input type="text" id="p-odp" placeholder="Pilih atau ketik ODP" list="odp-list" autocomplete="off"
+              oninput="onOdpInput(this.value)" onchange="onOdpInput(this.value)" onblur="validateOdpInput(this.value)"
+              disabled style="opacity:.45;pointer-events:none;cursor:not-allowed">
+            <datalist id="odp-list"></datalist>
           </div>
           <!-- ODP Monitor Box -->
           <div id="odp-monitor-box" style="display:none;margin-bottom:12px;border-radius:12px;overflow:hidden;border:1px solid rgba(251,191,36,.25)">
@@ -3097,8 +3088,17 @@ p, span, div, label, td, th, li {
             </div>
             <div id="odp-full-warning" style="display:none;padding:8px 13px;background:rgba(240,84,84,.12);border-top:1px solid rgba(240,84,84,.2);font-size:11px;font-weight:700;color:var(--red);display:none;align-items:center;gap:6px"><i class="ti ti-alert-triangle"></i> ODP ini sudah PENUH — pilih ODP lain!</div>
           </div>
-          <div class="field"><label>Port ODP <span class="req">*</span></label>
-            <select id="p-port" onchange="checkPortConflict(this.value)"><option value="">Pilih port</option><option>Port 1</option><option>Port 2</option><option>Port 3</option><option>Port 4</option><option>Port 5</option><option>Port 6</option><option>Port 7</option><option>Port 8</option></select>
+          <!-- Port — aktif setelah ODP dipilih -->
+          <div class="field" id="p-port-wrap">
+            <label>Port ODP <span class="req">*</span>
+              <span id="p-port-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih ODP dulu</span>
+            </label>
+            <select id="p-port" onchange="checkPortConflict(this.value)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed">
+              <option value="">Pilih port</option>
+              <option>Port 1</option><option>Port 2</option><option>Port 3</option>
+              <option>Port 4</option><option>Port 5</option><option>Port 6</option>
+              <option>Port 7</option><option>Port 8</option>
+            </select>
           </div>
           <div class="field"><label>Jenis ONT <span class="req">*</span></label>
             <select id="p-ont"><option value="">Pilih jenis ONT</option><option>NOKIA</option><option>HUAWEI</option><option>ZTE</option><option>FIBERHOME</option><option>KAON</option></select>
@@ -3111,13 +3111,83 @@ p, span, div, label, td, th, li {
               <select id="p-status"><option value="">Pilih</option><option>Paket 200Mbps</option><option>Fasum</option><option>ODP/ODC Tempel</option></select>
             </div>
           </div>
-          <div class="field"><label>Teknisi</label>
+        </div>
+
+        <!-- ══ CARD: DATA OPERASIONAL & SALES (CRM Unified) ══ -->
+        <div class="card c1" id="card-crm-ops" style="border-color:rgba(26,86,219,.22);background:linear-gradient(135deg,rgba(26,86,219,.04),rgba(99,102,241,.03))">
+          <div class="sec-t c1" style="margin-bottom:16px"><i class="ti ti-briefcase"></i> Data Operasional &amp; Sales
+            <span style="margin-left:auto;font-size:9px;font-weight:600;color:var(--text3);background:var(--bg4);padding:3px 9px;border-radius:20px;letter-spacing:.5px">CRM</span>
+          </div>
+
+          <!-- Divider: Teknisi -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--c1b);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-tools" style="font-size:14px;color:var(--c1)"></i>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--c1);letter-spacing:.4px;text-transform:uppercase">Penugasan Teknisi</div>
+            <div style="flex:1;height:1px;background:rgba(26,86,219,.12)"></div>
+          </div>
+          <div class="field">
+            <label>Teknisi Pelaksana</label>
             <select id="p-teknisi"><option value="">Pilih teknisi</option></select>
           </div>
-          <div class="field"><label>Nama Sales <span class="req">*</span></label>
-            <select id="p-sales" onchange="onSalesChange()"><option value="">Pilih sales</option></select>
+
+          <!-- Divider: Sales -->
+          <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+            <div style="width:28px;height:28px;border-radius:8px;background:rgba(16,217,160,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-user-check" style="font-size:14px;color:var(--green)"></i>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:.4px;text-transform:uppercase">Data Sales</div>
+            <div style="flex:1;height:1px;background:rgba(16,217,160,.18)"></div>
+          </div>
+          <div class="field">
+            <label>Nama Sales <span class="req">*</span></label>
+            <select id="p-sales" onchange="onSalesChange()" style="border-color:rgba(16,217,160,.3)">
+              <option value="">Pilih sales / agen</option>
+            </select>
+          </div>
+
+          <!-- Sales info box (muncul setelah pilih sales) -->
+          <div id="p-sales-info" style="display:none;background:rgba(16,217,160,.07);border:1px solid rgba(16,217,160,.2);border-radius:var(--rs);padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--text2)">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+              <i class="ti ti-chart-bar" style="font-size:14px;color:var(--green)"></i>
+              <span style="font-weight:700;color:var(--green)" id="p-sales-info-name">—</span>
+              <span style="margin-left:auto;background:rgba(16,217,160,.15);color:var(--green);font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px" id="p-sales-info-count">0 pelanggan</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3)" id="p-sales-info-sub">Fee akan dihitung otomatis setelah data disimpan.</div>
+          </div>
+
+          <!-- Divider: Paket & Transaksi -->
+          <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--c2b);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-receipt" style="font-size:14px;color:var(--c2)"></i>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--c2);letter-spacing:.4px;text-transform:uppercase">Paket &amp; Nilai</div>
+            <div style="flex:1;height:1px;background:rgba(249,115,22,.15)"></div>
+          </div>
+          <div class="r2">
+            <div class="field">
+              <label>Nominal / Harga Paket (Rp)</label>
+              <input type="number" id="p-nominal" placeholder="0" inputmode="numeric" min="0" style="border-color:rgba(249,115,22,.25)">
+            </div>
+            <div class="field">
+              <label>Metode Daftar</label>
+              <select id="p-reg-method" style="border-color:rgba(249,115,22,.25)">
+                <option value="">Pilih</option>
+                <option>Walk-in</option>
+                <option>Via Sales</option>
+                <option>Referral</option>
+                <option>Online</option>
+                <option>Cold Call</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Keterangan / Catatan CRM</label>
+            <textarea id="p-ket" placeholder="Catatan internal, permintaan khusus, kondisi lokasi, dsb..." style="border-color:rgba(26,86,219,.15)"></textarea>
           </div>
         </div>
+
         <button class="btn c1" id="btn-p" onclick="savePel()"><i class="ti ti-device-floppy"></i> Simpan Data Pelanggan</button>
         <button class="btn-ghost" onclick="rstPel()"><i class="ti ti-refresh"></i> Reset Form</button>
       </div>
@@ -4476,7 +4546,6 @@ p, span, div, label, td, th, li {
           <button id="mgmt-tab-pin" onclick="switchMgmtTab('pin')" style="flex:1;padding:9px 4px;border:none;border-radius:9px;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:.2s;background:rgba(167,139,250,.15);color:var(--pu);border:1px solid rgba(167,139,250,.3)"><i class="ti ti-lock" style="font-size:14px;display:block;margin:0 auto 2px"></i>PIN Login</button>
           <button id="mgmt-tab-akun" onclick="switchMgmtTab('akun')" style="flex:1;padding:9px 4px;border:none;border-radius:9px;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:.2s;background:transparent;color:var(--text3)"><i class="ti ti-users" style="font-size:14px;display:block;margin:0 auto 2px"></i>Akun Tim</button>
           <button id="mgmt-tab-akses" onclick="switchMgmtTab('akses')" style="flex:1;padding:9px 4px;border:none;border-radius:9px;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:.2s;background:transparent;color:var(--text3)"><i class="ti ti-key" style="font-size:14px;display:block;margin:0 auto 2px"></i>Hak Akses</button>
-          <button id="mgmt-tab-sales" onclick="switchMgmtTab('sales')" style="flex:1;padding:9px 4px;border:none;border-radius:9px;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:.2s;background:transparent;color:var(--text3)"><i class="ti ti-users-group" style="font-size:14px;display:block;margin:0 auto 2px"></i>Sales</button>
         </div>
 
         <!-- TAB PIN -->
@@ -4567,6 +4636,26 @@ p, span, div, label, td, th, li {
             <p style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:12px">Setiap akun memiliki nama, jabatan, peran, dan PIN uniknya sendiri.</p>
             <div id="acct-list-wrap"></div>
           </div>
+
+          <!-- ══ DIVIDER: MANAJEMEN SALES (terintegrasi CRM) ══ -->
+          <div style="display:flex;align-items:center;gap:8px;margin:4px 0 14px">
+            <div style="width:28px;height:28px;border-radius:8px;background:rgba(16,217,160,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-trending-up" style="font-size:14px;color:var(--green)"></i></div>
+            <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:.4px;text-transform:uppercase">Manajemen Sales</div>
+            <div style="flex:1;height:1px;background:rgba(16,217,160,.18)"></div>
+          </div>
+
+          <div id="sales-mgr-card" style="background:var(--bg2);border:1px solid rgba(16,217,160,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="ti ti-users-group" style="font-size:14px"></i> Daftar Nama Sales</div>
+              <span id="sales-count-badge" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:rgba(16,217,160,.12);color:var(--green)">0 sales</span>
+            </div>
+            <p style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px">Sales yang terdaftar di sini akan muncul di form input pelanggan dan laporan komisi.</p>
+            <div id="sales-list-wrap" style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px"></div>
+            <div style="display:flex;gap:7px">
+              <input type="text" id="sales-new-name" placeholder="Nama sales baru..." style="flex:1;padding:10px 12px;font-size:13px" onkeydown="if(event.key==='Enter')addSalesName()">
+              <button onclick="addSalesName()" style="background:var(--green);color:#001a0f;border:none;border-radius:var(--rs);padding:10px 14px;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px"><i class="ti ti-plus"></i> Tambah</button>
+            </div>
+          </div>
         </div>
 
         <!-- TAB HAK AKSES -->
@@ -4579,20 +4668,6 @@ p, span, div, label, td, th, li {
           </div>
         </div>
 
-        <!-- TAB SALES -->
-        <div id="mgmt-pane-sales" style="display:none">
-          <div id="sales-mgr-card" style="background:var(--bg2);border:1px solid rgba(16,217,160,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="ti ti-users-group" style="font-size:14px"></i> Daftar Nama Sales</div>
-              <span id="sales-count-badge" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:rgba(16,217,160,.12);color:var(--green)">0 sales</span>
-            </div>
-            <div id="sales-list-wrap" style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px"></div>
-            <div style="display:flex;gap:7px">
-              <input type="text" id="sales-new-name" placeholder="Nama sales baru..." style="flex:1;padding:10px 12px;font-size:13px" onkeydown="if(event.key==='Enter')addSalesName()">
-              <button onclick="addSalesName()" style="background:var(--green);color:#001a0f;border:none;border-radius:var(--rs);padding:10px 14px;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px"><i class="ti ti-plus"></i> Tambah</button>
-            </div>
-          </div>
-        </div>
 
       </div><!-- /set-cat-akses -->
 
@@ -5012,12 +5087,23 @@ function doGet(e){
       </div>
     </div>
 
-    <!-- PIN — pakai type="text" agar maxlength & validasi bekerja di semua browser -->
+    <!-- PIN — auto-generate, unik, tidak boleh sama antar akun -->
     <div class="acct-field" id="acct-f-pin-wrap">
-      <label>PIN (4 digit) <span style="color:var(--red)">*</span></label>
-      <input type="text" id="acct-f-pin" placeholder="4 digit angka" maxlength="4" inputmode="numeric" pattern="\d{4}" autocomplete="off"
-        oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4);validateAcctField('pin')">
+      <label>PIN (4 digit) <span style="color:var(--red)">*</span>
+        <span style="font-size:9px;color:var(--text3);font-weight:400;margin-left:4px;text-transform:none">— PIN unik per akun</span>
+      </label>
+      <div style="display:flex;gap:7px;align-items:center">
+        <input type="text" id="acct-f-pin" placeholder="4 digit angka" maxlength="4" inputmode="numeric" pattern="\d{4}" autocomplete="off"
+          style="flex:1"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4);validateAcctField('pin');_checkPinUnique()">
+        <button type="button" onclick="autoGenPin()" title="Generate PIN otomatis unik"
+          style="flex-shrink:0;padding:12px 13px;background:var(--c1b);color:var(--c1);border:1.5px solid rgba(26,86,219,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:.15s"
+          onmouseenter="this.style.background='var(--c1g)'" onmouseleave="this.style.background='var(--c1b)'">
+          <i class="ti ti-refresh" style="font-size:14px"></i> Auto
+        </button>
+      </div>
       <div id="acct-err-pin" style="display:none;font-size:10px;color:var(--red);margin-top:4px;font-weight:600"><i class="ti ti-alert-circle" style="font-size:11px"></i> PIN harus 4 digit angka</div>
+      <div id="acct-err-pin-dup" style="display:none;font-size:10px;color:var(--red);margin-top:4px;font-weight:600"><i class="ti ti-alert-circle" style="font-size:11px"></i> PIN sudah dipakai akun lain — gunakan PIN berbeda</div>
     </div>
 
     <!-- Area Kerja — dropdown WAJIB -->
@@ -5141,6 +5227,69 @@ function getPins(){
     teknisi: ls(K.pt)||DEFAULT_PINS.teknisi,
     gudang:  ls('pin_gudang')||DEFAULT_PINS.gudang
   };
+}
+
+/* ── Kumpulkan SEMUA PIN yang sudah terpakai di seluruh sistem ──
+   Dipakai untuk validasi duplikat sebelum menyimpan PIN baru.
+   excludeKey: { type:'global'|'acct'|'custom', id:... } → PIN milik entitas itu sendiri tidak dihitung.
+   Contoh: excludeKey={type:'global',id:'teknisi'} saat ganti PIN Teknisi.
+           excludeKey={type:'acct',id:2} saat edit akun index 2.
+           excludeKey={type:'custom',id:'Supervisor'} saat edit custom pin "Supervisor".
+*/
+function getAllUsedPins(excludeKey){
+  var pins = [];
+  // 1. PIN Global (admin, teknisi, gudang, tamu)
+  var globalKeys = {admin: ls(K.pa)||DEFAULT_PINS.admin, teknisi: ls(K.pt)||DEFAULT_PINS.teknisi, gudang: ls('pin_gudang')||DEFAULT_PINS.gudang};
+  var tamuPin = ls('pin_tamu');
+  if(tamuPin) globalKeys['tamu'] = tamuPin;
+  Object.keys(globalKeys).forEach(function(role){
+    if(excludeKey && excludeKey.type==='global' && excludeKey.id===role) return;
+    var p = globalKeys[role];
+    if(p && p.length===4 && pins.indexOf(p)<0) pins.push(p);
+  });
+  // 2. PIN Custom
+  var customPins = getCustomPins();
+  Object.keys(customPins).forEach(function(lbl){
+    if(excludeKey && excludeKey.type==='custom' && excludeKey.id===lbl) return;
+    var p = customPins[lbl];
+    if(p && p.length===4 && pins.indexOf(p)<0) pins.push(p);
+  });
+  // 3. PIN Akun Tim
+  var accts = typeof getAccts==='function' ? getAccts() : [];
+  accts.forEach(function(a,i){
+    if(excludeKey && excludeKey.type==='acct' && excludeKey.id===i) return;
+    var p = a.pin||'';
+    if(p && p.length===4 && pins.indexOf(p)<0) pins.push(p);
+  });
+  return pins;
+}
+
+/* Cek apakah PIN bentrok dengan PIN lain yang sudah ada.
+   Mengembalikan label konflik (string) atau null jika aman. */
+function checkPinConflict(pin, excludeKey){
+  if(!pin || pin.length!==4) return null;
+  // Global
+  var gKeys = {admin: ls(K.pa)||DEFAULT_PINS.admin, teknisi: ls(K.pt)||DEFAULT_PINS.teknisi, gudang: ls('pin_gudang')||DEFAULT_PINS.gudang};
+  var tamuPin = ls('pin_tamu');
+  if(tamuPin) gKeys['tamu'] = tamuPin;
+  var gLabels = {admin:'Admin', teknisi:'Teknisi', gudang:'Gudang', tamu:'Tamu'};
+  for(var role in gKeys){
+    if(excludeKey && excludeKey.type==='global' && excludeKey.id===role) continue;
+    if(gKeys[role]===pin) return 'PIN Global '+gLabels[role];
+  }
+  // Custom
+  var customPins = getCustomPins();
+  for(var lbl in customPins){
+    if(excludeKey && excludeKey.type==='custom' && excludeKey.id===lbl) continue;
+    if(customPins[lbl]===pin) return 'PIN Kustom "'+lbl+'"';
+  }
+  // Akun Tim
+  var accts = typeof getAccts==='function' ? getAccts() : [];
+  for(var i=0;i<accts.length;i++){
+    if(excludeKey && excludeKey.type==='acct' && excludeKey.id===i) continue;
+    if(accts[i].pin===pin) return 'akun "'+accts[i].name+'"';
+  }
+  return null;
 }
 
 // Role capabilities — kept for backward compat, now wraps rolePerm
@@ -5318,6 +5467,29 @@ function doLogin(){
   doLoginWithAccts();
 }
 
+// Loading overlay ID
+var _LOAD_OVL = 'app-loading-overlay';
+
+function _showLoadingOverlay(){
+  var ov = document.getElementById(_LOAD_OVL);
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = _LOAD_OVL;
+    ov.style.cssText = 'position:fixed;inset:0;z-index:10001;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+    ov.innerHTML = '<div style="width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,var(--c1),#6366f1);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(61,142,248,.35)">'
+      + '<i class="ti ti-loader-2" style="font-size:28px;color:#fff;animation:rot .7s linear infinite"></i></div>'
+      + '<div style="font-size:15px;font-weight:700;color:var(--text)">Memuat data...</div>'
+      + '<div style="font-size:12px;color:var(--text3)">Menyiapkan dashboard</div>';
+    document.body.appendChild(ov);
+  }
+  ov.style.display = 'flex';
+}
+
+function _hideLoadingOverlay(){
+  var ov = document.getElementById(_LOAD_OVL);
+  if(ov) ov.style.display = 'none';
+}
+
 function enterApp(role){
   // Jika role custom PIN (prefix 'custom_'), pakai permission tamu (read-only) by default
   var effectiveRole = role;
@@ -5326,9 +5498,10 @@ function enterApp(role){
     if(!currentAcctName) currentAcctName = role.replace('custom_','');
   }
   currentRole=effectiveRole||role;
+
+  // Sembunyikan login-wall, tampilkan loading overlay (bukan app dulu)
   document.getElementById('login-wall').style.display='none';
-  document.getElementById('app-shell').style.display='flex';
-  applyRoleUI();
+  _showLoadingOverlay();
 
   // Restore dulu dari IndexedDB ke localStorage
   restoreFromIDB(function(){
@@ -5344,12 +5517,19 @@ function enterApp(role){
     var needsConfig=(role!=='admin')&&(!ls(K.up)||!ls(K.um));
     var cfgUrlFromParam=getCfgUrlFromParam();
 
+    function _showApp(){
+      _hideLoadingOverlay();
+      document.getElementById('app-shell').style.display='flex';
+      applyRoleUI();
+    }
+
     function _doInit(){
       // Auto-sync dari Supabase sebelum init (non-blocking jika gagal)
       if(_sbGetClient()&&isOn()){
         _sbAutoSyncDone=false;
-        sbAutoSync().then(function(){ init(); }).catch(function(){ init(); });
+        sbAutoSync().then(function(){ _showApp(); init(); }).catch(function(){ _showApp(); init(); });
       } else {
+        _showApp();
         init();
       }
     }
@@ -5455,20 +5635,18 @@ function applyRoleUI(){
     if(mpM)mpM.style.display='none';
     setTimeout(function(){setMode('p');},0);
   }
-  // Semua role langsung ke dashboard saat PERTAMA login
-  // (hanya jika belum ada curTab yang aktif / baru masuk app)
-  if(curTab===null||curTab==='dash'){
+  // Arahkan ke dashboard HANYA saat pertama login (curTab===null)
+  // Jika user sudah berada di tab tertentu, JANGAN reset posisi
+  if(curTab===null){
     var bnDash=document.getElementById('bn-d');
-    if(bnDash){
-      ['dash','form','data','share','set','coming','odp'].forEach(function(id){
-        var p=document.getElementById('pane-'+id);if(p)p.classList.remove('on');
-      });
-      document.querySelectorAll('.bni').forEach(function(b){b.classList.remove('on');});
-      var pd=document.getElementById('pane-dash');if(pd)pd.classList.add('on');
-      bnDash.classList.add('on');
-      curTab='dash';
-      var scr=document.getElementById('scr');if(scr)scr.scrollTop=0;
-    }
+    ['dash','form','data','share','set','coming','odp'].forEach(function(id){
+      var p=document.getElementById('pane-'+id);if(p)p.classList.remove('on');
+    });
+    document.querySelectorAll('.bni').forEach(function(b){b.classList.remove('on');});
+    var pd=document.getElementById('pane-dash');if(pd)pd.classList.add('on');
+    if(bnDash)bnDash.classList.add('on');
+    curTab='dash';
+    var scr=document.getElementById('scr');if(scr)scr.scrollTop=0;
   }
 
   applyDataListRole();
@@ -5622,6 +5800,15 @@ function pmKey(k){
         updPmDots();
       } else {
         if(pmInput===pmNewPin){
+          // Cek duplikat cross-system sebelum simpan
+          var _pmConflict = checkPinConflict(pmInput, {type:'global', id:pmRole});
+          if(_pmConflict){
+            document.getElementById('pm-err').textContent='PIN ini sudah dipakai oleh '+_pmConflict+'. Gunakan PIN lain.';
+            pmInput='';pmNewPin='';pmStep=1;
+            document.getElementById('pm-sub').textContent='Masukkan PIN baru (4 digit)';
+            updPmDots();
+            return;
+          }
           // Save based on role
           var pinKeys={admin:K.pa,teknisi:K.pt,gudang:'pin_gudang',tamu:'pin_tamu'};
           lss(pinKeys[pmRole]||('pin_'+pmRole), pmInput);
@@ -5809,6 +5996,15 @@ function cpmKey(k){
         updCpmDots();
       } else {
         if(cpmInput===cpmNewPin){
+          // Cek duplikat cross-system sebelum simpan
+          var _cpmConflict = checkPinConflict(cpmInput, {type:'custom', id:cpmLabel});
+          if(_cpmConflict){
+            document.getElementById('cpm-err').textContent='PIN ini sudah dipakai oleh '+_cpmConflict+'. Gunakan PIN lain.';
+            cpmInput='';cpmNewPin='';cpmStep=1;
+            document.getElementById('cpm-sub').textContent='Masukkan PIN baru (4 digit)';
+            updCpmDots();
+            return;
+          }
           var customPins=getCustomPins();
           customPins[cpmLabel]=cpmInput;
           saveCustomPins(customPins);
@@ -6900,27 +7096,29 @@ function setTab(t,btn,skipDataReset){
     var canAnyInput=rolePerm('input_pel')||rolePerm('input_mat')||rolePerm('input_maint');
     if(!canAnyInput){toast('Peran '+(currentRole||'?')+' tidak punya akses input data','err');return;}
   }
-  ['dash','form','data','share','set','coming'].forEach(function(id){document.getElementById('pane-'+id).classList.remove('on');});
+  ['dash','form','data','share','set','coming','odp'].forEach(function(id){var _pe=document.getElementById('pane-'+id);if(_pe)_pe.classList.remove('on');});
   document.querySelectorAll('.bni').forEach(function(b){b.classList.remove('on');});
   document.querySelectorAll('.sb-item').forEach(function(b){b.classList.remove('on');});
   document.getElementById('pane-'+t).classList.add('on');
   if(btn && btn.classList) btn.classList.add('on');
   curTab=t;
   document.getElementById('scr').scrollTop=0;
-  if(t==='data' && !skipDataReset){
-    // Reset ke Pelanggan setiap kali tab data dibuka (kecuali dipanggil dari goDataMode)
-    datFilt='p';
-    document.querySelectorAll('#global-mode-row .dtab').forEach(function(c){c.classList.remove('on');});
-    var initBtn=document.getElementById('fc-p');
-    if(initBtn) initBtn.classList.add('on');
-    // Sembunyikan semua grup termasuk ODP, tampilkan hanya Pelanggan
-    ['grp-pel','grp-maint','grp-dismantle','grp-mat','grp-sales'].forEach(function(g){
-      var e=document.getElementById(g);if(e)e.style.display='none';
-    });
-    var odpRekap=document.getElementById('grp-odp-rekap');
-    if(odpRekap) odpRekap.style.display='none';
-    var gp=document.getElementById('grp-pel');if(gp)gp.style.display='block';
-    renderList();applyDataListRole();resetDataSearchCards();
+  if(t==='data'){
+    applyDataListRole();
+    if(!skipDataReset){
+      // Reset ke Pelanggan hanya saat tab Data dibuka langsung (bukan dari goDataMode)
+      datFilt='p';
+      document.querySelectorAll('#global-mode-row .dtab').forEach(function(c){c.classList.remove('on');});
+      var initBtn=document.getElementById('fc-p');
+      if(initBtn) initBtn.classList.add('on');
+      ['grp-pel','grp-maint','grp-dismantle','grp-mat','grp-sales'].forEach(function(g){
+        var e=document.getElementById(g);if(e)e.style.display='none';
+      });
+      var odpRekap=document.getElementById('grp-odp-rekap');
+      if(odpRekap) odpRekap.style.display='none';
+      var gp=document.getElementById('grp-pel');if(gp)gp.style.display='block';
+      renderList();resetDataSearchCards();
+    }
   }
   
   if(t==='share')updShare();
@@ -6928,14 +7126,18 @@ function setTab(t,btn,skipDataReset){
   if(t==='odp'){updOdpMonitor&&updOdpMonitor();}
 
   if(t==='set'){
+    var _wasInSet = (curTab === 'set'); // cek apakah sudah di setting sebelumnya
     renderPinMgr();renderSalesMgr();renderAcctList();
-    if(typeof switchMgmtTab==='function')switchMgmtTab('pin');
-    closeSetCat(); // Kembali ke pusat kontrol (daftar kategori)
+    // Hanya reset ke pusat kontrol jika baru masuk setting (bukan sedang di setting)
+    if(!_wasInSet){
+      if(typeof switchMgmtTab==='function')switchMgmtTab('pin');
+      closeSetCat();
+    }
     updSetStats();
     _sbInitUI(); // Refresh Supabase config UI
   }
   // Sync sidebar highlight untuk tab menu (bukan mode item)
-  var sbMap={dash:'sb-d',form:'sb-f',data:'sb-l',share:'sb-share',set:'sb-c',coming:'sb-coming'};
+  var sbMap={dash:'sb-d',form:'sb-f',data:'sb-l',share:'sb-share',set:'sb-c',coming:'sb-coming',odp:'sb-odp-mon'};
   if(sbMap[t]){
     document.querySelectorAll('.sb-item').forEach(function(b){b.classList.remove('on');});
     var sbTarget=document.getElementById(sbMap[t]);
@@ -7231,7 +7433,7 @@ function savePel(){
     document.getElementById('p-port').scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
-  var e={type:'p',ts:new Date().toISOString(),tgl:gv('p-tgl'),nama:gv('p-nama'),area:gv('p-area'),kota:gv('p-kota'),alamat:gv('p-alamat'),rt:gv('p-rt'),rw:gv('p-rw'),kec:gv('p-kec'),kel:gv('p-kel'),cid:gv('p-cid'),snont:gv('p-snont'),odc:gv('p-odc'),odp:gv('p-odp'),port:gv('p-port'),ont:gv('p-ont'),precon:gv('p-precon'),status:gv('p-status'),teknisi:gv('p-teknisi'),sales:gv('p-sales'),nominal:gv('p-nominal'),ket:gv('p-ket'),operator:currentAcctName||(currentRole||''),sent:false};
+  var e={type:'p',ts:new Date().toISOString(),tgl:gv('p-tgl'),nama:gv('p-nama'),area:gv('p-area'),kota:gv('p-kota'),alamat:gv('p-alamat'),rt:gv('p-rt'),rw:gv('p-rw'),kec:gv('p-kec'),kel:gv('p-kel'),cid:gv('p-cid'),snont:gv('p-snont'),odc:gv('p-odc'),odp:gv('p-odp'),port:gv('p-port'),ont:gv('p-ont'),precon:gv('p-precon'),status:gv('p-status'),teknisi:gv('p-teknisi'),sales:gv('p-sales'),nominal:gv('p-nominal'),ket:gv('p-ket'),reg_method:gv('p-reg-method'),operator:currentAcctName||(currentRole||''),sent:false};
   if(!U.p&&!_sbGetClient()){toast('URL Sheets Pelanggan dan Supabase belum diset di Setting — data tidak disimpan','err');return;}
   db.p.push(e);svP(e);updCounts();
   logActivity('tambah', 'pelanggan', e.nama, e.cid, {area:e.area, status:e.status});
@@ -7381,12 +7583,32 @@ function saveOdcOdpData(data){
 }
 
 // Dipanggil saat area berubah — update datalist ODC & ODP, reset nilai lama
+// ─── Helper: set enabled/disabled state + hint untuk ODC/ODP/Port ───
+function _setFieldLocked(inputId, hintId, locked){
+  var el = document.getElementById(inputId);
+  var hint = document.getElementById(hintId);
+  if(!el) return;
+  if(locked){
+    el.disabled = true;
+    el.style.opacity = '.45';
+    el.style.pointerEvents = 'none';
+    el.style.cursor = 'not-allowed';
+    if(hint) hint.style.display = 'inline-flex';
+  } else {
+    el.disabled = false;
+    el.style.opacity = '';
+    el.style.pointerEvents = '';
+    el.style.cursor = '';
+    if(hint) hint.style.display = 'none';
+  }
+}
+
 function onAreaChange(){
   var area = gv('p-area');
   var data = getOdcOdpData();
   var areaData = data[area] || {odc:[], odp:[]};
 
-  // Update datalist ODC
+  // Update datalist ODC berdasarkan area
   var odcList = document.getElementById('odc-list');
   if(odcList){
     odcList.innerHTML = areaData.odc.map(function(n){
@@ -7394,21 +7616,28 @@ function onAreaChange(){
     }).join('');
   }
 
-  // Update datalist ODP
+  // Reset ODP datalist (dikosongkan dulu — isi setelah ODC dipilih)
   var odpList = document.getElementById('odp-list');
-  if(odpList){
-    odpList.innerHTML = areaData.odp.map(function(n){
-      return '<option value="'+n+'">';
-    }).join('');
-  }
+  if(odpList) odpList.innerHTML = '';
 
-  // Reset ODC, ODP, dan monitor
-  var odcEl=document.getElementById('p-odc');
-  var odpEl=document.getElementById('p-odp');
-  if(odcEl)odcEl.value='';
-  if(odpEl)odpEl.value='';
-  var ob=document.getElementById('odp-monitor-box');
-  if(ob)ob.style.display='none';
+  // Reset field ODC, ODP, Port, dan monitor
+  var odcEl = document.getElementById('p-odc');
+  var odpEl = document.getElementById('p-odp');
+  var portEl = document.getElementById('p-port');
+  if(odcEl){ odcEl.value=''; }
+  if(odpEl){ odpEl.value=''; }
+  if(portEl){ portEl.value=''; }
+  var ob = document.getElementById('odp-monitor-box');
+  if(ob) ob.style.display = 'none';
+
+  // Lock/unlock berurutan: ODC unlock jika area ada, ODP & Port tetap terkunci
+  _setFieldLocked('p-odc', 'p-odc-lock-hint', !area);
+  _setFieldLocked('p-odp', 'p-odp-lock-hint', true);
+  _setFieldLocked('p-port', 'p-port-lock-hint', true);
+
+  // Jika area dikosongkan, kosongkan juga ODP hint dengan teks default
+  var odcHint = document.getElementById('p-odc-lock-hint');
+  if(odcHint) odcHint.innerHTML = '<i class="ti ti-lock" style="font-size:11px"></i> Pilih Area dulu';
 
   // ── Update Kecamatan & Kelurahan sesuai area ──
   var wilData = getWilayahData();
@@ -7439,28 +7668,90 @@ function onAreaChange(){
   }
 }
 
-// Dipanggil saat ODC diubah (opsional: bisa filter ODP berdasarkan ODC)
+// Dipanggil saat ODC diubah — filter ODP berdasarkan ODC dan unlock ODP
 function onOdcChange(val){
-  // Jika ingin filter ODP by ODC di masa depan, bisa dikembangkan di sini
-  // Saat ini ODP tetap tampil semua per area
+  var area = gv('p-area');
+  var data = getOdcOdpData();
+  var areaData = data[area] || {odc:[], odp:[]};
+  var odcVal = (val||'').trim();
+
+  // Reset ODP dan Port dulu
+  var odpEl = document.getElementById('p-odp');
+  var portEl = document.getElementById('p-port');
+  if(odpEl) odpEl.value = '';
+  if(portEl) portEl.value = '';
+  var ob = document.getElementById('odp-monitor-box');
+  if(ob) ob.style.display = 'none';
+  _setFieldLocked('p-port', 'p-port-lock-hint', true);
+
+  // Cek apakah ODC yang diketik valid (ada di daftar area ini)
+  var odcValid = odcVal && areaData.odc.some(function(o){
+    return o.trim().toLowerCase() === odcVal.toLowerCase();
+  });
+
+  if(odcValid){
+    // Filter ODP yang namanya mengandung prefix ODC ini
+    var prefix = odcVal.replace(/^ODC-/i,'').split('-')[0]; // e.g. "ODC-CIC-01" → "CIC-01"
+    var filteredOdp = areaData.odp.filter(function(o){
+      return o.toLowerCase().indexOf(odcVal.toLowerCase().replace(/^odc-/i,'').split('-').slice(0,2).join('-').toLowerCase()) >= 0
+          || o.toLowerCase().indexOf(odcVal.toLowerCase()) >= 0;
+    });
+    // Jika filter terlalu ketat dan hasilnya kosong, tampilkan semua ODP area
+    if(!filteredOdp.length) filteredOdp = areaData.odp;
+
+    var odpList = document.getElementById('odp-list');
+    if(odpList) odpList.innerHTML = filteredOdp.map(function(n){ return '<option value="'+n+'">'; }).join('');
+
+    _setFieldLocked('p-odp', 'p-odp-lock-hint', false);
+  } else {
+    // ODC belum valid/kosong: kunci ODP
+    var odpList2 = document.getElementById('odp-list');
+    if(odpList2) odpList2.innerHTML = '';
+    _setFieldLocked('p-odp', 'p-odp-lock-hint', true);
+  }
 }
 
-// Inisialisasi datalist saat app load (area kosong = tampilkan semua)
+// Dipanggil saat ODP diinput/diubah — unlock Port jika ODP valid
+function onOdpInput(val){
+  var area = gv('p-area');
+  var data = getOdcOdpData();
+  var areaData = data[area] || {odp:[]};
+  var odpVal = (val||'').trim();
+
+  var portEl = document.getElementById('p-port');
+  if(portEl) portEl.value = '';
+  _setFieldLocked('p-port', 'p-port-lock-hint', true);
+
+  var odpValid = odpVal && areaData.odp.some(function(o){
+    return o.trim().toLowerCase() === odpVal.toLowerCase();
+  });
+
+  if(odpValid){
+    _setFieldLocked('p-port', 'p-port-lock-hint', false);
+    // Jalankan juga checkOdpMonitor dan validateOdpInput
+    if(typeof checkOdpMonitor === 'function') checkOdpMonitor(val);
+    if(typeof validateOdpInput === 'function') validateOdpInput(val);
+  } else {
+    var ob = document.getElementById('odp-monitor-box');
+    if(ob) ob.style.display = 'none';
+  }
+}
+
+// Inisialisasi datalist saat app load
 function initOdcOdpDatalist(){
-  var area=gv('p-area');
-  if(area) onAreaChange();
-  else {
-    // Tampilkan semua dari semua area kalau belum dipilih
-    var data=getOdcOdpData();
-    var allOdc=[],allOdp=[];
-    Object.keys(data).forEach(function(a){
-      (data[a].odc||[]).forEach(function(v){if(allOdc.indexOf(v)<0)allOdc.push(v);});
-      (data[a].odp||[]).forEach(function(v){if(allOdp.indexOf(v)<0)allOdp.push(v);});
-    });
-    var odcList=document.getElementById('odc-list');
-    if(odcList)odcList.innerHTML=allOdc.map(function(n){return '<option value="'+n+'">';}).join('');
-    var odpList=document.getElementById('odp-list');
-    if(odpList)odpList.innerHTML=allOdp.map(function(n){return '<option value="'+n+'">';}).join('');
+  var area = gv('p-area');
+  if(area){
+    onAreaChange();
+    // Cek apakah ODC sudah terisi (misal saat edit)
+    var odcVal = gv('p-odc');
+    if(odcVal) onOdcChange(odcVal);
+    var odpVal = gv('p-odp');
+    if(odpVal) onOdpInput(odpVal);
+  } else {
+    // Belum ada area: kunci ODC, ODP, Port
+    _setFieldLocked('p-odc', 'p-odc-lock-hint', true);
+    _setFieldLocked('p-odp', 'p-odp-lock-hint', true);
+    _setFieldLocked('p-port', 'p-port-lock-hint', true);
   }
 }
 
@@ -8447,7 +8738,21 @@ function updateSalesDropdowns(){
 }
 
 function onSalesChange(){
-  // bisa digunakan untuk preview upline/downline info
+  var salesName = (document.getElementById("p-sales")||{}).value||"";
+  var infoBox = document.getElementById("p-sales-info");
+  var infoName = document.getElementById("p-sales-info-name");
+  var infoCount = document.getElementById("p-sales-info-count");
+  var infoSub = document.getElementById("p-sales-info-sub");
+  if(!infoBox) return;
+  if(!salesName){ infoBox.style.display="none"; return; }
+  var allP = typeof getMergedPel==="function"?getMergedPel():[];
+  var count = allP.filter(function(d){ return (d.sales||"").trim()===salesName.trim(); }).length;
+  var feePerPel = typeof SALES_FEE_OTF!=="undefined"?SALES_FEE_OTF:35000;
+  var fee = count * feePerPel;
+  if(infoName) infoName.textContent = salesName;
+  if(infoCount) infoCount.textContent = count + " pelanggan";
+  if(infoSub) infoSub.textContent = "Total fee: Rp " + fee.toLocaleString("id-ID") + " (@ Rp "+feePerPel.toLocaleString("id-ID")+"/pelanggan)";
+  infoBox.style.display = "block";
 }
 
 // ═══════════════════════════════
@@ -11352,7 +11657,7 @@ var svM=function(entryToSync){
     }
   }
 };
-function rstPel(){['p-nama','p-area','p-kota','p-alamat','p-rt','p-rw','p-kec','p-kel','p-cid','p-snont','p-odc','p-odp','p-port','p-ont','p-precon','p-status','p-teknisi','p-nominal','p-ket'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('p-tgl').value=today();var w=document.getElementById('cid-warn');if(w)w.style.display='none';var ob=document.getElementById('odp-monitor-box');if(ob)ob.style.display='none';initOdcOdpDatalist();}
+function rstPel(){['p-nama','p-area','p-kota','p-alamat','p-rt','p-rw','p-kec','p-kel','p-cid','p-snont','p-odc','p-odp','p-port','p-ont','p-precon','p-status','p-teknisi','p-sales','p-nominal','p-ket','p-reg-method'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('p-tgl').value=today();var w=document.getElementById('cid-warn');if(w)w.style.display='none';var ob=document.getElementById('odp-monitor-box');if(ob)ob.style.display='none';var si=document.getElementById('p-sales-info');if(si)si.style.display='none';initOdcOdpDatalist();_setFieldLocked('p-odc','p-odc-lock-hint',true);_setFieldLocked('p-odp','p-odp-lock-hint',true);_setFieldLocked('p-port','p-port-lock-hint',true);}
 function rstMat(){['m-pgn-nama','m-cid','m-qty','m-sn','m-amb','m-stat','m-area','m-pgn','m-ket'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});var mi=document.getElementById('m-item');if(mi)mi.value='';document.getElementById('m-tgl').value=today();clearCidSearch();}
 
 // ═══════════════════════════════
@@ -13450,8 +13755,8 @@ function setF(f,btn){
     c.classList.remove('on');
     c.style.background='';c.style.color='';c.style.borderColor='';c.style.boxShadow='';
   });
-  // Activate clicked tab
-  btn.classList.add('on');
+  // Activate clicked tab (btn may be null/hidden dummy)
+  if(btn && btn.classList) btn.classList.add('on');
   // toggle groups
   var groups=['pel','maint','dismantle','mat','sales'];
   var map={p:'pel',d:'maint',x:'dismantle',m:'mat',s:'sales'};
@@ -15017,6 +15322,50 @@ function copyCodeFromList(code){
   }
 }
 
+/* ── AUTO-GENERATE PIN UNIK (cross-system) ── */
+function autoGenPin(){
+  var editIdxVal = (document.getElementById('acct-f-id')||{}).value;
+  var excludeKey = editIdxVal !== '' ? {type:'acct', id:parseInt(editIdxVal)} : null;
+  var usedPins = getAllUsedPins(excludeKey);
+
+  var pin;
+  var tries = 0;
+  do {
+    pin = String(Math.floor(1000 + Math.random() * 9000));
+    tries++;
+  } while(usedPins.indexOf(pin) >= 0 && tries < 9999);
+
+  var el = document.getElementById('acct-f-pin');
+  if(el){
+    el.value = pin;
+    validateAcctField('pin');
+    _checkPinUnique();
+    toast('PIN '+ pin +' digenerate otomatis ✓','ok');
+  }
+}
+
+/* Cek PIN duplikat real-time di modal akun — cross-system */
+function _checkPinUnique(){
+  var el = document.getElementById('acct-f-pin');
+  var errDup = document.getElementById('acct-err-pin-dup');
+  if(!el || !errDup) return;
+  var pin = el.value.replace(/\D/g,'').slice(0,4);
+  if(pin.length !== 4){ errDup.style.display='none'; return; }
+
+  var editIdxVal = (document.getElementById('acct-f-id')||{}).value;
+  var excludeKey = editIdxVal !== '' ? {type:'acct', id:parseInt(editIdxVal)} : null;
+  var conflict = checkPinConflict(pin, excludeKey);
+
+  if(conflict){
+    errDup.innerHTML = '<i class="ti ti-alert-circle" style="font-size:11px"></i> PIN ini sudah dipakai oleh ' + conflict;
+    errDup.style.display = 'block';
+    var errPin = document.getElementById('acct-err-pin');
+    if(errPin) errPin.style.display = 'none';
+  } else {
+    errDup.style.display = 'none';
+  }
+}
+
 function openAcctModal(idx){
   if(currentRole!=='admin'){toast('Hanya Admin yang bisa kelola akun','err');return;}
   _acctEditId = idx;
@@ -15033,6 +15382,8 @@ function openAcctModal(idx){
     var el=document.getElementById('acct-err-'+f);
     if(el)el.style.display='none';
   });
+  var _epd=document.getElementById('acct-err-pin-dup');
+  if(_epd) _epd.style.display='none';
   if(idx !== null){
     var a = getAccts()[idx];
     if(!a) return;
@@ -15047,8 +15398,11 @@ function openAcctModal(idx){
   } else {
     title.textContent = 'Tambah Akun Baru';
     sub.textContent   = 'Isi data akun anggota tim';
-    fName.value='';fRole.value='teknisi';fPin.value='';fKet.value='';fId.value='';
+    fName.value='';fRole.value='teknisi';fKet.value='';fId.value='';
     if(fJab) fJab.value='';
+    // Auto-generate PIN unik saat tambah akun baru
+    fPin.value = '';
+    setTimeout(function(){ autoGenPin(); }, 50);
   }
   onAcctRoleChange();
   updateAreaDropdowns(); // sync area kerja dari Wilayah Setting
@@ -15087,6 +15441,18 @@ function saveAcct(){
     var ep=document.getElementById('acct-err-pin');if(ep)ep.style.display='block';
     if(!hasErr){document.getElementById('acct-f-pin').focus();}
     hasErr=true;
+  }
+  // Cek duplikat PIN — tidak boleh sama dengan PIN manapun di sistem
+  if(!hasErr && role !== 'tamu' && pin.length === 4){
+    var editIdxNum = idx !== '' ? parseInt(idx) : -1;
+    var excludeKey = editIdxNum >= 0 ? {type:'acct', id:editIdxNum} : null;
+    var conflictLabel = checkPinConflict(pin, excludeKey);
+    if(conflictLabel){
+      var epd = document.getElementById('acct-err-pin-dup');
+      if(epd){ epd.innerHTML='<i class="ti ti-alert-circle" style="font-size:11px"></i> PIN ini sudah dipakai oleh '+conflictLabel; epd.style.display='block'; }
+      if(!hasErr){ document.getElementById('acct-f-pin').focus(); }
+      hasErr = true;
+    }
   }
   if(!ket){
     var ek=document.getElementById('acct-err-ket');if(ek)ek.style.display='block';
@@ -15790,16 +16156,20 @@ function onAcctRoleChange(){
   }
   // Refresh kode preview saat role berubah (hanya di mode tambah baru)
   var idxVal2 = (document.getElementById('acct-f-id')||{}).value;
-  if(idxVal2 === '') _refreshCodePreview();
+  if(idxVal2 === ''){
+    _refreshCodePreview();
+    // Auto-generate ulang PIN unik setiap kali role berubah di mode tambah baru
+    if(r !== 'tamu') autoGenPin();
+  }
 }
 
 // ─── Tab switcher untuk Manajemen Akun & Akses ───
 function switchMgmtTab(tab){
-  var mgmtLabels={pin:'PIN Login',akun:'Akun Tim',akses:'Hak Akses',sales:'Sales'};
-  var tabs = ['pin','akun','akses','sales'];
-  var colors = {pin:'rgba(167,139,250,.15)',akun:'rgba(61,142,248,.15)',akses:'rgba(16,217,160,.12)',sales:'rgba(16,217,160,.12)'};
-  var textColors = {pin:'var(--pu)',akun:'var(--c1)',akses:'var(--green)',sales:'var(--green)'};
-  var borders = {pin:'rgba(167,139,250,.3)',akun:'rgba(61,142,248,.3)',akses:'rgba(16,217,160,.3)',sales:'rgba(16,217,160,.3)'};
+  var mgmtLabels={pin:'PIN Login',akun:'Akun Tim',akses:'Hak Akses'};
+  var tabs = ['pin','akun','akses'];
+  var colors = {pin:'rgba(167,139,250,.15)',akun:'rgba(61,142,248,.15)',akses:'rgba(16,217,160,.12)'};
+  var textColors = {pin:'var(--pu)',akun:'var(--c1)',akses:'var(--green)'};
+  var borders = {pin:'rgba(167,139,250,.3)',akun:'rgba(61,142,248,.3)',akses:'rgba(16,217,160,.3)'};
   tabs.forEach(function(t){
     var btn = document.getElementById('mgmt-tab-'+t);
     var pane = document.getElementById('mgmt-pane-'+t);
@@ -15817,10 +16187,8 @@ function switchMgmtTab(tab){
       pane.style.display = 'none';
     }
   });
-  // Jika tab sales dibuka, render ulang
-  if(tab==='sales') renderSalesMgr();
-  // Jika tab akun dibuka, load prefix inputs
-  if(tab==='akun') loadPrefixInputs();
+  // Jika tab akun dibuka, load prefix inputs + render sales
+  if(tab==='akun'){ loadPrefixInputs(); renderSalesMgr(); }
 }
 
 // ─── Jabatan chip helper ───
@@ -16470,39 +16838,53 @@ function goInputMode(mode, el) {
   if(!currentRole){showLogin();return;}
   // Switch to form tab
   var bnF = document.getElementById('bn-f');
-  if(typeof setTab === 'function' && bnF) setTab('form', bnF);
+  if(typeof setTab === 'function') setTab('form', bnF||null);
   // Set mode
   if(typeof setMode === 'function') setMode(mode);
-  // Highlight correct sub-item
-  document.querySelectorAll('.sb-sub').forEach(function(b){ b.classList.remove('on'); });
-  if(el) el.classList.add('on');
-  // Keep group header highlighted
-  document.querySelectorAll('.sb-item').forEach(function(b){
-    if(!b.classList.contains('sb-sub') && !b.classList.contains('sb-group-hd')) b.classList.remove('on');
-  });
-  var gHd = document.getElementById('sb-f');
-  if(gHd) gHd.classList.add('on');
+  // Highlight sidebar setelah setTab selesai
+  setTimeout(function(){
+    document.querySelectorAll('.sb-item').forEach(function(b){b.classList.remove('on');});
+    document.querySelectorAll('.sb-sub').forEach(function(b){b.classList.remove('on');});
+    var gHd = document.getElementById('sb-f');
+    if(gHd){gHd.classList.add('on');}
+    var ig = document.getElementById('input-group');
+    if(ig) ig.classList.add('open');
+    if(el) el.classList.add('on');
+    var modeSubMap = {p:'sb-inp-p',d:'sb-inp-d',x:'sb-inp-x',m:'sb-inp-m',s:'sb-inp-s'};
+    if(!el && modeSubMap[mode]){
+      var sub = document.getElementById(modeSubMap[mode]);
+      if(sub) sub.classList.add('on');
+    }
+  }, 0);
   closeSidebar();
 }
 
 /* Navigate to Data list with a specific mode active */
 function goDataMode(mode, el) {
   if(!currentRole){showLogin();return;}
-  // Switch to data tab (skip reset so mode below takes effect)
+  // Switch to data tab dengan skipDataReset=true agar mode di bawah bisa diterapkan
   var bnL = document.getElementById('bn-l');
-  if(typeof setTab === 'function' && bnL) setTab('data', bnL, true);
-  // Panggil setF langsung — dummy fc-* buttons tidak punya onclick handler
-  var idMap = {p:'fc-p',d:'fc-d',x:'fc-x',m:'fc-m',s:'fc-s'};
-  var target = document.getElementById(idMap[mode]);
-  if(typeof setF === 'function') setF(mode, target || document.createElement('button'));
-  // Highlight correct sub-item
-  document.querySelectorAll('.sb-sub').forEach(function(b){ b.classList.remove('on'); });
-  if(el) el.classList.add('on');
-  document.querySelectorAll('.sb-item').forEach(function(b){
-    if(!b.classList.contains('sb-sub') && !b.classList.contains('sb-group-hd')) b.classList.remove('on');
-  });
-  var gHd = document.getElementById('sb-l');
-  if(gHd) gHd.classList.add('on');
+  if(typeof setTab === 'function') setTab('data', bnL||null, true);
+  // setF langsung dengan mode yang diminta — btn null aman karena sudah ada null guard
+  if(typeof setF === 'function') setF(mode, null);
+  // renderList & renderGrouped eksplisit untuk mode ini
+  if(typeof renderList === 'function') renderList();
+  // Highlight sidebar setelah setTab (setTimeout agar tidak di-override setTab)
+  setTimeout(function(){
+    document.querySelectorAll('.sb-item').forEach(function(b){b.classList.remove('on');});
+    document.querySelectorAll('.sb-sub').forEach(function(b){b.classList.remove('on');});
+    var gHd = document.getElementById('sb-l');
+    if(gHd){gHd.classList.add('on');}
+    var dg = document.getElementById('data-group');
+    if(dg) dg.classList.add('open');
+    if(el) el.classList.add('on');
+    // Fallback: cari sub-item yang cocok dengan mode
+    var modeSubMap = {p:'sb-dat-p',d:'sb-dat-d',x:'sb-dat-x',m:'sb-dat-m',s:'sb-dat-s'};
+    if(!el && modeSubMap[mode]){
+      var sub = document.getElementById(modeSubMap[mode]);
+      if(sub) sub.classList.add('on');
+    }
+  }, 0);
   closeSidebar();
 }
 
@@ -16709,7 +17091,7 @@ function goDashMode(mode, el) {
 /* ── COMING SOON ── */
 function showComingSoon(menuName, btn) {
   if(!currentRole){showLogin();return;}
-  ['dash','form','data','share','set','coming'].forEach(function(id){
+  ['dash','form','data','share','set','coming','odp'].forEach(function(id){
     var p = document.getElementById('pane-'+id);
     if(p) p.classList.remove('on');
   });
@@ -16718,6 +17100,7 @@ function showComingSoon(menuName, btn) {
   var pane = document.getElementById('pane-coming');
   if(pane) pane.classList.add('on');
   if(btn && btn.classList) btn.classList.add('on');
+  curTab = 'coming';
   var label = document.getElementById('coming-menu-name');
   if(label) label.innerHTML = '<i class="ti ti-clock" style="font-size:13px"></i> ' + menuName;
   var scr = document.getElementById('scr');
