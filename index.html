@@ -6464,13 +6464,13 @@ var _actRealtimeChannel = null;
 /* ── Catat aktivitas ke Supabase ── */
 async function logActivity(action, entityType, entityName, entityCid, meta) {
   var sb = _sbGetClient();
-  if (!sb) return;
+  // Untuk import/export, log bahkan tanpa Supabase (lokal dulu)
   var actor = currentAcctName || currentRole || 'unknown';
   var id = 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
   var row = {
     id: id,
     actor: actor,
-    action: action,        // 'tambah' | 'edit' | 'hapus'
+    action: action,        // 'tambah' | 'edit' | 'hapus' | 'import' | 'export'
     entity_type: entityType, // 'pelanggan' | 'material' | 'maintenance' | 'dismantle' | 'sales'
     entity_name: entityName || '',
     entity_cid: entityCid || '',
@@ -6481,6 +6481,7 @@ async function logActivity(action, entityType, entityName, entityCid, meta) {
   _actCache.unshift(row);
   if (_actCache.length > 50) _actCache.pop();
   _renderActivityFeed();
+  if (!sb) return;
   try {
     await sb.from(SB_TABLE_ACTIVITY).insert(row);
   } catch(e) {}
@@ -6519,12 +6520,22 @@ function sbStartActivityRealtime() {
           _actCache.unshift(row);
           if (_actCache.length > 50) _actCache.pop();
           _renderActivityFeed();
-          // Notif toast ringan untuk aktivitas dari device lain
+          // Notif toast untuk aktivitas dari device lain
           var myActor = currentAcctName || currentRole || 'unknown';
           if (row.actor !== myActor) {
             var icon = _actIcon(row.entity_type);
-            var actLabel = _actLabel(row.action);
-            toast(icon + ' ' + fmtOp(row.actor) + ' ' + actLabel + ' ' + (row.entity_name || row.entity_type), 'info', 3500);
+            if (row.action === 'import') {
+              var metaP = {}; try{metaP=row.meta?(typeof row.meta==='string'?JSON.parse(row.meta):row.meta):{};}catch(e){}
+              var cnt = metaP.count || metaP.imported || '';
+              toast('📥 ' + fmtOp(row.actor) + ' import ' + row.entity_type + (cnt?' (+'+cnt+')':'') + ' — data diperbarui', 'info', 4000);
+              // Trigger pull data terbaru dari Supabase
+              if(_sbGetClient()) sbLoadRows().then(function(){ _syncFullRefresh('rt-act-import'); updCounts(); if(typeof updDash==='function') updDash(); if(typeof renderList==='function') renderList(); });
+            } else if (row.action === 'export') {
+              toast('📤 ' + fmtOp(row.actor) + ' export ' + row.entity_type, 'info', 3000);
+            } else {
+              var actLabel = _actLabel(row.action);
+              toast(icon + ' ' + fmtOp(row.actor) + ' ' + actLabel + ' ' + (row.entity_name || row.entity_type), 'info', 3500);
+            }
           }
         }
       })
@@ -6544,16 +6555,32 @@ function sbStartActivityRealtime() {
 
 /* ── Helper: ikon dan label per tipe ── */
 function _actIcon(type) {
-  var map = { pelanggan:'👤', material:'📦', maintenance:'🔧', dismantle:'🗑️', sales:'💰' };
+  var map = { pelanggan:'👤', material:'📦', maintenance:'🔧', dismantle:'🗑️', sales:'💰', semua:'🗄️' };
   return map[type] || '📋';
 }
 function _actTypeColor(type) {
-  var map = { pelanggan:'var(--c1)', material:'var(--c2)', maintenance:'var(--pu)', dismantle:'var(--red)', sales:'var(--green)' };
+  var map = { pelanggan:'var(--c1)', material:'var(--c2)', maintenance:'var(--pu)', dismantle:'var(--red)', sales:'var(--green)', semua:'var(--text2)' };
   return map[type] || 'var(--text3)';
 }
 function _actLabel(action) {
-  var map = { tambah:'menambah', edit:'mengedit', hapus:'menghapus' };
+  var map = { tambah:'menambah', edit:'mengedit', hapus:'menghapus', import:'mengimpor', export:'mengekspor' };
   return map[action] || action;
+}
+function _actActionBadge(action, meta) {
+  var parsed = {};
+  try { parsed = meta ? (typeof meta === 'string' ? JSON.parse(meta) : meta) : {}; } catch(e) {}
+  var cnt = parsed.count != null ? parsed.count : (parsed.imported != null ? parsed.imported : null);
+  if (action === 'import') {
+    var cntHtml = cnt != null ? ' <span style="font-family:JetBrains Mono,monospace">+'+cnt+'</span>' : '';
+    return '<span style="background:rgba(26,86,219,.13);color:var(--c1);font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-file-import" style="font-size:10px"></i>IMPORT'+cntHtml+'</span>';
+  }
+  if (action === 'export') {
+    var cntHtml2 = cnt != null ? ' <span style="font-family:JetBrains Mono,monospace">'+cnt+'</span>' : '';
+    return '<span style="background:rgba(124,58,237,.12);color:var(--pu);font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-file-export" style="font-size:10px"></i>EXPORT'+cntHtml2+'</span>';
+  }
+  if (action === 'tambah') return '<span style="background:rgba(5,150,105,.12);color:var(--green);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">+BARU</span>';
+  if (action === 'hapus') return '<span style="background:rgba(220,38,38,.1);color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">HAPUS</span>';
+  return '<span style="background:rgba(249,115,22,.1);color:var(--c2);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">EDIT</span>';
 }
 function _actRelTime(ts) {
   if (!ts) return '';
@@ -6576,16 +6603,26 @@ function _renderActivityFeed() {
   } else {
     html = items.map(function(a) {
       var typeColor = _actTypeColor(a.entity_type);
-      var actionBadge = a.action === 'tambah'
-        ? '<span style="background:rgba(5,150,105,.12);color:var(--green);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">+BARU</span>'
-        : a.action === 'hapus'
-          ? '<span style="background:rgba(220,38,38,.1);color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">HAPUS</span>'
-          : '<span style="background:rgba(249,115,22,.1);color:var(--c2);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">EDIT</span>';
+      var actionBadge = _actActionBadge(a.action, a.meta);
       var actorIni = ini(a.actor);
-      return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">'
+      // Parse meta untuk info tambahan
+      var metaParsed = {};
+      try { metaParsed = a.meta ? (typeof a.meta === 'string' ? JSON.parse(a.meta) : a.meta) : {}; } catch(e) {}
+      var metaLine = '';
+      if ((a.action === 'import' || a.action === 'export') && (metaParsed.skipped || metaParsed.fmt)) {
+        var parts = [];
+        if (metaParsed.fmt) parts.push(metaParsed.fmt.toUpperCase());
+        if (metaParsed.skipped > 0) parts.push(metaParsed.skipped + ' dilewati');
+        if (parts.length) metaLine = '<div style="font-size:10px;color:var(--text3);margin-top:1px;font-family:JetBrains Mono,monospace">' + parts.join(' · ') + '</div>';
+      }
+      // Highlight baris import/export
+      var rowBg = (a.action === 'import') ? 'background:rgba(26,86,219,.04);border-radius:var(--rs);padding:8px;margin-bottom:2px;border-left:2px solid var(--c1);' :
+                  (a.action === 'export') ? 'background:rgba(124,58,237,.04);border-radius:var(--rs);padding:8px;margin-bottom:2px;border-left:2px solid var(--pu);' :
+                  'padding:10px 0;border-bottom:1px solid var(--border);';
+      return '<div style="display:flex;align-items:flex-start;gap:10px;'+rowBg+'">'
         + '<div style="width:34px;height:34px;border-radius:10px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:'+typeColor+';flex-shrink:0;font-family:JetBrains Mono,monospace">'+actorIni+'</div>'
         + '<div style="flex:1;min-width:0">'
-        +   '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">'
+        +   '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;flex-wrap:wrap">'
         +     '<span style="font-size:12px;font-weight:700;color:var(--text)">'+fmtOp(a.actor)+'</span>'
         +     actionBadge
         +   '</div>'
@@ -6593,7 +6630,8 @@ function _renderActivityFeed() {
         +     _actIcon(a.entity_type)+' '+(a.entity_name ? '<b>'+escHtml(a.entity_name)+'</b>' : a.entity_type)
         +     (a.entity_cid ? ' <span style="color:var(--text3);font-family:JetBrains Mono,monospace;font-size:10px">· '+a.entity_cid+'</span>' : '')
         +   '</div>'
-        +   '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace">'+_actRelTime(a.ts)+'</div>'
+        +   metaLine
+        +   '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:2px">'+_actRelTime(a.ts)+'</div>'
         + '</div>'
         + '</div>';
     }).join('');
@@ -6620,10 +6658,20 @@ function sbStartRealtime() {
     _sbRealtimeChannel = sb
       .channel('db-changes-v2')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'app_rows' }, function(payload) {
-        sbLoadRows().then(function(){ _syncFullRefresh('rt-insert'); updCounts(); if(curTab==='dash')updDash(); });
+        sbLoadRows().then(function(){
+          _syncFullRefresh('rt-insert');
+          updCounts();
+          if(typeof updDash==='function') updDash();
+          if(typeof renderList==='function') renderList();
+        });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_rows' }, function(payload) {
-        sbLoadRows().then(function(){ _syncFullRefresh('rt-update'); updCounts(); if(curTab==='dash')updDash(); });
+        sbLoadRows().then(function(){
+          _syncFullRefresh('rt-update');
+          updCounts();
+          if(typeof updDash==='function') updDash();
+          if(typeof renderList==='function') renderList();
+        });
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'app_rows' }, function(payload) {
         var delId = payload.old && payload.old.id;
@@ -6633,7 +6681,10 @@ function sbStartRealtime() {
           try{ localStorage.setItem(K.p, JSON.stringify(db.p)); }catch(ex){}
           try{ localStorage.setItem(K.m, JSON.stringify(db.m)); }catch(ex){}
         } else { sbLoadRows(); }
-        _syncFullRefresh('rt-delete'); updCounts(); if(curTab==='dash')updDash();
+        _syncFullRefresh('rt-delete');
+        updCounts();
+        if(typeof updDash==='function') updDash();
+        if(typeof renderList==='function') renderList();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_kv' }, function(payload) {
         sbPullAllSettings().then(function(){ _syncFullRefresh('rt-kv'); });
@@ -6821,6 +6872,8 @@ function _syncInit(){
       _visibilityDebounce=setTimeout(function(){
         _syncFullRefresh('visibility');
         if(!_sbRealtimeChannel && _sbGetClient() && isOn()) sbStartRealtime();
+        if(!_actRealtimeChannel && _sbGetClient() && isOn()) sbStartActivityRealtime();
+        if(_sbGetClient() && isOn()) loadActivityFeed();
       },500);
     }
   });
@@ -6830,6 +6883,7 @@ function _syncInit(){
     _focusDebounce=setTimeout(function(){
       _syncFullRefresh('focus');
       if(!_sbRealtimeChannel && _sbGetClient() && isOn()) sbStartRealtime();
+      if(!_actRealtimeChannel && _sbGetClient() && isOn()) sbStartActivityRealtime();
     },600);
   });
 }
@@ -6895,12 +6949,12 @@ function _syncFullRefresh(reason){
 
     // Refresh semua komponen UI
     if(typeof updCounts==='function')updCounts();
-    if(typeof updDash==='function'&&curTab==='dash')updDash();
+    if(typeof updDash==='function')updDash();
     if(typeof updConn==='function')updConn();
     if(typeof updPelDbInfo==='function')updPelDbInfo();
     if(typeof updAllUrlBadges==='function')updAllUrlBadges();
     if(typeof updateAllDropdowns==='function')updateAllDropdowns();
-    if(typeof renderList==='function'&&curTab==='data')renderList();
+    if(typeof renderList==='function')renderList();
     if(typeof renderSalesMgr==='function'&&curTab==='set')renderSalesMgr();
     if(typeof renderAcctList==='function'&&curTab==='set')renderAcctList();
     if(typeof renderPinMgr==='function'&&curTab==='set')renderPinMgr();
@@ -15204,12 +15258,11 @@ function expSheetsPelCSV(){
 // ═══════════════════════════════
 function triggerImportCSV(){
   if(currentRole!=='admin'){toast('Hanya Admin yang bisa import data','err');return;}
-  var inp=document.getElementById('imp-file-csv');
-  if(!inp){
-    inp=document.createElement('input');inp.type='file';inp.id='imp-file-csv';inp.accept='.csv';inp.style.display='none';
-    inp.addEventListener('change',function(){doImportCSV(this.files[0]);this.value='';});
-    document.body.appendChild(inp);
-  }
+  var old=document.getElementById('imp-file-csv');
+  if(old) old.parentNode.removeChild(old);
+  var inp=document.createElement('input');inp.type='file';inp.id='imp-file-csv';inp.accept='.csv';inp.style.display='none';
+  inp.addEventListener('change',function(){doImportCSV(this.files[0]);this.value='';});
+  document.body.appendChild(inp);
   inp.click();
 }
 
@@ -15264,7 +15317,16 @@ function doImportCSV(file){
         db.p.push(obj2);imported++;
       }
     }
-    svP();updCounts();updDash();renderList();
+    svP();
+    // Log aktivitas import ke Supabase realtime
+    logActivity('import', 'pelanggan', imported+' data', null, {count: imported, skipped: skipped, fmt:'csv'});
+    // Broadcast perubahan ke tab lain
+    try{_syncBroadcast(K.p, JSON.stringify(db.p));}catch(e){}
+    // Force refresh semua UI tanpa perlu reload
+    updCounts();
+    if(typeof updDash==='function') updDash();
+    if(typeof renderList==='function') renderList();
+    if(typeof _syncFullRefresh==='function') _syncFullRefresh('import-csv');
     toast('Import selesai: '+imported+' data masuk, '+skipped+' dilewati','ok');
   };
   reader.readAsText(file);
@@ -15287,12 +15349,11 @@ function parseCSVLine(line){
 // ═══════════════════════════════
 function triggerImportJSON(){
   if(currentRole!=='admin'){toast('Hanya Admin yang bisa import data','err');return;}
-  var inp=document.getElementById('imp-file-json');
-  if(!inp){
-    inp=document.createElement('input');inp.type='file';inp.id='imp-file-json';inp.accept='.json';inp.style.display='none';
-    inp.addEventListener('change',function(){doImportJSON(this.files[0]);this.value='';});
-    document.body.appendChild(inp);
-  }
+  var old=document.getElementById('imp-file-json');
+  if(old) old.parentNode.removeChild(old);
+  var inp=document.createElement('input');inp.type='file';inp.id='imp-file-json';inp.accept='.json';inp.style.display='none';
+  inp.addEventListener('change',function(){doImportJSON(this.files[0]);this.value='';});
+  document.body.appendChild(inp);
   inp.click();
 }
 
@@ -15316,7 +15377,17 @@ function doImportJSON(file){
           d.sent=false;db.m.push(d);addM++;
         });
       }
-      svP();svM();updCounts();updDash();renderList();
+      svP();svM();
+      // Log aktivitas import ke Supabase realtime
+      logActivity('import', 'semua', addP+' pelanggan, '+addM+' material', null, {count: addP+addM, imported: addP, imported_m: addM, skipped: skipP+skipM, fmt:'json'});
+      // Broadcast perubahan ke tab lain
+      try{_syncBroadcast(K.p, JSON.stringify(db.p));}catch(e){}
+      try{_syncBroadcast(K.m, JSON.stringify(db.m));}catch(e){}
+      // Force refresh semua UI tanpa perlu reload
+      updCounts();
+      if(typeof updDash==='function') updDash();
+      if(typeof renderList==='function') renderList();
+      if(typeof _syncFullRefresh==='function') _syncFullRefresh('import-json');
       toast('Import JSON: +'+addP+' pelanggan, +'+addM+' material (skip: '+skipP+'p/'+skipM+'m)','ok');
     }catch(err){toast('File JSON tidak valid: '+err.message,'err');}
   };
@@ -15373,6 +15444,7 @@ function expDataSection(section){
   }
   var fn='export_'+section+'_'+today()+'.csv';
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h+rows.join('\n')],{type:'text/csv'}));a.download=fn;a.click();
+  logActivity('export', section, rows.length+' data', null, {count: rows.length, fmt:'csv'});
   toast(rows.length+' data '+section+' diekspor','ok');
 }
 
@@ -15386,19 +15458,19 @@ function expDataSectionJSON(section){
   if(!data.length){toast('Tidak ada data '+section,'err');return;}
   var payload=JSON.stringify({type:section,data:data,exported:new Date().toISOString()},null,2);
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([payload],{type:'application/json'}));a.download=fn+'_'+today()+'.json';a.click();
+  logActivity('export', section, data.length+' data', null, {count: data.length, fmt:'json'});
   toast(data.length+' data '+section+' diekspor JSON','ok');
 }
 
 function impDataSection(section){
   if(currentRole!=='admin'){toast('Hanya Admin yang bisa import data','err');return;}
   var inputId='imp-sec-'+section;
-  var inp=document.getElementById(inputId);
-  if(!inp){
-    inp=document.createElement('input');inp.type='file';inp.id=inputId;
-    inp.accept='.csv,.json';inp.style.display='none';
-    inp.addEventListener('change',function(){doImpDataSection(section,this.files[0]);this.value='';});
-    document.body.appendChild(inp);
-  }
+  var old=document.getElementById(inputId);
+  if(old) old.parentNode.removeChild(old);
+  var inp=document.createElement('input');inp.type='file';inp.id=inputId;
+  inp.accept='.csv,.json';inp.style.display='none';
+  inp.addEventListener('change',function(){doImpDataSection(section,this.files[0]);this.value='';});
+  document.body.appendChild(inp);
   inp.click();
 }
 
@@ -15438,7 +15510,16 @@ function doImpDataSection(section,file){
           });
           try{localStorage.setItem('tek_list',JSON.stringify(list));}catch(e){}
         }
-        updCounts();updDash();renderList();
+        updCounts();
+        // Log aktivitas import ke Supabase realtime
+        logActivity('import', section, imported+' data', null, {count: imported, skipped: skipped, fmt:'json'});
+        // Broadcast perubahan ke tab lain
+        try{_syncBroadcast(K.p, JSON.stringify(db.p));}catch(e){}
+        try{_syncBroadcast(K.m, JSON.stringify(db.m));}catch(e){}
+        // Force refresh semua UI tanpa perlu reload
+        if(typeof updDash==='function') updDash();
+        if(typeof renderList==='function') renderList();
+        if(typeof _syncFullRefresh==='function') _syncFullRefresh('imp-section-json');
         toast('Import '+section+': +'+imported+' data, '+skipped+' dilewati','ok');
       }catch(err){toast('File JSON tidak valid','err');}
     } else {
@@ -15473,7 +15554,16 @@ function doImpDataSection(section,file){
       }
       if(section==='pelanggan'||section==='dismantle') svP();
       else if(section==='material'||section==='maintenance') svM();
-      updCounts();updDash();renderList();
+      // Log aktivitas import ke Supabase realtime
+      logActivity('import', section, imported+' data', null, {count: imported, skipped: skipped, fmt:'csv'});
+      // Broadcast perubahan ke tab lain
+      try{_syncBroadcast(K.p, JSON.stringify(db.p));}catch(e){}
+      try{_syncBroadcast(K.m, JSON.stringify(db.m));}catch(e){}
+      // Force refresh semua UI tanpa perlu reload
+      updCounts();
+      if(typeof updDash==='function') updDash();
+      if(typeof renderList==='function') renderList();
+      if(typeof _syncFullRefresh==='function') _syncFullRefresh('imp-section-csv');
       toast('Import '+section+' CSV: +'+imported+', skip: '+skipped,'ok');
     }
   };
@@ -17622,6 +17712,10 @@ function doImportFromModal(fmt){
   var f = datFilt || 'p';
   var info = _EI_MAP[f] || _EI_MAP.p;
   var sec = info.sec;
+  // Hapus input lama agar event change selalu terpicu (termasuk file yang sama)
+  var oldInp = document.getElementById('imp-sec-'+sec);
+  if(oldInp) oldInp.parentNode.removeChild(oldInp);
+  // Langsung panggil setelah animasi modal selesai (300ms)
   setTimeout(function(){
     impDataSection(sec);
   }, 320);
@@ -17642,6 +17736,7 @@ function expFullBackupCSV(){
   var blob = new Blob([h+rows.join('\n')], {type:'text/csv'});
   var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = 'backup_semua_'+today()+'.csv'; a.click();
+  logActivity('export', 'semua', db.p.length+' pelanggan + '+db.m.length+' material', null, {count: db.p.length+db.m.length, fmt:'csv'});
   toast('Export all: '+db.p.length+' pelanggan + '+db.m.length+' material','ok');
 }
 
@@ -17669,6 +17764,7 @@ function expFullBackupJSON(){
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)], {type:'application/json'}));
   a.download = 'backup_lengkap_'+today()+'.json'; a.click();
+  logActivity('export', 'semua', db.p.length+' pelanggan + '+db.m.length+' material', null, {count: db.p.length+db.m.length, fmt:'json'});
   toast('Backup lengkap diunduh','ok');
 }
 
@@ -17775,7 +17871,13 @@ function confirmRestoreAll(){
     if(parsed.url_read){ try{ lss(K.ur, parsed.url_read); }catch(e){} }
 
     var tot = db.p.length + db.m.length;
-    updCounts(); updDash(); renderList();
+    try{_syncBroadcast(K.p, JSON.stringify(db.p));}catch(e){}
+    try{_syncBroadcast(K.m, JSON.stringify(db.m));}catch(e){}
+    logActivity('import', 'semua', tot+' data (restore)', null, {count: tot, fmt:'json', restore:true});
+    updCounts();
+    if(typeof updDash==='function') updDash();
+    if(typeof renderList==='function') renderList();
+    if(typeof _syncFullRefresh==='function') _syncFullRefresh('restore-json');
     if(typeof renderOdpMonitor==='function') renderOdpMonitor();
     if(typeof renderAcctList==='function') renderAcctList();
     toast('✓ Restore selesai: '+tot+' data berhasil dimuat','ok');
@@ -17810,7 +17912,13 @@ function confirmRestoreAll(){
     db.p = newP; db.m = newM;
     try{ localStorage.setItem(K.p, JSON.stringify(db.p)); }catch(e){}
     try{ localStorage.setItem(K.m, JSON.stringify(db.m)); }catch(e){}
-    updCounts(); updDash(); renderList();
+    try{_syncBroadcast(K.p, JSON.stringify(db.p));}catch(e){}
+    try{_syncBroadcast(K.m, JSON.stringify(db.m));}catch(e){}
+    logActivity('import', 'semua', imported+' data (restore)', null, {count: imported, fmt:'csv', restore:true});
+    updCounts();
+    if(typeof updDash==='function') updDash();
+    if(typeof renderList==='function') renderList();
+    if(typeof _syncFullRefresh==='function') _syncFullRefresh('restore-csv');
     toast('✓ Restore CSV: '+imported+' data berhasil dimuat','ok');
   }
   _restoreAllPending = null;
