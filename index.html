@@ -2503,6 +2503,7 @@ p, span, div, label, td, th, li {
           <button class="sb-item sb-sub sal" id="sb-dash-s" onclick="goDashMode('s',this)"><i class="ti ti-cash"></i><span>Sales</span></button>
         </div>
       </div>
+      <button class="sb-item" id="sb-odp-mon" onclick="setTab('odp',this)" style="color:var(--red)"><i class="ti ti-antenna-bars-5" style="color:var(--red)"></i><span>Monitor ODP</span></button>
       <button class="sb-item" id="sb-overview" onclick="showComingSoon('Overview', this)"><i class="ti ti-chart-line"></i><span>Overview</span></button>
 
       <!-- ── INPUT DATA GROUP ── -->
@@ -2595,6 +2596,144 @@ p, span, div, label, td, th, li {
     </div>
 
     <!-- ═══ DASHBOARD ═══ -->
+    <!-- ═══ DASHBOARD ODP PANE ═══ -->
+    <div class="pane" id="pane-odp">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Dashboard ODP</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--green);background:rgba(15,212,148,.1);border:1px solid rgba(15,212,148,.25);border-radius:20px;padding:4px 10px">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 1.5s infinite"></span>
+          LIVE
+        </div>
+      </div>
+
+      <!-- Ringkasan cepat — 5 stat dari seluruh area -->
+      <div class="card" style="border-color:rgba(255,82,82,.2);margin-bottom:12px">
+        <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:4px">
+          <i class="ti ti-world" style="font-size:11px;color:var(--c1)"></i> Total Seluruh Area
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">
+          <div onclick="toggleOdpStatDetail('penuh')" style="background:linear-gradient(135deg,rgba(255,82,82,.12),rgba(255,82,82,.05));border-radius:var(--rs);padding:12px 8px;text-align:center;border:1px solid rgba(255,82,82,.3);position:relative;overflow:hidden;cursor:pointer;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+            <div style="position:absolute;right:-6px;top:-6px;width:36px;height:36px;border-radius:50%;background:rgba(255,82,82,.1)"></div>
+            <div style="font-size:28px;font-weight:800;color:var(--red);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-penuh">0</div>
+            <div style="font-size:9px;color:var(--text3);margin-top:5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">ODP Penuh</div>
+            <i class="ti ti-chevron-down" id="odp-stat-chev-penuh" style="position:absolute;top:5px;right:5px;font-size:10px;color:var(--red);opacity:.5;transition:transform .25s"></i>
+          </div>
+          <div onclick="toggleOdpStatDetail('rusak')" style="background:linear-gradient(135deg,rgba(157,128,250,.12),rgba(157,128,250,.05));border-radius:var(--rs);padding:12px 8px;text-align:center;border:1px solid rgba(157,128,250,.3);position:relative;overflow:hidden;cursor:pointer;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+            <div style="position:absolute;right:-6px;top:-6px;width:36px;height:36px;border-radius:50%;background:rgba(157,128,250,.1)"></div>
+            <div style="font-size:28px;font-weight:800;color:var(--pu);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-rusak">0</div>
+            <div style="font-size:9px;color:var(--text3);margin-top:5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">ODP Rusak</div>
+            <i class="ti ti-chevron-down" id="odp-stat-chev-rusak" style="position:absolute;top:5px;right:5px;font-size:10px;color:var(--pu);opacity:.5;transition:transform .25s"></i>
+          </div>
+        </div>
+        <div id="odp-stat-detail-penuh" style="display:none;flex-direction:column;gap:5px;margin-bottom:8px"></div>
+        <div id="odp-stat-detail-rusak" style="display:none;flex-direction:column;gap:5px;margin-bottom:8px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px">
+          <div onclick="toggleOdpStatDetail('kosong')" style="background:linear-gradient(135deg,rgba(15,212,148,.10),rgba(15,212,148,.04));border-radius:var(--rs);padding:10px 6px;text-align:center;border:1px solid rgba(15,212,148,.25);cursor:pointer;position:relative;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+            <div style="font-size:22px;font-weight:800;color:var(--green);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-kosong">0</div>
+            <div style="font-size:8px;color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">ODP Kosong</div>
+            <i class="ti ti-chevron-down" id="odp-stat-chev-kosong" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--green);opacity:.5;transition:transform .25s"></i>
+          </div>
+          <div onclick="toggleOdpStatDetail('belumaktif')" style="background:linear-gradient(135deg,rgba(79,158,255,.10),rgba(79,158,255,.04)).border-radius:var(--rs);padding:10px 6px;text-align:center;border:1px solid rgba(79,158,255,.25);cursor:pointer;position:relative;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+            <div style="font-size:22px;font-weight:800;color:var(--c1);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-belumaktif">0</div>
+            <div style="font-size:8px;color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">Blm Aktif</div>
+            <i class="ti ti-chevron-down" id="odp-stat-chev-belumaktif" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--c1);opacity:.5;transition:transform .25s"></i>
+          </div>
+          <div onclick="toggleOdpStatDetail('kritis')" style="background:linear-gradient(135deg,rgba(245,200,66,.10),rgba(245,200,66,.04));border-radius:var(--rs);padding:10px 6px;text-align:center;border:1px solid rgba(245,200,66,.25);cursor:pointer;position:relative;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+            <div style="font-size:22px;font-weight:800;color:var(--yellow);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-kritis">0</div>
+            <div style="font-size:8px;color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">ODP Kritis</div>
+            <i class="ti ti-chevron-down" id="odp-stat-chev-kritis" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--yellow);opacity:.5;transition:transform .25s"></i>
+          </div>
+          <div onclick="toggleOdpTerpakaiMon()" style="background:linear-gradient(135deg,rgba(6,182,212,.10),rgba(6,182,212,.04));border-radius:var(--rs);padding:10px 6px;text-align:center;border:1px solid rgba(6,182,212,.25);cursor:pointer;position:relative">
+            <div style="font-size:22px;font-weight:800;color:#06b6d4;line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-terpakai">0</div>
+            <div style="font-size:8px;color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">ODP Terpakai</div>
+            <div style="font-size:7px;color:rgba(6,182,212,.7);margin-top:2px;font-weight:600">&lt; 75%</div>
+            <i class="ti ti-chevron-down" id="odp-terpakai-mon-chev" style="position:absolute;top:6px;right:6px;font-size:10px;color:#06b6d4;opacity:.6;transition:transform .25s"></i>
+          </div>
+        </div>
+        <div id="odp-stat-detail-kosong" style="display:none;flex-direction:column;gap:5px;margin-top:-4px;margin-bottom:10px"></div>
+        <div id="odp-stat-detail-belumaktif" style="display:none;flex-direction:column;gap:5px;margin-top:-4px;margin-bottom:10px"></div>
+        <div id="odp-stat-detail-kritis" style="display:none;flex-direction:column;gap:5px;margin-top:-4px;margin-bottom:10px"></div>
+        <div id="odp-terpakai-mon-list" style="display:none;flex-direction:column;gap:5px;margin-top:-4px;margin-bottom:10px"></div>
+      </div>
+
+      <!-- Anchor untuk restore posisi filter wrap -->
+      <div id="odp-mon-filter-anchor" style="display:none"></div>
+
+      <!-- Filter ODC & ODP -->
+      <div id="odp-mon-odc-odp-filter-wrap" style="display:none;background:var(--bg4);border-radius:var(--rs);padding:11px 12px;margin-bottom:10px;border:1px solid rgba(26,86,219,.18)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:5px">
+            <i class="ti ti-filter" style="font-size:11px;color:var(--c1)"></i>
+            Filter ODC &amp; ODP —
+            <span id="odp-mon-selected-area-lbl" style="color:var(--c1);font-weight:800"></span>
+          </div>
+          <button onclick="resetOdpMonFilter()" id="odp-mon-reset-btn" style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--red);background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.25);border-radius:20px;padding:4px 10px;cursor:pointer;font-family:'Sora',sans-serif">
+            <i class="ti ti-x" style="font-size:11px"></i> Reset
+          </button>
+        </div>
+        <select id="odp-mon-area-filter" onchange="onOdpMonAreaChange()" style="display:none">
+          <option value="">Pilih Area...</option>
+        </select>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div id="odp-mon-odc-row">
+            <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-sitemap" style="font-size:11px"></i> ODC</label>
+            <select id="odp-mon-odc-filter" onchange="onOdpMonOdcChange()" style="background:var(--bg3);border:1.5px solid rgba(157,128,250,.3);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
+              <option value="">Semua ODC</option>
+            </select>
+          </div>
+          <div id="odp-mon-odp-row" style="display:none">
+            <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-antenna-bars-5" style="font-size:11px"></i> ODP</label>
+            <select id="odp-mon-odp-filter" onchange="onOdpMonOdpChange()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.25);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
+              <option value="">Semua ODP</option>
+            </select>
+          </div>
+        </div>
+        <div id="odp-mon-odp-detail-panel" style="display:none;margin-top:10px;background:var(--bg3);border-radius:var(--rs);padding:10px 12px;border:1px solid rgba(255,82,82,.2)">
+          <div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:5px">
+            <i class="ti ti-users" style="font-size:11px"></i> Pelanggan di ODP Terpilih <span style="background:rgba(255,82,82,.15);border-radius:10px;padding:1px 7px;font-size:9px" id="odp-mon-odp-det-count"></span>
+          </div>
+          <div id="odp-mon-odp-det-list"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:9px;display:flex;align-items:center;gap:5px;background:var(--bg3);border-radius:7px;padding:6px 10px;border:1px solid var(--border)">
+          <i class="ti ti-info-circle" style="font-size:12px;color:var(--c1);flex-shrink:0"></i>
+          <span>Data dari <b style="color:var(--c1)">Setting → Wilayah</b> · <span id="odp-mon-info-total" style="color:var(--text2);font-weight:700"></span></span>
+        </div>
+      </div>
+
+      <!-- Kapasitas Port per Area -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px">
+          <i class="ti ti-map-pin" style="font-size:14px;color:var(--c1)"></i> Kapasitas Port per Area
+        </div>
+        <div id="odp-mon-area-chart">
+          <div style="font-size:11px;color:var(--text3);text-align:center;padding:14px">Belum ada data</div>
+        </div>
+      </div>
+
+      <!-- Kapasitas Port per ODC -->
+      <div id="odp-mon-odc-wrap" style="display:none" class="card" style="margin-bottom:12px;border-color:rgba(157,128,250,.2)">
+        <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px">
+          <i class="ti ti-sitemap" style="font-size:14px;color:var(--pu)"></i> Kapasitas Port per ODC
+        </div>
+        <div id="odp-mon-odc-chart">
+          <div style="font-size:11px;color:var(--text3);text-align:center;padding:14px">Belum ada data ODC</div>
+        </div>
+      </div>
+
+      <!-- Distribusi Status ODP -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px">
+          <i class="ti ti-chart-donut" style="font-size:14px;color:var(--yellow)"></i> Distribusi Status ODP
+        </div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100" id="odp-mon-donut"><circle cx="50" cy="50" r="36" fill="none" stroke="var(--border2)" stroke-width="16"/><text x="50" y="55" text-anchor="middle" fill="var(--text3)" font-size="10" font-family="Sora">kosong</text></svg>
+          <div class="donut-legend" id="odp-mon-donut-legend" style="font-size:11px"></div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ═══ END DASHBOARD ODP PANE ═══ -->
+
     <div class="pane" id="pane-dash">
       <div id="last-t" style="display:none">12.41.11</div>
 
@@ -2664,155 +2803,21 @@ p, span, div, label, td, th, li {
 
 
 
-        <!-- ═══ MONITORING ODP ═══ -->
+        <!-- ═══ MONITORING ODP shortcut ═══ -->
         <div class="card" style="border-color:rgba(255,82,82,.25);background:rgba(255,82,82,.03);margin-bottom:12px">
-          <!-- Header + live badge -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
             <div class="sec-t" style="color:var(--red);margin-bottom:0"><i class="ti ti-antenna-bars-5" style="font-size:16px"></i> Monitoring ODP</div>
             <div id="odp-live-badge" style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--green);background:rgba(15,212,148,.1);border:1px solid rgba(15,212,148,.25);border-radius:20px;padding:4px 10px">
               <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 1.5s infinite"></span>
               LIVE
             </div>
           </div>
-
-          <!-- Ringkasan cepat — 5 stat dari seluruh area --><!-- Ringkasan cepat — 5 stat dari seluruh area -->
-          <div style="margin-bottom:6px">
-            <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:4px">
-              <i class="ti ti-world" style="font-size:11px;color:var(--c1)"></i> Total Seluruh Area
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">
-              <div onclick="toggleOdpStatDetail('penuh')" style="background:linear-gradient(135deg,rgba(255,82,82,.12),rgba(255,82,82,.05));border-radius:var(--rs);padding:12px 8px;text-align:center;border:1px solid rgba(255,82,82,.3);position:relative;overflow:hidden;cursor:pointer;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
-                <div style="position:absolute;right:-6px;top:-6px;width:36px;height:36px;border-radius:50%;background:rgba(255,82,82,.1)"></div>
-                <div style="font-size:28px;font-weight:800;color:var(--red);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-penuh">0</div>
-                <div style="font-size:9px;color:var(--text3);margin-top:5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">ODP Penuh</div>
-                <i class="ti ti-chevron-down" id="odp-stat-chev-penuh" style="position:absolute;top:5px;right:5px;font-size:10px;color:var(--red);opacity:.5;transition:transform .25s"></i>
-              </div>
-              <div onclick="toggleOdpStatDetail('rusak')" style="background:linear-gradient(135deg,rgba(157,128,250,.12),rgba(157,128,250,.05));border-radius:var(--rs);padding:12px 8px;text-align:center;border:1px solid rgba(157,128,250,.3);position:relative;overflow:hidden;cursor:pointer;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
-                <div style="position:absolute;right:-6px;top:-6px;width:36px;height:36px;border-radius:50%;background:rgba(157,128,250,.1)"></div>
-                <div style="font-size:28px;font-weight:800;color:var(--pu);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-rusak">0</div>
-                <div style="font-size:9px;color:var(--text3);margin-top:5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">ODP Rusak</div>
-                <i class="ti ti-chevron-down" id="odp-stat-chev-rusak" style="position:absolute;top:5px;right:5px;font-size:10px;color:var(--pu);opacity:.5;transition:transform .25s"></i>
-              </div>
-            </div>
-            <!-- Detail per area: penuh / rusak -->
-            <div id="odp-stat-detail-penuh" style="display:none;flex-direction:column;gap:5px;margin-bottom:8px"></div>
-            <div id="odp-stat-detail-rusak" style="display:none;flex-direction:column;gap:5px;margin-bottom:8px"></div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px">
-              <div onclick="toggleOdpStatDetail('kosong')" style="background:linear-gradient(135deg,rgba(15,212,148,.10),rgba(15,212,148,.04));border-radius:var(--rs);padding:10px 6px;text-align:center;border:1px solid rgba(15,212,148,.25);cursor:pointer;position:relative;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
-                <div style="font-size:22px;font-weight:800;color:var(--green);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-kosong">0</div>
-                <div style="font-size:8px;color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">ODP Kosong</div>
-                <i class="ti ti-chevron-down" id="odp-stat-chev-kosong" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--green);opacity:.5;transition:transform .25s"></i>
-              </div>
-              <div onclick="toggleOdpStatDetail('belumaktif')" style="background:linear-gradient(135deg,rgba(79,158,255,.10),rgba(79,158,255,.04));border-radius:var(--rs);padding:10px 6px;text-align:center;border:1px solid rgba(79,158,255,.25);cursor:pointer;position:relative;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
-                <div style="font-size:22px;font-weight:800;color:var(--c1);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-belumaktif">0</div>
-                <div style="font-size:8px;color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">Blm Aktif</div>
-                <i class="ti ti-chevron-down" id="odp-stat-chev-belumaktif" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--c1);opacity:.5;transition:transform .25s"></i>
-              </div>
-              <div onclick="toggleOdpStatDetail('kritis')" style="background:linear-gradient(135deg,rgba(245,200,66,.10),rgba(245,200,66,.04));border-radius:var(--rs);padding:10px 6px;text-align:center;border:1px solid rgba(245,200,66,.25);cursor:pointer;position:relative;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
-                <div style="font-size:22px;font-weight:800;color:var(--yellow);line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-kritis">0</div>
-                <div style="font-size:8px;color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">ODP Kritis</div>
-                <i class="ti ti-chevron-down" id="odp-stat-chev-kritis" style="position:absolute;top:4px;right:4px;font-size:10px;color:var(--yellow);opacity:.5;transition:transform .25s"></i>
-              </div>
-              <!-- ODP TERPAKAI < 75% -->
-              <div onclick="toggleOdpTerpakaiMon()" style="background:linear-gradient(135deg,rgba(6,182,212,.10),rgba(6,182,212,.04));border-radius:var(--rs);padding:10px 6px;text-align:center;border:1px solid rgba(6,182,212,.25);cursor:pointer;position:relative">
-                <div style="font-size:22px;font-weight:800;color:#06b6d4;line-height:1;font-family:'JetBrains Mono',monospace" id="odp-mon-total-terpakai">0</div>
-                <div style="font-size:8px;color:var(--text3);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.2px">ODP Terpakai</div>
-                <div style="font-size:7px;color:rgba(6,182,212,.7);margin-top:2px;font-weight:600">&lt; 75%</div>
-                <i class="ti ti-chevron-down" id="odp-terpakai-mon-chev" style="position:absolute;top:6px;right:6px;font-size:10px;color:#06b6d4;opacity:.6;transition:transform .25s"></i>
-              </div>
-            </div>
-            <!-- Detail per area: kosong / belumaktif / kritis -->
-            <div id="odp-stat-detail-kosong" style="display:none;flex-direction:column;gap:5px;margin-top:-8px;margin-bottom:10px"></div>
-            <div id="odp-stat-detail-belumaktif" style="display:none;flex-direction:column;gap:5px;margin-top:-8px;margin-bottom:10px"></div>
-            <div id="odp-stat-detail-kritis" style="display:none;flex-direction:column;gap:5px;margin-top:-8px;margin-bottom:10px"></div>
-            <!-- ODP Terpakai detail list (collapsible) — per area -->
-            <div id="odp-terpakai-mon-list" style="display:none;flex-direction:column;gap:5px;margin-top:-8px;margin-bottom:10px"></div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:12px;color:var(--text2);line-height:1.5">Monitor kapasitas port ODP, filter per area / ODC, dan distribusi status seluruh jaringan.</div>
+            <button onclick="setTab('odp',document.getElementById('sb-odp-mon'))" style="width:100%;padding:13px 16px;background:rgba(255,82,82,.08);color:var(--red);border:1.5px solid rgba(255,82,82,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+              <i class="ti ti-antenna-bars-5" style="font-size:18px"></i> Buka Dashboard ODP
+            </button>
           </div>
-
-
-          <!-- Anchor untuk restore posisi filter wrap setelah reset -->
-          <div id="odp-mon-filter-anchor" style="display:none"></div>
-
-          <!-- Filter ODC & ODP — area dipilih via card kapasitas per area -->
-          <div id="odp-mon-odc-odp-filter-wrap" style="display:none;background:var(--bg4);border-radius:var(--rs);padding:11px 12px;margin-bottom:10px;border:1px solid rgba(26,86,219,.18)">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
-              <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:5px">
-                <i class="ti ti-filter" style="font-size:11px;color:var(--c1)"></i>
-                Filter ODC &amp; ODP —
-                <span id="odp-mon-selected-area-lbl" style="color:var(--c1);font-weight:800"></span>
-              </div>
-              <button onclick="resetOdpMonFilter()" id="odp-mon-reset-btn" style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--red);background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.25);border-radius:20px;padding:4px 10px;cursor:pointer;font-family:'Sora',sans-serif">
-                <i class="ti ti-x" style="font-size:11px"></i> Reset
-              </button>
-            </div>
-            <!-- hidden area filter (still needed by JS logic) -->
-            <select id="odp-mon-area-filter" onchange="onOdpMonAreaChange()" style="display:none">
-              <option value="">Pilih Area...</option>
-            </select>
-            <div style="display:flex;flex-direction:column;gap:7px">
-              <!-- ODC -->
-              <div id="odp-mon-odc-row">
-                <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-sitemap" style="font-size:11px"></i> ODC</label>
-                <select id="odp-mon-odc-filter" onchange="onOdpMonOdcChange()" style="background:var(--bg3);border:1.5px solid rgba(157,128,250,.3);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
-                  <option value="">Semua ODC</option>
-                </select>
-              </div>
-              <!-- ODP — muncul setelah ODC dipilih -->
-              <div id="odp-mon-odp-row" style="display:none">
-                <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-antenna-bars-5" style="font-size:11px"></i> ODP</label>
-                <select id="odp-mon-odp-filter" onchange="onOdpMonOdpChange()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.25);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
-                  <option value="">Semua ODP</option>
-                </select>
-              </div>
-            </div>
-            <!-- Panel detail ODP terpilih (read only) -->
-            <div id="odp-mon-odp-detail-panel" style="display:none;margin-top:10px;background:var(--bg3);border-radius:var(--rs);padding:10px 12px;border:1px solid rgba(255,82,82,.2)">
-              <div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:5px">
-                <i class="ti ti-users" style="font-size:11px"></i> Pelanggan di ODP Terpilih <span style="background:rgba(255,82,82,.15);border-radius:10px;padding:1px 7px;font-size:9px" id="odp-mon-odp-det-count"></span>
-              </div>
-              <div id="odp-mon-odp-det-list"></div>
-            </div>
-            <!-- Info sumber data -->
-            <div style="font-size:10px;color:var(--text3);margin-top:9px;display:flex;align-items:center;gap:5px;background:var(--bg3);border-radius:7px;padding:6px 10px;border:1px solid var(--border)">
-              <i class="ti ti-info-circle" style="font-size:12px;color:var(--c1);flex-shrink:0"></i>
-              <span>Data dari <b style="color:var(--c1)">Setting → Wilayah</b> · <span id="odp-mon-info-total" style="color:var(--text2);font-weight:700"></span></span>
-            </div>
-          </div>
-
-          <!-- Chart 1: Kapasitas Port per AREA — stat cards -->
-          <div style="background:var(--bg3);border-radius:var(--rs);padding:12px;margin-bottom:10px;border:1px solid var(--border)">
-            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px">
-              <i class="ti ti-map-pin" style="font-size:14px;color:var(--c1)"></i> Kapasitas Port per Area
-            </div>
-            <div id="odp-mon-area-chart">
-              <div style="font-size:11px;color:var(--text3);text-align:center;padding:14px">Belum ada data</div>
-            </div>
-          </div>
-
-          <!-- Chart 2: Kapasitas Port per ODC — hanya tampil bila ODC dipilih -->
-          <div id="odp-mon-odc-wrap" style="display:none;background:var(--bg3);border-radius:var(--rs);padding:12px;margin-bottom:10px;border:1px solid rgba(157,128,250,.2)">
-            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px">
-              <i class="ti ti-sitemap" style="font-size:14px;color:var(--pu)"></i> Kapasitas Port per ODC
-            </div>
-            <div id="odp-mon-odc-chart">
-              <div style="font-size:11px;color:var(--text3);text-align:center;padding:14px">Belum ada data ODC</div>
-            </div>
-          </div>
-
-          <!-- Chart 3: Donut distribusi status port -->
-          <div style="background:var(--bg3);border-radius:var(--rs);padding:12px;margin-bottom:10px;border:1px solid var(--border)">
-            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px">
-              <i class="ti ti-chart-donut" style="font-size:14px;color:var(--yellow)"></i> Distribusi Status ODP
-            </div>
-            <div class="donut-wrap">
-              <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100" id="odp-mon-donut"><circle cx="50" cy="50" r="36" fill="none" stroke="#1f2540" stroke-width="16"/><text x="50" y="55" text-anchor="middle" fill="#4a5580" font-size="10" font-family="Sora">kosong</text></svg>
-              <div class="donut-legend" id="odp-mon-donut-legend" style="font-size:11px"></div>
-            </div>
-          </div>
-
-
-
         </div>
         <!-- ═══ END MONITORING ODP ═══ -->
 
@@ -5455,7 +5460,7 @@ function applyRoleUI(){
   if(curTab===null||curTab==='dash'){
     var bnDash=document.getElementById('bn-d');
     if(bnDash){
-      ['dash','form','data','share','set','coming'].forEach(function(id){
+      ['dash','form','data','share','set','coming','odp'].forEach(function(id){
         var p=document.getElementById('pane-'+id);if(p)p.classList.remove('on');
       });
       document.querySelectorAll('.bni').forEach(function(b){b.classList.remove('on');});
@@ -6612,7 +6617,7 @@ function _syncFullRefresh(reason){
     if(typeof renderAcctList==='function'&&curTab==='set')renderAcctList();
     if(typeof renderPinMgr==='function'&&curTab==='set')renderPinMgr();
     if(typeof renderAccessManager==='function'&&curTab==='set')renderAccessManager();
-    if(typeof renderOdpMonitor==='function'&&curTab==='dash')renderOdpMonitor();
+    if(typeof renderOdpMonitor==='function'&&(curTab==='dash'||curTab==='odp'))renderOdpMonitor();
     if(typeof renderOdpRekap==='function'&&curTab==='data')renderOdpRekap();
     if(typeof updSetStats==='function'&&curTab==='set')updSetStats();
     if(typeof updCfgPushStatus==='function'&&curTab==='set')updCfgPushStatus();
@@ -6772,7 +6777,7 @@ function init(){
   renderAccessManager();
   // Always start at dashboard
   var _bnD=document.getElementById('bn-d'); setTab('dash',_bnD||{classList:{add:function(){},remove:function(){}}});
-  setInterval(function(){updTime();if(curTab==='dash')updDash();odpMonLivePulse();},3000);
+  setInterval(function(){updTime();if(curTab==='dash')updDash();if(curTab==='odp'){renderOdpMonitor&&renderOdpMonitor();}odpMonLivePulse();},3000);
   // Live update: fetch ulang data dari Sheets setiap 30 detik (lebih responsif)
   setInterval(function(){
     if(U.read&&isOn()&&!pelFetching){
@@ -6920,6 +6925,7 @@ function setTab(t,btn,skipDataReset){
   
   if(t==='share')updShare();
   if(t==='dash')updDash();
+  if(t==='odp'){updOdpMonitor&&updOdpMonitor();}
 
   if(t==='set'){
     renderPinMgr();renderSalesMgr();renderAcctList();
@@ -10131,7 +10137,7 @@ function fetchPelDB(showToast){
     // Broadcast ke semua tab bahwa data Sheets terbaru sudah ada
     _syncBroadcast(K.pc,JSON.stringify(pelDB));
     if(curTab==='data')renderList();
-    if(curTab==='dash')renderOdpMonitor&&renderOdpMonitor();
+    if(curTab==='dash'||curTab==='odp')renderOdpMonitor&&renderOdpMonitor();
   }
 
   function onFail(reason){
