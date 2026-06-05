@@ -2,7 +2,7 @@
 <!-- saved from url=(0033)https://pelangganwtg.netlify.app/ -->
 <html lang="id"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -46,7 +46,7 @@
   --c2g:rgba(249,115,22,.14);--c2b:rgba(249,115,22,.07);
   --gng2:rgba(5,150,105,.07);--rg2:rgba(220,38,38,.06);
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Sora',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+html{height:100%;height:-webkit-fill-available;overflow:hidden}body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);font-family:'Sora',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;position:fixed;width:100%;top:0;left:0}
 
 /* ═══════════════════════════════
    OFFLINE WALL
@@ -61,7 +61,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Sora',sa
 /* ═══════════════════════════════
    APP SHELL — STARLITE THEME
 ═══════════════════════════════ */
-.shell{height:100%;display:flex;flex-direction:column}
+.shell{position:fixed;inset:0;height:100%;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 .hd{background:var(--bg2);border-bottom:1.5px solid var(--border2);flex-shrink:0;padding-top:var(--sat);box-shadow:0 2px 12px rgba(26,86,219,.08)}
 .hd-inner{padding:12px 16px}
 .hd-top{display:flex;align-items:center;justify-content:space-between}
@@ -1343,7 +1343,7 @@ textarea{resize:none;height:72px;line-height:1.6}
 .acct-item{background:var(--bg3);border-radius:var(--rs);padding:10px 12px;border:1px solid var(--border);display:flex;align-items:center;gap:9px;transition:var(--ease)}
 .acct-item:hover{border-color:var(--border2)}
 .acct-av{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;font-family:'JetBrains Mono',monospace}
-.acct-av.admin{background:var(--c1b);color:var(--c1)}.acct-av.teknisi{background:var(--c2b);color:var(--c2)}.acct-av.gudang{background:var(--gng);color:var(--green)}.acct-av.tamu{background:var(--pug);color:var(--pu)}
+.acct-av.admin{background:var(--c1b);color:var(--c1)}.acct-av.teknisi{background:var(--c2b);color:var(--c2)}.acct-av.gudang{background:var(--gng);color:var(--green)}.acct-av.tamu{background:var(--pug);color:var(--pu)}.acct-av.sales{background:rgba(124,58,237,.12);color:var(--pu)}
 .acct-info{flex:1;min-width:0}
 .acct-name{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acct-meta{font-size:9px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace}
@@ -1369,6 +1369,22 @@ textarea{resize:none;height:72px;line-height:1.6}
 .acct-modal-cancel:hover{background:var(--bg3)}
 .acct-empty{text-align:center;padding:26px 16px;color:var(--text3);font-size:12px}
 .acct-empty i{font-size:34px;display:block;margin-bottom:8px;opacity:.2}
+.acct-code-badge{display:inline-flex;align-items:center;gap:4px;background:var(--c1b);color:var(--c1);border:1px solid rgba(26,86,219,.2);border-radius:7px;padding:2px 7px;font-size:9px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;cursor:pointer;transition:.15s;margin-top:2px;user-select:all}
+.acct-code-badge:active{background:var(--c1g);transform:scale(.96)}
+.acct-code-badge.teknisi{background:var(--c2b);color:var(--c2);border-color:rgba(249,115,22,.2)}
+.acct-code-badge.gudang{background:var(--gng);color:var(--green);border-color:rgba(5,150,105,.2)}
+.acct-code-badge.sales{background:rgba(124,58,237,.1);color:var(--pu);border-color:rgba(124,58,237,.2)}
+.acct-code-badge.tamu{background:var(--pug);color:var(--pu);border-color:rgba(124,58,237,.2)}
+/* Kode Akun field di modal */
+.acct-code-display{background:var(--bg4);border:1.5px solid var(--border2);border-radius:var(--rs);padding:11px 13px;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;color:var(--c1);letter-spacing:1px;text-align:center;position:relative;cursor:pointer;user-select:all;transition:.15s}
+.acct-code-display:active{background:var(--c1b)}
+.acct-code-copy-hint{font-size:9px;color:var(--text3);text-align:center;margin-top:4px}
+/* Prefix setting card */
+.prefix-role-row{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:var(--rs);padding:10px 12px;border:1px solid var(--border);margin-bottom:7px}
+.prefix-role-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.prefix-role-label{flex:1;font-size:12px;font-weight:700;color:var(--text)}
+.prefix-inp{width:90px;padding:7px 10px;background:#fff;border:1.5px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:var(--c1);letter-spacing:.5px;text-align:center;text-transform:uppercase;outline:none;transition:border .15s}
+.prefix-inp:focus{border-color:var(--c1);box-shadow:0 0 0 3px var(--c1b)}
 .role-badge-sm{font-size:8px;font-weight:700;padding:2px 7px;border-radius:10px}
 .rb-admin{background:var(--c1g);color:var(--c1)}.rb-teknisi{background:var(--c2g);color:var(--c2)}.rb-gudang{background:var(--gng);color:var(--green)}.rb-tamu{background:var(--pug);color:var(--pu)}
 
@@ -1703,6 +1719,11 @@ input::placeholder, textarea::placeholder { font-size: 15px !important; }
 .sb-item i, .sb-sub i { font-size: 20px !important; }
 
 /* ODP monitoring stats */
+/* ODP monitor filter panel (area → ODC → ODP) */
+#odp-mon-odc-odp-filter-wrap{transition:all .2s}
+#odp-mon-odp-detail-panel .pel-ro-card{animation:fadeInUp .2s ease}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
 #odp-mon-total-penuh, #odp-mon-total-kritis, #odp-mon-total-kosong,
 #odp-mon-total-ok, #odp-mon-total-blm { font-size: 32px !important; }
 
@@ -2710,43 +2731,52 @@ p, span, div, label, td, th, li {
           </div>
 
 
-          <!-- Filter: Area → ODC → ODP (cascading) — di bawah stat global -->
-          <div style="background:var(--bg4);border-radius:var(--rs);padding:11px 12px;margin-bottom:10px;border:1px solid var(--border)">
+          <!-- Anchor untuk restore posisi filter wrap setelah reset -->
+          <div id="odp-mon-filter-anchor" style="display:none"></div>
+
+          <!-- Filter ODC & ODP — area dipilih via card kapasitas per area -->
+          <div id="odp-mon-odc-odp-filter-wrap" style="display:none;background:var(--bg4);border-radius:var(--rs);padding:11px 12px;margin-bottom:10px;border:1px solid rgba(26,86,219,.18)">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
               <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:5px">
-                <i class="ti ti-filter" style="font-size:11px;color:var(--c1)"></i> Filter Detail
+                <i class="ti ti-filter" style="font-size:11px;color:var(--c1)"></i>
+                Filter ODC &amp; ODP —
+                <span id="odp-mon-selected-area-lbl" style="color:var(--c1);font-weight:800"></span>
               </div>
-              <button onclick="resetOdpMonFilter()" id="odp-mon-reset-btn" style="display:none;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--red);background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.25);border-radius:20px;padding:4px 10px;cursor:pointer;font-family:'Sora',sans-serif">
+              <button onclick="resetOdpMonFilter()" id="odp-mon-reset-btn" style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--red);background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.25);border-radius:20px;padding:4px 10px;cursor:pointer;font-family:'Sora',sans-serif">
                 <i class="ti ti-x" style="font-size:11px"></i> Reset
               </button>
             </div>
+            <!-- hidden area filter (still needed by JS logic) -->
+            <select id="odp-mon-area-filter" onchange="onOdpMonAreaChange()" style="display:none">
+              <option value="">Pilih Area...</option>
+            </select>
             <div style="display:flex;flex-direction:column;gap:7px">
-              <!-- Area -->
-              <div>
-                <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:11px"></i> Area</label>
-                <select id="odp-mon-area-filter" onchange="onOdpMonAreaChange()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.2);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
-                  <option value="">Pilih Area...</option>
-                </select>
-              </div>
-              <!-- ODC — muncul setelah area dipilih -->
-              <div id="odp-mon-odc-row" style="display:none">
+              <!-- ODC -->
+              <div id="odp-mon-odc-row">
                 <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-sitemap" style="font-size:11px"></i> ODC</label>
-                <select id="odp-mon-odc-filter" onchange="onOdpMonOdcChange()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.2);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
-                  <option value="">Pilih ODC...</option>
+                <select id="odp-mon-odc-filter" onchange="onOdpMonOdcChange()" style="background:var(--bg3);border:1.5px solid rgba(157,128,250,.3);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
+                  <option value="">Semua ODC</option>
                 </select>
               </div>
               <!-- ODP — muncul setelah ODC dipilih -->
               <div id="odp-mon-odp-row" style="display:none">
                 <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px"><i class="ti ti-antenna-bars-5" style="font-size:11px"></i> ODP</label>
-                <select id="odp-mon-odp-filter" onchange="renderOdpMonitor()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.2);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
-                  <option value="">Pilih ODP...</option>
+                <select id="odp-mon-odp-filter" onchange="onOdpMonOdpChange()" style="background:var(--bg3);border:1.5px solid rgba(255,82,82,.25);border-radius:var(--rs);color:var(--text);font-family:'Sora',sans-serif;font-size:12px;padding:9px 30px 9px 11px;width:100%;outline:none;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%238892b0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center">
+                  <option value="">Semua ODP</option>
                 </select>
               </div>
+            </div>
+            <!-- Panel detail ODP terpilih (read only) -->
+            <div id="odp-mon-odp-detail-panel" style="display:none;margin-top:10px;background:var(--bg3);border-radius:var(--rs);padding:10px 12px;border:1px solid rgba(255,82,82,.2)">
+              <div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:5px">
+                <i class="ti ti-users" style="font-size:11px"></i> Pelanggan di ODP Terpilih <span style="background:rgba(255,82,82,.15);border-radius:10px;padding:1px 7px;font-size:9px" id="odp-mon-odp-det-count"></span>
+              </div>
+              <div id="odp-mon-odp-det-list"></div>
             </div>
             <!-- Info sumber data -->
             <div style="font-size:10px;color:var(--text3);margin-top:9px;display:flex;align-items:center;gap:5px;background:var(--bg3);border-radius:7px;padding:6px 10px;border:1px solid var(--border)">
               <i class="ti ti-info-circle" style="font-size:12px;color:var(--c1);flex-shrink:0"></i>
-              <span>Filter dari <b style="color:var(--c1)">Setting → Wilayah</b> · Kapasitas dari total ODP terdaftar · <span id="odp-mon-info-total" style="color:var(--text2);font-weight:700"></span></span>
+              <span>Data dari <b style="color:var(--c1)">Setting → Wilayah</b> · <span id="odp-mon-info-total" style="color:var(--text2);font-weight:700"></span></span>
             </div>
           </div>
 
@@ -2785,6 +2815,17 @@ p, span, div, label, td, th, li {
 
         </div>
         <!-- ═══ END MONITORING ODP ═══ -->
+
+        <!-- ══ LIVE ACTIVITY FEED (multi-device) ══ -->
+        <div class="card" style="border-color:rgba(16,217,160,.2);margin-bottom:12px">
+          <div class="sec-t" style="color:var(--green);justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:6px"><i class="ti ti-activity"></i> Live Aktivitas <span style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite;display:inline-block;margin-left:2px"></span></span>
+            <span style="font-size:9px;color:var(--text3);font-weight:500;font-family:'JetBrains Mono',monospace">Real-time · Semua Device</span>
+          </div>
+          <div class="live-activity-feed" style="max-height:280px;overflow-y:auto">
+            <div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px"><i class="ti ti-activity" style="font-size:24px;display:block;margin-bottom:6px"></i>Memuat aktivitas...</div>
+          </div>
+        </div>
 
         <div class="card c1">
           <div class="sec-t c1"><i class="ti ti-clock"></i> Aktivitas Terbaru</div>
@@ -3688,11 +3729,69 @@ p, span, div, label, td, th, li {
       <button id="odp-filter-btn" style="display:none" aria-hidden="true"
         onclick="setF('odp',this);document.querySelectorAll('#global-mode-row .dtab').forEach(function(b){b.classList.remove('on');});"></button>
 
-      <!-- Action chips: export, import, kirim ulang -->
+      <!-- Action chips: export, import, kirim ulang — KONTEKSTUAL per tab aktif -->
       <div class="chips" style="margin-bottom:14px">
-        <button class="chip" style="background:var(--c1b);border-color:rgba(61,142,248,.35);color:var(--c1)" onclick="expCSV()"><i class="ti ti-download"></i> CSV</button>
-        <button class="chip" style="background:rgba(16,217,160,.15);border-color:rgba(16,217,160,.35);color:var(--green)" onclick="triggerImportCSV()"><i class="ti ti-upload"></i> Import</button>
+        <button class="chip" id="chip-export" style="background:var(--c1b);border-color:rgba(61,142,248,.35);color:var(--c1)" onclick="showExportModal()"><i class="ti ti-download"></i> Export</button>
+        <button class="chip" id="chip-import" style="background:rgba(16,217,160,.15);border-color:rgba(16,217,160,.35);color:var(--green)" onclick="showImportModal()"><i class="ti ti-upload"></i> Import</button>
         <button class="chip" style="background:rgba(61,142,248,.12);border-color:rgba(61,142,248,.3);color:var(--c1)" onclick="retrySend()"><i class="ti ti-send"></i> Kirim Ulang</button>
+      </div>
+
+      <!-- ── EXPORT MODAL (bottom sheet) ── -->
+      <div id="modal-export" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)" onclick="if(event.target===this)closeExportModal()">
+        <div id="modal-export-sheet" style="position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 40px rgba(0,0,0,.25);transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.1,.64,1)">
+          <div style="width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div id="modal-export-icon" style="width:40px;height:40px;border-radius:12px;background:var(--c1b);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-download" style="font-size:20px;color:var(--c1)"></i>
+            </div>
+            <div>
+              <div id="modal-export-title" style="font-size:15px;font-weight:800;color:var(--text)">Export Data</div>
+              <div id="modal-export-sub" style="font-size:11px;color:var(--text3);margin-top:1px">Pilih format file</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <button onclick="doExportFromModal('csv')" style="width:100%;padding:13px 16px;background:var(--c1b);color:var(--c1);border:1.5px solid rgba(61,142,248,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+              <div style="width:38px;height:38px;border-radius:10px;background:rgba(61,142,248,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-file-type-csv" style="font-size:20px"></i></div>
+              <div style="text-align:left"><div>Export CSV</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:1px">Format spreadsheet — bisa dibuka di Excel/Sheets</div></div>
+            </button>
+            <button onclick="doExportFromModal('json')" style="width:100%;padding:13px 16px;background:rgba(167,139,250,.09);color:var(--pu);border:1.5px solid rgba(167,139,250,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+              <div style="width:38px;height:38px;border-radius:10px;background:rgba(167,139,250,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-file-type-json" style="font-size:20px"></i></div>
+              <div style="text-align:left"><div>Export JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:1px">Format backup — cocok untuk restore data</div></div>
+            </button>
+          </div>
+          <button onclick="closeExportModal()" style="width:100%;margin-top:12px;padding:13px;background:var(--bg4);color:var(--text3);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Batal</button>
+        </div>
+      </div>
+
+      <!-- ── IMPORT MODAL (bottom sheet) ── -->
+      <div id="modal-import" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)" onclick="if(event.target===this)closeImportModal()">
+        <div id="modal-import-sheet" style="position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 40px rgba(0,0,0,.25);transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.1,.64,1)">
+          <div style="width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(16,217,160,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-upload" style="font-size:20px;color:var(--green)"></i>
+            </div>
+            <div>
+              <div id="modal-import-title" style="font-size:15px;font-weight:800;color:var(--text)">Import Data</div>
+              <div id="modal-import-sub" style="font-size:11px;color:var(--text3);margin-top:1px">Pilih file .csv atau .json</div>
+            </div>
+          </div>
+          <div style="background:rgba(217,119,6,.07);border:1px solid rgba(217,119,6,.25);border-radius:var(--rs);padding:10px 12px;margin-bottom:12px;display:flex;gap:8px;align-items:flex-start">
+            <i class="ti ti-alert-triangle" style="font-size:15px;color:var(--yellow);flex-shrink:0;margin-top:1px"></i>
+            <span style="font-size:11px;color:var(--text2);line-height:1.6" id="modal-import-warn">Data duplikat (berdasarkan CID) akan dilewati. Data yang sudah ada tidak akan dihapus.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <button onclick="doImportFromModal('csv')" style="width:100%;padding:13px 16px;background:rgba(16,217,160,.08);color:var(--green);border:1.5px solid rgba(16,217,160,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+              <div style="width:38px;height:38px;border-radius:10px;background:rgba(16,217,160,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-file-upload" style="font-size:20px"></i></div>
+              <div style="text-align:left"><div>Import dari CSV</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:1px">Upload file .csv (format Sheets atau export lokal)</div></div>
+            </button>
+            <button onclick="doImportFromModal('json')" style="width:100%;padding:13px 16px;background:rgba(167,139,250,.08);color:var(--pu);border:1.5px solid rgba(167,139,250,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;transition:opacity .15s" ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+              <div style="width:38px;height:38px;border-radius:10px;background:rgba(167,139,250,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-cloud-upload" style="font-size:20px"></i></div>
+              <div style="text-align:left"><div>Import dari JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:1px">Restore dari file backup .json sebelumnya</div></div>
+            </button>
+          </div>
+          <button onclick="closeImportModal()" style="width:100%;margin-top:12px;padding:13px;background:var(--bg4);color:var(--text3);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Batal</button>
+        </div>
       </div>
 
 
@@ -3982,36 +4081,36 @@ p, span, div, label, td, th, li {
         </div>
       </div>
 
-      <!-- EXPORT / IMPORT CARD -->
+      <!-- EXPORT / IMPORT CARD — shortcut ke Setting > Data & Backup -->
       <div class="card" style="border-color:rgba(61,142,248,.2)">
-        <div class="sec-t c1"><i class="ti ti-database-export"></i> Export Data</div>
+        <div class="sec-t c1"><i class="ti ti-database-export"></i> Export / Backup Data</div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button onclick="expCSV()" style="width:100%;padding:13px;background:var(--c1b);color:var(--c1);border:1.5px solid rgba(61,142,248,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
+          <button onclick="expFullBackupCSV()" style="width:100%;padding:13px;background:var(--c1b);color:var(--c1);border:1.5px solid rgba(61,142,248,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
             <i class="ti ti-file-type-csv" style="font-size:18px"></i>
-            <div style="text-align:left"><div>Export CSV Lokal</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Data yang diinput di app ini</div></div>
+            <div style="text-align:left"><div>Export All — CSV</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Semua pelanggan &amp; material dalam 1 file CSV</div></div>
+          </button>
+          <button onclick="expFullBackupJSON()" style="width:100%;padding:13px;background:rgba(167,139,250,.1);color:var(--pu);border:1.5px solid rgba(167,139,250,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
+            <i class="ti ti-database-export" style="font-size:18px"></i>
+            <div style="text-align:left"><div>Backup Lengkap — JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Semua data + konfigurasi, akun &amp; ODP setting</div></div>
           </button>
           <button onclick="expSheetsPelCSV()" style="width:100%;padding:13px;background:rgba(16,217,160,.08);color:var(--green);border:1.5px solid rgba(16,217,160,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
             <i class="ti ti-table-export" style="font-size:18px"></i>
-            <div style="text-align:left"><div>Export Pelanggan Sheets</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Semua data dari Google Sheets + lokal</div></div>
-          </button>
-          <button onclick="expJSON()" style="width:100%;padding:13px;background:rgba(167,139,250,.1);color:var(--pu);border:1.5px solid rgba(167,139,250,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
-            <i class="ti ti-file-type-json" style="font-size:18px"></i>
-            <div style="text-align:left"><div>Backup JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Backup lengkap pelanggan & material</div></div>
+            <div style="text-align:left"><div>Export Pelanggan Sheets</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Gabungan data Sheets + lokal</div></div>
           </button>
         </div>
       </div>
 
       <div class="card" style="border-color:rgba(249,115,22,.2)">
-        <div class="sec-t c2"><i class="ti ti-database-import"></i> Import Data <span style="font-size:9px;background:var(--rg);color:var(--red);padding:2px 7px;border-radius:10px;margin-left:4px">Admin</span></div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.6">Import data dari file CSV (format Sheets atau export lokal) atau file JSON backup. Data duplikat berdasarkan CID akan dilewati.</div>
+        <div class="sec-t c2"><i class="ti ti-database-import"></i> Import / Restore <span style="font-size:9px;background:var(--rg);color:var(--red);padding:2px 7px;border-radius:10px;margin-left:4px">Admin</span></div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.6">Untuk import per-data (pelanggan saja / material saja), gunakan tombol <b>Import</b> di tab Data. Untuk restore semua data sekaligus, gunakan tombol di bawah.</div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button onclick="triggerImportCSV()" style="width:100%;padding:13px;background:var(--c2b);color:var(--c2);border:1.5px solid rgba(249,115,22,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
-            <i class="ti ti-file-upload" style="font-size:18px"></i>
-            <div style="text-align:left"><div>Import dari CSV</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Upload file .csv dari Sheets atau export lokal</div></div>
+          <button onclick="triggerFullRestoreJSON()" style="width:100%;padding:13px;background:var(--c2b);color:var(--c2);border:1.5px solid rgba(249,115,22,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
+            <i class="ti ti-database-import" style="font-size:18px"></i>
+            <div style="text-align:left"><div>Restore All — JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Timpa semua data dari file .json backup lengkap</div></div>
           </button>
-          <button onclick="triggerImportJSON()" style="width:100%;padding:13px;background:rgba(167,139,250,.1);color:var(--pu);border:1.5px solid rgba(167,139,250,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
-            <i class="ti ti-cloud-upload" style="font-size:18px"></i>
-            <div style="text-align:left"><div>Restore Backup JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Restore dari file .json backup sebelumnya</div></div>
+          <button onclick="triggerFullRestoreCSV()" style="width:100%;padding:13px;background:rgba(167,139,250,.1);color:var(--pu);border:1.5px solid rgba(167,139,250,.3);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
+            <i class="ti ti-file-upload" style="font-size:18px"></i>
+            <div style="text-align:left"><div>Import All — CSV</div><div style="font-size:10px;font-weight:400;color:var(--text3)">Timpa semua data dari file .csv export lokal</div></div>
           </button>
         </div>
       </div>
@@ -4423,6 +4522,38 @@ p, span, div, label, td, th, li {
 
         <!-- TAB AKUN TIM -->
         <div id="mgmt-pane-akun" style="display:none">
+
+          <!-- KODE AKUN PREFIX SETTING -->
+          <div style="background:var(--bg2);border:1px solid rgba(26,86,219,.18);border-radius:var(--r);padding:14px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:10px;font-weight:700;color:var(--c1);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="ti ti-hash" style="font-size:14px"></i> Kode Akun — Prefix</div>
+              <button onclick="saveAcctPrefixes()" style="padding:6px 12px;background:var(--c1);color:#fff;border:none;border-radius:7px;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px"><i class="ti ti-device-floppy"></i> Simpan</button>
+            </div>
+            <p style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px">Atur 3 huruf prefix kode akun per peran. Kode digenerate otomatis saat akun dibuat. Format: <b style="font-family:'JetBrains Mono',monospace;color:var(--c1)">XXX00001</b></p>
+            <div id="prefix-setting-list">
+              <div class="prefix-role-row">
+                <div class="prefix-role-icon" style="background:var(--c2b)"><i class="ti ti-tools" style="color:var(--c2)"></i></div>
+                <div class="prefix-role-label">Teknisi</div>
+                <input class="prefix-inp" id="prefix-teknisi" maxlength="3" placeholder="TKN" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)" value="">
+              </div>
+              <div class="prefix-role-row">
+                <div class="prefix-role-icon" style="background:var(--gng)"><i class="ti ti-package" style="color:var(--green)"></i></div>
+                <div class="prefix-role-label">Gudang</div>
+                <input class="prefix-inp" id="prefix-gudang" maxlength="3" placeholder="GDG" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)" value="">
+              </div>
+              <div class="prefix-role-row">
+                <div class="prefix-role-icon" style="background:rgba(124,58,237,.1)"><i class="ti ti-trending-up" style="color:var(--pu)"></i></div>
+                <div class="prefix-role-label">Sales</div>
+                <input class="prefix-inp" id="prefix-sales" maxlength="3" placeholder="SLS" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)" value="">
+              </div>
+              <div class="prefix-role-row">
+                <div class="prefix-role-icon" style="background:var(--pug)"><i class="ti ti-eye" style="color:var(--pu)"></i></div>
+                <div class="prefix-role-label">Tamu</div>
+                <input class="prefix-inp" id="prefix-tamu" maxlength="3" placeholder="TMU" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)" value="">
+              </div>
+            </div>
+          </div>
+
           <div style="background:var(--bg2);border:1px solid rgba(61,142,248,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
               <div style="font-size:10px;font-weight:700;color:var(--c1);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="ti ti-users" style="font-size:14px"></i> Daftar Akun Tim</div>
@@ -4649,41 +4780,53 @@ p, span, div, label, td, th, li {
           </div>
         </div>
 
-        <!-- Export -->
+        <!-- Export All -->
         <div style="background:var(--bg2);border:1px solid rgba(16,217,160,.2);border-radius:var(--r);padding:14px;margin-bottom:12px">
-          <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;display:flex;align-items:center;gap:6px"><i class="ti ti-download" style="font-size:14px"></i> Export Data</div>
+          <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;display:flex;align-items:center;gap:6px"><i class="ti ti-download" style="font-size:14px"></i> Export / Backup Semua</div>
+          <p style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">Export <b>seluruh data aplikasi</b> — pelanggan, material, sales, ODP, akun &amp; konfigurasi.</p>
           <div style="display:flex;flex-direction:column;gap:7px">
-            <button onclick="expCSV()" style="width:100%;padding:12px;background:rgba(16,217,160,.08);color:var(--green);border:1.5px solid rgba(16,217,160,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
+            <button onclick="expFullBackupCSV()" style="width:100%;padding:12px;background:rgba(16,217,160,.08);color:var(--green);border:1.5px solid rgba(16,217,160,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
               <div style="width:36px;height:36px;border-radius:9px;background:rgba(16,217,160,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-file-type-csv" style="font-size:18px"></i></div>
-              <div style="text-align:left"><div>Export CSV Lokal</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Data pelanggan &amp; material dari storage lokal</div></div>
+              <div style="text-align:left"><div>Export All — CSV</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Semua data (pelanggan + material) dalam 1 file CSV</div></div>
             </button>
-            <button onclick="expSheetsPelCSV()" style="width:100%;padding:12px;background:rgba(16,217,160,.08);color:var(--green);border:1.5px solid rgba(16,217,160,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:9px;background:rgba(16,217,160,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-table-export" style="font-size:18px"></i></div>
-              <div style="text-align:left"><div>Export Pelanggan Sheets</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Gabungan data Sheets + lokal</div></div>
-            </button>
-            <button onclick="expJSON()" style="width:100%;padding:12px;background:rgba(167,139,250,.08);color:var(--pu);border:1.5px solid rgba(167,139,250,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:9px;background:rgba(167,139,250,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-file-type-json" style="font-size:18px"></i></div>
-              <div style="text-align:left"><div>Backup JSON Lengkap</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Backup semua pelanggan, material &amp; konfigurasi</div></div>
+            <button onclick="expFullBackupJSON()" style="width:100%;padding:12px;background:rgba(167,139,250,.08);color:var(--pu);border:1.5px solid rgba(167,139,250,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:9px;background:rgba(167,139,250,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-database-export" style="font-size:18px"></i></div>
+              <div style="text-align:left"><div>Backup Lengkap — JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Semua data + konfigurasi, akun, ODP setting</div></div>
             </button>
           </div>
         </div>
 
-        <!-- Import -->
+        <!-- Import / Restore All -->
         <div style="background:var(--bg2);border:1px solid rgba(249,115,22,.2);border-radius:var(--r);padding:14px;margin-bottom:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div style="font-size:10px;font-weight:700;color:var(--c2);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="ti ti-upload" style="font-size:14px"></i> Import Data</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:10px;font-weight:700;color:var(--c2);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="ti ti-upload" style="font-size:14px"></i> Import / Restore Semua</div>
             <span style="font-size:9px;background:var(--rg);color:var(--red);padding:3px 8px;border-radius:10px;font-weight:700">Admin Only</span>
           </div>
-          <p style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.6">Data duplikat berdasarkan CID akan otomatis dilewati saat import.</p>
+          <p style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.6">Restore <b>seluruh data aplikasi</b> dari file backup. Semua data yang ada akan <b style="color:var(--red)">langsung ditimpa</b> setelah konfirmasi.</p>
           <div style="display:flex;flex-direction:column;gap:7px">
-            <button onclick="triggerImportCSV()" style="width:100%;padding:12px;background:rgba(249,115,22,.08);color:var(--c2);border:1.5px solid rgba(249,115,22,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:9px;background:var(--c2b);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-file-upload" style="font-size:18px"></i></div>
-              <div style="text-align:left"><div>Import dari CSV</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Format Sheets atau export lokal (.csv)</div></div>
+            <button onclick="triggerFullRestoreJSON()" style="width:100%;padding:12px;background:rgba(249,115,22,.08);color:var(--c2);border:1.5px solid rgba(249,115,22,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:9px;background:var(--c2b);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-database-import" style="font-size:18px"></i></div>
+              <div style="text-align:left"><div>Restore Backup JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Timpa semua data dari file .json backup lengkap</div></div>
             </button>
-            <button onclick="triggerImportJSON()" style="width:100%;padding:12px;background:rgba(167,139,250,.08);color:var(--pu);border:1.5px solid rgba(167,139,250,.25);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:9px;background:var(--pug);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-cloud-upload" style="font-size:18px"></i></div>
-              <div style="text-align:left"><div>Restore Backup JSON</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Restore dari file .json backup sebelumnya</div></div>
+            <button onclick="triggerFullRestoreCSV()" style="width:100%;padding:12px;background:rgba(16,217,160,.06);color:var(--green);border:1.5px solid rgba(16,217,160,.2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:9px;background:rgba(16,217,160,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-file-upload" style="font-size:18px"></i></div>
+              <div style="text-align:left"><div>Import All — CSV</div><div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:2px">Timpa semua data dari file .csv export lokal</div></div>
             </button>
+          </div>
+        </div>
+
+        <!-- Confirm All-Restore Modal -->
+        <div id="modal-restore-all" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
+          <div style="background:var(--bg2);border-radius:20px;padding:24px;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4);border:1px solid rgba(220,38,38,.2)">
+            <div style="width:52px;height:52px;border-radius:15px;background:var(--rg);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+              <i class="ti ti-alert-triangle" style="font-size:26px;color:var(--red)"></i>
+            </div>
+            <div style="font-size:17px;font-weight:800;color:var(--text);text-align:center;margin-bottom:8px">Timpa Semua Data?</div>
+            <p style="font-size:12px;color:var(--text2);text-align:center;line-height:1.7;margin-bottom:18px" id="modal-restore-all-desc">Seluruh data aplikasi akan <b>diganti permanen</b> dengan data dari file backup. Pastikan file backup benar sebelum melanjutkan.</p>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <button id="modal-restore-all-btn-ok" onclick="confirmRestoreAll()" style="width:100%;padding:14px;background:var(--red);color:#fff;border:none;border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px"><i class="ti ti-database-import"></i> Ya, Restore Sekarang</button>
+              <button onclick="cancelRestoreAll()" style="width:100%;padding:13px;background:var(--bg4);color:var(--text2);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Batal</button>
+            </div>
           </div>
         </div>
 
@@ -4887,6 +5030,13 @@ function doGet(e){
       PIN akun ini menggantikan PIN peran global. Semua akun dengan peran yang sama pakai PIN masing-masing.
     </div>
     <input type="hidden" id="acct-f-id" value="">
+
+    <!-- Kode Akun (read-only, generate otomatis) -->
+    <div class="acct-field" id="acct-code-wrap">
+      <label>Kode Akun <i class="ti ti-sparkles" style="font-size:11px;color:var(--c2);vertical-align:middle"></i></label>
+      <div class="acct-code-display" id="acct-f-code-display" onclick="copyAcctCode()" title="Klik untuk salin">—</div>
+      <div class="acct-code-copy-hint"><i class="ti ti-copy" style="font-size:9px"></i> Klik untuk salin kode</div>
+    </div>
     <div class="acct-modal-btns">
       <button class="acct-modal-cancel" onclick="closeAcctModal()">Batal</button>
       <button class="acct-modal-save" id="acct-modal-save-btn" onclick="saveAcct()"><i class="ti ti-check"></i> Simpan</button>
@@ -5300,9 +5450,9 @@ function applyRoleUI(){
     if(mpM)mpM.style.display='none';
     setTimeout(function(){setMode('p');},0);
   }
-  // FIX: Semua role langsung ke dashboard saat login
-  // agar pane-form yang default 'on' tidak muncul lebih dulu
-  {
+  // Semua role langsung ke dashboard saat PERTAMA login
+  // (hanya jika belum ada curTab yang aktif / baru masuk app)
+  if(curTab===null||curTab==='dash'){
     var bnDash=document.getElementById('bn-d');
     if(bnDash){
       ['dash','form','data','share','set','coming'].forEach(function(id){
@@ -5835,12 +5985,25 @@ async function sbGetRows(type) {
   var sb = _sbGetClient();
   if (!sb) return null;
   try {
-    var { data, error } = await sb.from(SB_TABLE_ROWS).select('data,sent').eq('type', type).order('ts', { ascending: true });
-    if (error || !data) return null;
-    return data.map(function(r) {
-      try { var d = JSON.parse(r.data); d.sent = r.sent; return d; }
-      catch(e) { return null; }
-    }).filter(Boolean);
+    var query;
+    if (type === 'm') {
+      // db.m menyimpan type 'm', 'd', dan 'x' — ambil semuanya
+      var { data, error } = await sb.from(SB_TABLE_ROWS).select('data,sent')
+        .in('type', ['m','d','x']).order('ts', { ascending: true });
+      if (error || !data) return null;
+      return data.map(function(r) {
+        try { var d = JSON.parse(r.data); d.sent = r.sent; return d; }
+        catch(e) { return null; }
+      }).filter(Boolean);
+    } else {
+      var { data: data2, error: error2 } = await sb.from(SB_TABLE_ROWS).select('data,sent')
+        .eq('type', type).order('ts', { ascending: true });
+      if (error2 || !data2) return null;
+      return data2.map(function(r) {
+        try { var d = JSON.parse(r.data); d.sent = r.sent; return d; }
+        catch(e) { return null; }
+      }).filter(Boolean);
+    }
   } catch(e) { return null; }
 }
 
@@ -5908,11 +6071,41 @@ async function sbLoadRows() {
     var pRows = await sbGetRows('p');
     var mRows = await sbGetRows('m');
     if (pRows !== null) {
-      db.p = pRows;
+      // Merge: data lokal yang lebih baru (_editTs > server ts) dipertahankan
+      var localPMap = {};
+      db.p.forEach(function(e){ if(e.ts) localPMap[e.ts] = e; });
+      var mergedP = pRows.map(function(serverRow) {
+        var local = serverRow.ts ? localPMap[serverRow.ts] : null;
+        if (local && local._editTs && (!serverRow._editTs || local._editTs >= serverRow._editTs)) {
+          return local; // pakai versi lokal yang lebih baru
+        }
+        return serverRow;
+      });
+      // Tambahkan data lokal yang belum ada di Supabase (belum dikirim)
+      db.p.forEach(function(e) {
+        if (!e.ts) return;
+        var alreadyInMerged = mergedP.some(function(r){ return r.ts === e.ts; });
+        if (!alreadyInMerged) mergedP.push(e);
+      });
+      db.p = mergedP;
       try { localStorage.setItem(K.p, JSON.stringify(db.p)); } catch(e) {}
     }
     if (mRows !== null) {
-      db.m = mRows;
+      var localMMap = {};
+      db.m.forEach(function(e){ if(e.ts) localMMap[e.ts] = e; });
+      var mergedM = mRows.map(function(serverRow) {
+        var local = serverRow.ts ? localMMap[serverRow.ts] : null;
+        if (local && local._editTs && (!serverRow._editTs || local._editTs >= serverRow._editTs)) {
+          return local;
+        }
+        return serverRow;
+      });
+      db.m.forEach(function(e) {
+        if (!e.ts) return;
+        var alreadyInMerged = mergedM.some(function(r){ return r.ts === e.ts; });
+        if (!alreadyInMerged) mergedM.push(e);
+      });
+      db.m = mergedM;
       try { localStorage.setItem(K.m, JSON.stringify(db.m)); } catch(e) {}
     }
     _sbSetStatus('ok');
@@ -5929,7 +6122,9 @@ async function sbPushAllRows() {
     rows.push({ id: e.ts||'p-'+Math.random(), type:'p', data:JSON.stringify(e), ts:e.ts||new Date().toISOString(), sent:!!e.sent });
   });
   db.m.forEach(function(e) {
-    rows.push({ id: e.ts||'m-'+Math.random(), type:'m', data:JSON.stringify(e), ts:e.ts||new Date().toISOString(), sent:!!e.sent });
+    // Gunakan type asli dari entry (bisa 'm', 'd', atau 'x')
+    var rowType = e.type || 'm';
+    rows.push({ id: e.ts||rowType+'-'+Math.random(), type:rowType, data:JSON.stringify(e), ts:e.ts||new Date().toISOString(), sent:!!e.sent });
   });
   if (!rows.length) return;
   try {
@@ -5962,9 +6157,162 @@ async function sbTestConnection() {
 // Catatan: user perlu buat tabel di Supabase dashboard atau via SQL editor
 // SQL yang diperlukan ditampilkan di UI Setting
 
-var SB_SETUP_SQL = `-- Jalankan SQL ini di Supabase SQL Editor\n\nCREATE TABLE IF NOT EXISTS app_kv (\n  key TEXT PRIMARY KEY,\n  value TEXT NOT NULL,\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS app_rows (\n  id TEXT PRIMARY KEY,\n  type TEXT NOT NULL,\n  data JSONB NOT NULL,\n  ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  sent BOOLEAN DEFAULT FALSE\n);\n\n-- RLS: izinkan semua operasi (sesuaikan policy sesuai kebutuhan keamanan)\nALTER TABLE app_kv ENABLE ROW LEVEL SECURITY;\nALTER TABLE app_rows ENABLE ROW LEVEL SECURITY;\n\nCREATE POLICY "allow_all_kv" ON app_kv FOR ALL USING (true) WITH CHECK (true);\nCREATE POLICY "allow_all_rows" ON app_rows FOR ALL USING (true) WITH CHECK (true);`;
+var SB_SETUP_SQL = `-- Jalankan SQL ini di Supabase SQL Editor\n\nCREATE TABLE IF NOT EXISTS app_kv (\n  key TEXT PRIMARY KEY,\n  value TEXT NOT NULL,\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS app_rows (\n  id TEXT PRIMARY KEY,\n  type TEXT NOT NULL,\n  data JSONB NOT NULL,\n  ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  sent BOOLEAN DEFAULT FALSE\n);\n\nCREATE TABLE IF NOT EXISTS app_activity (\n  id TEXT PRIMARY KEY,\n  actor TEXT NOT NULL,\n  action TEXT NOT NULL,\n  entity_type TEXT NOT NULL,\n  entity_name TEXT,\n  entity_cid TEXT,\n  meta JSONB,\n  ts TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\n-- RLS: izinkan semua operasi\nALTER TABLE app_kv ENABLE ROW LEVEL SECURITY;\nALTER TABLE app_rows ENABLE ROW LEVEL SECURITY;\nALTER TABLE app_activity ENABLE ROW LEVEL SECURITY;\n\nCREATE POLICY \"allow_all_kv\" ON app_kv FOR ALL USING (true) WITH CHECK (true);\nCREATE POLICY \"allow_all_rows\" ON app_rows FOR ALL USING (true) WITH CHECK (true);\nCREATE POLICY \"allow_all_activity\" ON app_activity FOR ALL USING (true) WITH CHECK (true);`;
 
 // ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// ACTIVITY LOG — Real-time feed antar semua device
+// ═══════════════════════════════════════════════════════════════
+var SB_TABLE_ACTIVITY = 'app_activity';
+var _actCache = []; // cache aktivitas di memori
+var _actRealtimeChannel = null;
+
+/* ── Catat aktivitas ke Supabase ── */
+async function logActivity(action, entityType, entityName, entityCid, meta) {
+  var sb = _sbGetClient();
+  if (!sb) return;
+  var actor = currentAcctName || currentRole || 'unknown';
+  var id = 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  var row = {
+    id: id,
+    actor: actor,
+    action: action,        // 'tambah' | 'edit' | 'hapus'
+    entity_type: entityType, // 'pelanggan' | 'material' | 'maintenance' | 'dismantle' | 'sales'
+    entity_name: entityName || '',
+    entity_cid: entityCid || '',
+    meta: meta ? JSON.stringify(meta) : null,
+    ts: new Date().toISOString()
+  };
+  // Tambah ke cache lokal dulu (optimistic)
+  _actCache.unshift(row);
+  if (_actCache.length > 50) _actCache.pop();
+  _renderActivityFeed();
+  try {
+    await sb.from(SB_TABLE_ACTIVITY).insert(row);
+  } catch(e) {}
+}
+
+/* ── Load aktivitas terbaru dari Supabase ── */
+async function loadActivityFeed() {
+  var sb = _sbGetClient();
+  if (!sb) return;
+  try {
+    var { data, error } = await sb
+      .from(SB_TABLE_ACTIVITY)
+      .select('*')
+      .order('ts', { ascending: false })
+      .limit(30);
+    if (!error && data) {
+      _actCache = data;
+      _renderActivityFeed();
+    }
+  } catch(e) {}
+}
+
+/* ── Start realtime listener untuk activity feed ── */
+function sbStartActivityRealtime() {
+  var sb = _sbGetClient();
+  if (!sb || _actRealtimeChannel) return;
+  try {
+    _actRealtimeChannel = sb
+      .channel('activity-feed-v1')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: SB_TABLE_ACTIVITY }, function(payload) {
+        if (!payload.new) return;
+        var row = payload.new;
+        // Hindari duplikasi (jika kita sendiri yang kirim, sudah ada di cache)
+        var exists = _actCache.some(function(a){ return a.id === row.id; });
+        if (!exists) {
+          _actCache.unshift(row);
+          if (_actCache.length > 50) _actCache.pop();
+          _renderActivityFeed();
+          // Notif toast ringan untuk aktivitas dari device lain
+          var myActor = currentAcctName || currentRole || 'unknown';
+          if (row.actor !== myActor) {
+            var icon = _actIcon(row.entity_type);
+            var actLabel = _actLabel(row.action);
+            toast(icon + ' ' + fmtOp(row.actor) + ' ' + actLabel + ' ' + (row.entity_name || row.entity_type), 'info', 3500);
+          }
+        }
+      })
+      .subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+          loadActivityFeed();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          _actRealtimeChannel = null;
+          setTimeout(sbStartActivityRealtime, 6000);
+        }
+      });
+  } catch(e) {
+    _actRealtimeChannel = null;
+    setTimeout(sbStartActivityRealtime, 8000);
+  }
+}
+
+/* ── Helper: ikon dan label per tipe ── */
+function _actIcon(type) {
+  var map = { pelanggan:'👤', material:'📦', maintenance:'🔧', dismantle:'🗑️', sales:'💰' };
+  return map[type] || '📋';
+}
+function _actTypeColor(type) {
+  var map = { pelanggan:'var(--c1)', material:'var(--c2)', maintenance:'var(--pu)', dismantle:'var(--red)', sales:'var(--green)' };
+  return map[type] || 'var(--text3)';
+}
+function _actLabel(action) {
+  var map = { tambah:'menambah', edit:'mengedit', hapus:'menghapus' };
+  return map[action] || action;
+}
+function _actRelTime(ts) {
+  if (!ts) return '';
+  var diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (diff < 10) return 'baru saja';
+  if (diff < 60) return diff + 'd lalu';
+  if (diff < 3600) return Math.floor(diff/60) + 'm lalu';
+  if (diff < 86400) return Math.floor(diff/3600) + 'j lalu';
+  return new Date(ts).toLocaleDateString('id-ID', {day:'2-digit', month:'short'});
+}
+
+/* ── Render activity feed ke semua container ── */
+function _renderActivityFeed() {
+  var containers = document.querySelectorAll('.live-activity-feed');
+  if (!containers.length) return;
+  var items = _actCache.slice(0, 20);
+  var html;
+  if (!items.length) {
+    html = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px"><i class="ti ti-activity" style="font-size:24px;display:block;margin-bottom:6px"></i>Belum ada aktivitas</div>';
+  } else {
+    html = items.map(function(a) {
+      var typeColor = _actTypeColor(a.entity_type);
+      var actionBadge = a.action === 'tambah'
+        ? '<span style="background:rgba(5,150,105,.12);color:var(--green);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">+BARU</span>'
+        : a.action === 'hapus'
+          ? '<span style="background:rgba(220,38,38,.1);color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">HAPUS</span>'
+          : '<span style="background:rgba(249,115,22,.1);color:var(--c2);font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px">EDIT</span>';
+      var actorIni = ini(a.actor);
+      return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">'
+        + '<div style="width:34px;height:34px;border-radius:10px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:'+typeColor+';flex-shrink:0;font-family:JetBrains Mono,monospace">'+actorIni+'</div>'
+        + '<div style="flex:1;min-width:0">'
+        +   '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">'
+        +     '<span style="font-size:12px;font-weight:700;color:var(--text)">'+fmtOp(a.actor)+'</span>'
+        +     actionBadge
+        +   '</div>'
+        +   '<div style="font-size:11px;color:var(--text2);margin-bottom:2px">'
+        +     _actIcon(a.entity_type)+' '+(a.entity_name ? '<b>'+escHtml(a.entity_name)+'</b>' : a.entity_type)
+        +     (a.entity_cid ? ' <span style="color:var(--text3);font-family:JetBrains Mono,monospace;font-size:10px">· '+a.entity_cid+'</span>' : '')
+        +   '</div>'
+        +   '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace">'+_actRelTime(a.ts)+'</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+  containers.forEach(function(el){ el.innerHTML = html; });
+
+  // Update relative times setiap 30 detik
+  clearTimeout(_actRelTimeTimer);
+  _actRelTimeTimer = setTimeout(_renderActivityFeed, 30000);
+}
+var _actRelTimeTimer = null;
+
 // SUPABASE REALTIME — Auto-sync antar semua device
 // ═══════════════════════════════════════════════════════════════
 var _sbRealtimeChannel = null;
@@ -5979,10 +6327,10 @@ function sbStartRealtime() {
     _sbRealtimeChannel = sb
       .channel('db-changes-v2')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'app_rows' }, function(payload) {
-        sbLoadRows().then(function(){ _syncFullRefresh('rt-insert'); updCounts(); updDash(); });
+        sbLoadRows().then(function(){ _syncFullRefresh('rt-insert'); updCounts(); if(curTab==='dash')updDash(); });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_rows' }, function(payload) {
-        sbLoadRows().then(function(){ _syncFullRefresh('rt-update'); updCounts(); updDash(); });
+        sbLoadRows().then(function(){ _syncFullRefresh('rt-update'); updCounts(); if(curTab==='dash')updDash(); });
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'app_rows' }, function(payload) {
         var delId = payload.old && payload.old.id;
@@ -5992,7 +6340,7 @@ function sbStartRealtime() {
           try{ localStorage.setItem(K.p, JSON.stringify(db.p)); }catch(ex){}
           try{ localStorage.setItem(K.m, JSON.stringify(db.m)); }catch(ex){}
         } else { sbLoadRows(); }
-        _syncFullRefresh('rt-delete'); updCounts(); updDash();
+        _syncFullRefresh('rt-delete'); updCounts(); if(curTab==='dash')updDash();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_kv' }, function(payload) {
         sbPullAllSettings().then(function(){ _syncFullRefresh('rt-kv'); });
@@ -6043,6 +6391,8 @@ async function sbAutoSync() {
     if(typeof updCounts==='function') updCounts();
     if(typeof updDash==='function') updDash();
     sbStartRealtime();
+    sbStartActivityRealtime();
+    loadActivityFeed();
   } catch(e) {
     _sbAutoSyncDone = false;
     _sbSetStatus('err');
@@ -6171,15 +6521,23 @@ function _syncInit(){
   });
 
   // Re-sync saat tab kembali aktif (focus/visible)
+  var _visibilityDebounce=null;
   document.addEventListener('visibilitychange',function(){
     if(document.visibilityState==='visible'){
-      _syncFullRefresh('visibility');
-      if(!_sbRealtimeChannel && _sbGetClient() && isOn()) sbStartRealtime();
+      if(_visibilityDebounce)clearTimeout(_visibilityDebounce);
+      _visibilityDebounce=setTimeout(function(){
+        _syncFullRefresh('visibility');
+        if(!_sbRealtimeChannel && _sbGetClient() && isOn()) sbStartRealtime();
+      },500);
     }
   });
+  var _focusDebounce=null;
   window.addEventListener('focus',function(){
-    _syncFullRefresh('focus');
-    if(!_sbRealtimeChannel && _sbGetClient() && isOn()) sbStartRealtime();
+    if(_focusDebounce)clearTimeout(_focusDebounce);
+    _focusDebounce=setTimeout(function(){
+      _syncFullRefresh('focus');
+      if(!_sbRealtimeChannel && _sbGetClient() && isOn()) sbStartRealtime();
+    },600);
   });
 }
 
@@ -6244,7 +6602,7 @@ function _syncFullRefresh(reason){
 
     // Refresh semua komponen UI
     if(typeof updCounts==='function')updCounts();
-    if(typeof updDash==='function')updDash();
+    if(typeof updDash==='function'&&curTab==='dash')updDash();
     if(typeof updConn==='function')updConn();
     if(typeof updPelDbInfo==='function')updPelDbInfo();
     if(typeof updAllUrlBadges==='function')updAllUrlBadges();
@@ -6294,6 +6652,12 @@ var gv=function(id){var e=document.getElementById(id);return e?e.value.trim():''
 var today=function(){return new Date().toISOString().split('T')[0];};
 var nowStr=function(){return new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});};
 var ini=function(n){if(!n)return '??';var p=n.trim().split(' ').filter(Boolean);return p.length===1?p[0].substring(0,2).toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();};
+/* ── fmtTgl: bersihkan ISO datetime → YYYY-MM-DD ── */
+var fmtTgl=function(t){if(!t)return '—';var s=String(t);return s.indexOf('T')>-1?s.split('T')[0]:s;};
+/* ── fmtOp: kapitalkan nama operator/user ── */
+var fmtOp=function(s){if(!s)return '';return s.replace(/\b\w/g,function(c){return c.toUpperCase();});};
+/* ── sortDesc: sort array by tgl descending (terbaru di atas) ── */
+var sortDesc=function(arr){return arr.slice().sort(function(a,b){return (fmtTgl(b.tgl)||'').localeCompare(fmtTgl(a.tgl)||'');});};
 
 function toast(msg,type,dur){
   var t=document.getElementById('toast');
@@ -6393,6 +6757,8 @@ function init(){
   var xtgl=document.getElementById('x-tgl');if(xtgl)xtgl.value=today();
   updConn();updCounts();updShare();updDash();updPelDbInfo();updAllUrlBadges();renderAcctList();
   applyRoleUI();
+  migrateAcctCodes(); // assign kode ke akun lama yang belum punya kode
+  loadPrefixInputs(); // tampilkan prefix tersimpan di input setting
   updateAllDropdowns(); // sync semua dropdown dari akun & wilayah terpusat
   renderSalesMgr();
   renderPinMgr();
@@ -6406,7 +6772,7 @@ function init(){
   renderAccessManager();
   // Always start at dashboard
   var _bnD=document.getElementById('bn-d'); setTab('dash',_bnD||{classList:{add:function(){},remove:function(){}}});
-  setInterval(function(){updTime();updDash();odpMonLivePulse();},3000);
+  setInterval(function(){updTime();if(curTab==='dash')updDash();odpMonLivePulse();},3000);
   // Live update: fetch ulang data dari Sheets setiap 30 detik (lebih responsif)
   setInterval(function(){
     if(U.read&&isOn()&&!pelFetching){
@@ -6862,6 +7228,7 @@ function savePel(){
   var e={type:'p',ts:new Date().toISOString(),tgl:gv('p-tgl'),nama:gv('p-nama'),area:gv('p-area'),kota:gv('p-kota'),alamat:gv('p-alamat'),rt:gv('p-rt'),rw:gv('p-rw'),kec:gv('p-kec'),kel:gv('p-kel'),cid:gv('p-cid'),snont:gv('p-snont'),odc:gv('p-odc'),odp:gv('p-odp'),port:gv('p-port'),ont:gv('p-ont'),precon:gv('p-precon'),status:gv('p-status'),teknisi:gv('p-teknisi'),sales:gv('p-sales'),nominal:gv('p-nominal'),ket:gv('p-ket'),operator:currentAcctName||(currentRole||''),sent:false};
   if(!U.p&&!_sbGetClient()){toast('URL Sheets Pelanggan dan Supabase belum diset di Setting — data tidak disimpan','err');return;}
   db.p.push(e);svP(e);updCounts();
+  logActivity('tambah', 'pelanggan', e.nama, e.cid, {area:e.area, status:e.status});
   // Kirim ke Google Sheets sebagai cadangan (backup)
   if(U.p){
     send(e,db.p,db.p.length-1,'btn-p',svP,'p');
@@ -7993,6 +8360,7 @@ function saveMat(){
   if(qtyVal===''||qtyVal===null){showBubbleWarn('m-qty','Qty wajib diisi!');document.getElementById('m-qty').focus();return;}
   var e={type:'m',ts:new Date().toISOString(),tgl:gv('m-tgl'),pgnNama:gv('m-pgn-nama'),cid:gv('m-cid'),item:gv('m-item'),qty:qtyVal,sn:gv('m-sn'),amb:gv('m-amb'),stat:gv('m-stat'),area:gv('m-area'),pgn:gv('m-pgn'),ikr:gv('m-ikr'),mnt:gv('m-mnt'),ket:gv('m-ket'),operator:currentAcctName||(currentRole||''),sent:false};
   db.m.push(e);svM(e);updCounts();
+  logActivity('tambah', 'material', e.item, e.cid||e.pgnNama||null, {qty:e.qty, area:e.area});
   if(U.m){send(e,db.m,db.m.length-1,'btn-m',svM,'m');}
   else if(_sbGetClient()){toast('Material tersimpan ke Supabase ✓','ok');updDash();updTime();updCounts();rstMat();_syncFullRefresh('mat-saved');}
   else{toast('URL Sheets Material belum diset','err');}
@@ -8311,16 +8679,154 @@ function renderOdpStatDetailByArea(type){
     el.innerHTML='<div style="font-size:10px;color:var(--text3);text-align:center;padding:10px;background:var(--bg4);border-radius:var(--rs);width:100%">Tidak ada data</div>';
     return;
   }
+  // Build ODC grouping per area
+  // For each area, group ODPs by their parent ODC
+  var areaOdcMap = {}; // area -> { odcName -> { count, odps[] } }
+  areas.forEach(function(area){
+    var s = areaMap[area];
+    var odcGroups = {};
+    s.odps.forEach(function(odpObj){
+      // Derive ODC from ODP name: ODP-XXX-01-A -> ODC-XXX-01
+      var odcName = odpObj.name.replace(/^ODP-/i,'ODC-').replace(/-[A-Z]$/i,'');
+      // Fallback: check pelanggan data for odc field
+      var allP2 = getMergedPel();
+      var pelMatch = allP2.filter(function(d){ return (d.odp||'').trim().toLowerCase() === odpObj.name.toLowerCase(); });
+      if(pelMatch.length && pelMatch[0].odc) odcName = pelMatch[0].odc;
+      if(!odcGroups[odcName]) odcGroups[odcName]={count:0,odps:[]};
+      odcGroups[odcName].count++;
+      odcGroups[odcName].odps.push(odpObj);
+    });
+    areaOdcMap[area] = odcGroups;
+  });
+
+  var _openAreaOdc = {};
+  var _openOdcOdp = {};
+
   el.innerHTML = areas.map(function(area){
     var s = areaMap[area];
-    return '<div style="background:var(--bg4);border:1px solid '+cm.border+';border-radius:var(--rs);padding:9px 12px;width:100%;display:flex;align-items:center;justify-content:space-between">'+
-      '<div style="display:flex;align-items:center;gap:7px">'+
-        '<i class="ti '+cm.icon+'" style="font-size:13px;color:'+cm.c+'"></i>'+
-        '<span style="font-size:13px;font-weight:700;color:var(--text)">'+escHtml(area)+'</span>'+
+    var areaId = 'odp-stat-area-'+type+'-'+area.replace(/\s+/g,'_');
+    return '<div style="width:100%">'+
+      '<div id="'+areaId+'-hd" onclick="_toggleOdpStatOdc(\''+type+'\',\''+area+'\')" style="background:var(--bg4);border:1px solid '+cm.border+';border-radius:var(--rs);padding:9px 12px;width:100%;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:opacity .15s" ontouchstart="this.style.opacity=\'.7\'" ontouchend="this.style.opacity=\'1\'">'+
+        '<div style="display:flex;align-items:center;gap:7px">'+
+          '<i class="ti '+cm.icon+'" style="font-size:13px;color:'+cm.c+'"></i>'+
+          '<span style="font-size:13px;font-weight:700;color:var(--text)">'+escHtml(area)+'</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<span style="font-size:13px;font-weight:800;color:'+cm.c+';font-family:\'JetBrains Mono\',monospace;background:'+cm.bg+';padding:3px 11px;border-radius:20px">'+s.count+' ODP</span>'+
+          '<i class="ti ti-chevron-right" id="'+areaId+'-chev" style="font-size:12px;color:var(--text3);transition:transform .2s"></i>'+
+        '</div>'+
       '</div>'+
-      '<span style="font-size:13px;font-weight:800;color:'+cm.c+';font-family:\'JetBrains Mono\',monospace;background:'+cm.bg+';padding:3px 11px;border-radius:20px">'+s.count+' ODP</span>'+
+      '<div id="'+areaId+'-odc" style="display:none;flex-direction:column;gap:4px;margin-top:4px;padding-left:12px"></div>'+
     '</div>';
   }).join('');
+
+  // Store data for dynamic expand
+  el._odpStatData = { type: type, areaMap: areaMap, areaOdcMap: areaOdcMap, cm: cm };
+}
+
+function _toggleOdpStatOdc(type, area){
+  var areaId = 'odp-stat-area-'+type+'-'+area.replace(/\s+/g,'_');
+  var odcWrap = document.getElementById(areaId+'-odc');
+  var chev = document.getElementById(areaId+'-chev');
+  var detailEl = document.getElementById('odp-stat-detail-'+type);
+  if(!odcWrap || !detailEl) return;
+  var isOpen = odcWrap.style.display === 'flex';
+  // Close all other areas
+  detailEl.querySelectorAll('[id$="-odc"]').forEach(function(el){
+    if(el.id !== areaId+'-odc'){
+      el.style.display='none';
+      el.style.flexDirection='';
+    }
+  });
+  detailEl.querySelectorAll('[id$="-chev"]').forEach(function(el){
+    if(el.id !== areaId+'-chev') el.style.transform='';
+  });
+  if(isOpen){
+    odcWrap.style.display='none';
+    if(chev) chev.style.transform='';
+  } else {
+    odcWrap.style.display='flex';
+    odcWrap.style.flexDirection='column';
+    if(chev) chev.style.transform='rotate(90deg)';
+    // Render ODC list
+    var data = detailEl._odpStatData;
+    if(!data) return;
+    var cm = data.cm;
+    var odcGroups = data.areaOdcMap[area]||{};
+    var odcNames = Object.keys(odcGroups).sort();
+    if(!odcNames.length){
+      odcWrap.innerHTML='<div style="font-size:10px;color:var(--text3);padding:6px 8px">Tidak ada ODC</div>';
+      return;
+    }
+    odcWrap.innerHTML = odcNames.map(function(odcName){
+      var odcId = 'odp-stat-odc-'+type+'-'+odcName.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_-]/g,'');
+      var g = odcGroups[odcName];
+      return '<div style="width:100%">'+
+        '<div id="'+odcId+'-hd" onclick="_toggleOdpStatOdp(\''+type+'\',\''+escHtml(odcName).replace(/'/g,"\\'")+'\')" style="background:var(--bg2);border:1px solid rgba(157,128,250,.25);border-radius:var(--rs);padding:8px 11px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:opacity .15s" ontouchstart="this.style.opacity=\'.7\'" ontouchend="this.style.opacity=\'1\'">'+
+          '<div style="display:flex;align-items:center;gap:6px">'+
+            '<i class="ti ti-box" style="font-size:12px;color:var(--pu)"></i>'+
+            '<span style="font-size:12px;font-weight:700;color:var(--pu)">'+escHtml(odcName)+'</span>'+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:7px">'+
+            '<span style="font-size:11px;font-weight:700;color:var(--pu);background:rgba(124,58,237,.1);padding:2px 8px;border-radius:20px;font-family:\'JetBrains Mono\',monospace">'+g.count+' ODP</span>'+
+            '<i class="ti ti-chevron-right" id="'+odcId+'-chev" style="font-size:11px;color:var(--text3);transition:transform .2s"></i>'+
+          '</div>'+
+        '</div>'+
+        '<div id="'+odcId+'-odps" style="display:none;flex-direction:column;gap:3px;margin-top:3px;padding-left:10px"></div>'+
+      '</div>';
+    }).join('');
+    // Store odcGroups reference
+    odcWrap._odcGroups = odcGroups;
+    odcWrap._cmData = cm;
+    odcWrap._type = type;
+  }
+}
+
+function _toggleOdpStatOdp(type, odcName){
+  // Find the wrap element by searching through all odc wraps
+  var odcId = 'odp-stat-odc-'+type+'-'+odcName.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_-]/g,'');
+  var odpsWrap = document.getElementById(odcId+'-odps');
+  var chev = document.getElementById(odcId+'-chev');
+  if(!odpsWrap) return;
+  var isOpen = odpsWrap.style.display === 'flex';
+  // Close siblings (other ODC ODP lists in same area)
+  var parentOdcWrap = odpsWrap.parentElement && odpsWrap.parentElement.parentElement;
+  if(parentOdcWrap){
+    parentOdcWrap.querySelectorAll('[id$="-odps"]').forEach(function(el){
+      if(el.id !== odcId+'-odps'){ el.style.display='none'; }
+    });
+    parentOdcWrap.querySelectorAll('[id$="-chev"]').forEach(function(el){
+      if(el.id !== odcId+'-chev') el.style.transform='';
+    });
+  }
+  if(isOpen){
+    odpsWrap.style.display='none';
+    if(chev) chev.style.transform='';
+  } else {
+    odpsWrap.style.display='flex';
+    odpsWrap.style.flexDirection='column';
+    if(chev) chev.style.transform='rotate(90deg)';
+    // Get odcGroups from parent
+    var odcWrapEl = odpsWrap.closest ? odpsWrap.closest('[id$="-odc"]') : null;
+    var odcGroups = odcWrapEl ? odcWrapEl._odcGroups : null;
+    var cm = odcWrapEl ? odcWrapEl._cmData : null;
+    if(!odcGroups || !odcGroups[odcName]){
+      odpsWrap.innerHTML='<div style="font-size:10px;color:var(--text3);padding:6px 8px">Tidak ada ODP</div>';
+      return;
+    }
+    var g = odcGroups[odcName];
+    odpsWrap.innerHTML = g.odps.map(function(o){
+      var usedTxt = o.used > 0 ? o.used+' pel' : 'Kosong';
+      var usedColor = o.used > 0 ? 'var(--yellow)' : cm.c;
+      return '<div style="background:var(--bg3);border:1px solid '+cm.border+';border-radius:8px;padding:7px 11px;display:flex;align-items:center;justify-content:space-between">'+
+        '<div style="display:flex;align-items:center;gap:6px">'+
+          '<i class="ti ti-circle-dot" style="font-size:11px;color:'+cm.c+'"></i>'+
+          '<span style="font-size:12px;font-weight:700;color:var(--text)">'+escHtml(o.name)+'</span>'+
+        '</div>'+
+        '<span style="font-size:10px;font-weight:700;color:'+usedColor+';background:'+cm.bg+';padding:2px 8px;border-radius:20px;font-family:\'JetBrains Mono\',monospace">'+usedTxt+'</span>'+
+      '</div>';
+    }).join('');
+  }
 }
 
 function updOdpTerpakaiAll(){
@@ -9269,25 +9775,24 @@ function updSalesDash(){
   var rEl = document.getElementById('recent-s');
   if(rEl){
     var recentSrc = getMergedPel().filter(function(d){ return d.status && d.tgl; });
-    recentSrc.sort(function(a,b){ return (a.tgl||'').localeCompare(b.tgl||''); });
-    var recent = recentSrc.slice(-5).reverse();
+    var recent = sortDesc(recentSrc).slice(0,5);
     if(!recent.length){
       rEl.innerHTML = '<div class="dash-empty" style="margin-bottom:0"><div class="dash-empty-icon gr"><i class="ti ti-cash"></i></div><div class="dash-empty-title">Belum Ada Data Sales OTF</div><div class="dash-empty-sub">Aktivitas pembayaran OTF sales akan tampil di sini.</div><button class="dash-empty-btn gr" onclick="goInputMode(\'s\',null)"><i class="ti ti-plus"></i> Input OTF Sales</button></div>';
     } else {
       var rHtml = '';
       recent.forEach(function(d){
         var initials = ini(d.nama);
-        var salesName = (d.sales && d.sales.trim()) ? d.sales.trim() : 'Daftar Mandiri';
-        var isToday = d.tgl === tod;
+        var salesName = (d.sales && d.sales.trim()) ? fmtOp(d.sales.trim()) : 'Daftar Mandiri';
+        var isToday = fmtTgl(d.tgl) === tod;
         rHtml += '<div class="ritem">';
         rHtml += '<div class="ritem-av" style="background:rgba(16,217,160,.12);color:var(--green)">'+initials+'</div>';
         rHtml += '<div style="flex:1;min-width:0">';
         rHtml += '<div class="ritem-name">'+d.nama+'</div>';
-        rHtml += '<div class="ritem-sub"><i class="ti ti-user" style="font-size:11px;margin-right:3px"></i>'+salesName+(d.operator?' · <i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+d.operator:'')+'</div>';
+        rHtml += '<div class="ritem-sub"><i class="ti ti-user" style="font-size:11px;margin-right:3px"></i>'+salesName+(d.operator?' · <i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+fmtOp(d.operator):'')+'</div>';
         rHtml += '</div>';
         rHtml += '<div style="text-align:right;flex-shrink:0">';
         if(isToday) rHtml += '<div style="font-size:12px;font-weight:700;color:var(--green)">Rp 35.000</div>';
-        rHtml += '<div style="font-size:9px;color:var(--text3);margin-top:2px;font-family:\'JetBrains Mono\',monospace">'+d.tgl+'</div>';
+        rHtml += '<div style="font-size:9px;color:var(--text3);margin-top:2px;font-family:\'JetBrains Mono\',monospace">'+fmtTgl(d.tgl)+'</div>';
         rHtml += '</div></div>';
       });
       rEl.innerHTML = rHtml;
@@ -10107,6 +10612,7 @@ function saveDismantle(){
   if(!U.m){toast('URL Sheets Material belum diset di Setting — data tidak disimpan','err');return;}
 
   db.m.push(e);svM();updCounts();
+  logActivity('tambah', 'maintenance', e.nama||e.item, e.cid||null, {item:e.item, area:e.area});
 
   var btn=document.getElementById('btn-d');
   btn.disabled=true;btn.innerHTML='<span class="spin"></span> Mengirim...';
@@ -10647,6 +11153,7 @@ function saveXDismantle(){
     teknisi:teknisi,ket:ket,operator:currentAcctName||(currentRole||''),sent:false
   };
   db.m.push(dismantleEntry);svM();
+  logActivity('tambah', 'dismantle', dismantleEntry.nama||dismantleEntry.cid, dismantleEntry.cid||null, {port:dismantleEntry.port, kondisi:dismantleEntry.kondisi||''});
 
   // 3. Buat entri material masuk untuk ONT yang di-dismantle
   var matEntry={
@@ -10780,6 +11287,35 @@ document.addEventListener('click',function(e){
   }
 });
 
+// ── Hapus rows dari Supabase yang sudah tidak ada di db.p / db.m ──
+// Dipanggil setelah delete agar Supabase benar-benar sinkron
+async function sbSyncDeletedRows(type) {
+  var sb = _sbGetClient();
+  if (!sb) return;
+  try {
+    var types = (type === 'm') ? ['m','d','x'] : [type];
+    // Ambil semua ID di Supabase untuk tipe ini
+    var { data, error } = await sb.from(SB_TABLE_ROWS).select('id,type').in('type', types);
+    if (error || !data) return;
+    // Kumpulkan ID yang masih ada di memori
+    var localIds = {};
+    if (type === 'p') {
+      db.p.forEach(function(e){ if(e.ts) localIds[e.ts] = 1; });
+    } else {
+      db.m.forEach(function(e){ if(e.ts) localIds[e.ts] = 1; });
+    }
+    // Hapus ID yang sudah tidak ada lokal
+    var toDelete = data.filter(function(r){ return !localIds[r.id]; }).map(function(r){ return r.id; });
+    if (!toDelete.length) return;
+    // Batch delete (maks 100 per panggilan agar tidak timeout)
+    var BATCH = 100;
+    for (var i = 0; i < toDelete.length; i += BATCH) {
+      var batch = toDelete.slice(i, i + BATCH);
+      await sb.from(SB_TABLE_ROWS).delete().in('id', batch);
+    }
+  } catch(e) {}
+}
+
 var svP=function(entryToSync){
   lss(K.p,JSON.stringify(db.p));
   if(_sbGetClient()){
@@ -10787,7 +11323,11 @@ var svP=function(entryToSync){
       sbUpsertRow(entryToSync).catch(function(){});
     } else {
       clearTimeout(svP._t);
-      svP._t=setTimeout(function(){ sbPushAllRows(); }, 600);
+      svP._t=setTimeout(function(){
+        sbPushAllRows();
+        // Hapus dari Supabase rows type 'p' yang sudah tidak ada di db.p
+        sbSyncDeletedRows('p').catch(function(){});
+      }, 600);
     }
   }
 };
@@ -10798,7 +11338,11 @@ var svM=function(entryToSync){
       sbUpsertRow(entryToSync).catch(function(){});
     } else {
       clearTimeout(svM._t);
-      svM._t=setTimeout(function(){ sbPushAllRows(); }, 600);
+      svM._t=setTimeout(function(){
+        sbPushAllRows();
+        // Hapus dari Supabase rows type 'd','m','x' yang sudah tidak ada di db.m
+        ['d','m','x'].forEach(function(t){ sbSyncDeletedRows(t).catch(function(){}); });
+      }, 600);
     }
   }
 };
@@ -10895,10 +11439,10 @@ function updDash(){
   // PELANGGAN STATS (dari filtP)
   var tp=filtP.length;
   var ak=filtP.filter(function(d){return d.status==='Aktif'||d.status==='Paket 200Mbps';}).length;
-  var tp_today=filtP.filter(function(d){return d.tgl===tod;}).length;
+  var tp_today=filtP.filter(function(d){return fmtTgl(d.tgl)===tod;}).length;
   // Hitung juga dari db.p lokal hari ini (input baru)
   var localToday=db.p.filter(function(d){
-    if(d.tgl!==tod) return false;
+    if(fmtTgl(d.tgl)!==tod) return false;
     if(selArea&&d.area!==selArea) return false;
     if(selWil&&d.kec!==selWil) return false;
     return true;
@@ -10962,7 +11506,7 @@ function updDash(){
   var dismantleX=db.m.filter(function(d){return d.type==='x';});
   var maintD=db.m.filter(function(d){return d.type==='d';});
   var tm=matOnly.length;
-  var tm_today=matOnly.filter(function(d){return d.tgl===tod;}).length;
+  var tm_today=matOnly.filter(function(d){return fmtTgl(d.tgl)===tod;}).length;
   // KELUAR = Pelanggan Pasang Baru (allP) + Maintenance (type='d')
   var mkPasangBaru=allP.length;
   var mkMaint=maintD.length;
@@ -10998,17 +11542,17 @@ function updDash(){
 
   // RECENT MATERIAL — 5 terbaru berdasarkan tanggal (semua periode)
   var rm=document.getElementById('recent-m');
-  var rmsrc=matOnly.slice().sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');}).slice(-5).reverse();
+  var rmsrc=sortDesc(matOnly).slice(0,5);
   if(!rmsrc.length){rm.innerHTML='<div class="dash-empty"><div class="dash-empty-icon c2"><i class="ti ti-package"></i></div><div class="dash-empty-title">Belum Ada Data Material</div><div class="dash-empty-sub">Input material akan tampil di sini setelah data pertama disimpan.</div><button class="dash-empty-btn c2" onclick="goInputMode(\'m\',null)"><i class="ti ti-plus"></i> Input Material</button></div>';}
   else{rm.innerHTML=rmsrc.map(function(d){
-    var op=d.operator?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+d.operator):(d.amb||'');
-    return '<div class="ritem"><div class="ritem-av c2"><i class="ti ti-package" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+d.item+'</div><div class="ritem-sub">Qty: '+d.qty+' · '+d.tgl+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
+    var opRaw=d.operator||d.amb||'';var op=opRaw?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+fmtOp(opRaw)):'';
+    return '<div class="ritem"><div class="ritem-av c2"><i class="ti ti-package" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+d.item+'</div><div class="ritem-sub">Qty: '+d.qty+' · '+fmtTgl(d.tgl)+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
   }).join('');}
 
   // DISMANTLE STATS
   var dOnly=db.m.filter(function(d){return d.type==='d';});
   var td=dOnly.length;
-  var td_today=dOnly.filter(function(d){return d.tgl===tod;}).length;
+  var td_today=dOnly.filter(function(d){return fmtTgl(d.tgl)===tod;}).length;
   document.getElementById('ds-total-d').textContent=td;
   document.getElementById('ds-today-d').textContent=td_today;
   document.getElementById('ds-new-d').innerHTML='<i class="ti ti-trending-up"></i> '+td_today+' hari ini';
@@ -11034,17 +11578,17 @@ function updDash(){
 
   // RECENT DISMANTLE — 5 terbaru berdasarkan tanggal (semua periode)
   var rd=document.getElementById('recent-d');
-  var rdsrc=dOnly.slice().sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');}).slice(-5).reverse();
+  var rdsrc=sortDesc(dOnly).slice(0,5);
   if(!rdsrc.length){rd.innerHTML='<div class="dash-empty"><div class="dash-empty-icon pu"><i class="ti ti-replace"></i></div><div class="dash-empty-title">Belum Ada Data Maintenance</div><div class="dash-empty-sub">Riwayat maintenance akan tampil di sini setelah ada data yang diinput.</div><button class="dash-empty-btn pu" onclick="goInputMode(\'d\',null)"><i class="ti ti-plus"></i> Input Maintenance</button></div>';}
   else{rd.innerHTML=rdsrc.map(function(d){
-    var op=d.operator?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+d.operator):(d.teknisi||'');
-    return '<div class="ritem"><div class="ritem-av" style="background:rgba(167,139,250,.15);color:var(--pu)"><i class="ti ti-replace" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+(d.nama||'—')+' · '+d.item+'</div><div class="ritem-sub">'+d.snLama+' → '+d.snBaru+' · '+d.tgl+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
+    var opRaw=d.operator||d.teknisi||'';var op=opRaw?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+fmtOp(opRaw)):'';
+    return '<div class="ritem"><div class="ritem-av" style="background:rgba(167,139,250,.15);color:var(--pu)"><i class="ti ti-replace" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+(d.nama||'—')+' · '+d.item+'</div><div class="ritem-sub">'+d.snLama+' → '+d.snBaru+' · '+fmtTgl(d.tgl)+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
   }).join('');}
 
   // DISMANTLE STATS (mode x — pure dismantle, type='x')
   var xOnly=db.m.filter(function(d){return d.type==='x';});
   var tx=xOnly.length;
-  var tx_today=xOnly.filter(function(d){return d.tgl===tod;}).length;
+  var tx_today=xOnly.filter(function(d){return fmtTgl(d.tgl)===tod;}).length;
   var dsTotX=document.getElementById('ds-total-x');if(dsTotX)dsTotX.textContent=tx;
   var dsTodX=document.getElementById('ds-today-x');if(dsTodX)dsTodX.textContent=tx_today;
   var dsNewX=document.getElementById('ds-new-x');if(dsNewX)dsNewX.innerHTML='<i class="ti ti-trending-up"></i> '+tx_today+' hari ini';
@@ -11066,11 +11610,11 @@ function updDash(){
   }
   var rxEl=document.getElementById('recent-x');
   if(rxEl){
-    var rxsrc=xOnly.slice().sort(function(a,b){return (a.tgl||'').localeCompare(b.tgl||'');}).slice(-5).reverse();
+    var rxsrc=sortDesc(xOnly).slice(0,5);
     if(!rxsrc.length){rxEl.innerHTML='<div class="dash-empty"><div class="dash-empty-icon rd"><i class="ti ti-tool"></i></div><div class="dash-empty-title">Belum Ada Data Dismantle</div><div class="dash-empty-sub">Riwayat dismantle pelanggan akan muncul di sini.</div><button class="dash-empty-btn rd" onclick="goInputMode(\'x\',null)"><i class="ti ti-plus"></i> Input Dismantle</button></div>';}
     else{rxEl.innerHTML=rxsrc.map(function(d){
-      var op=d.operator?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+d.operator):(d.teknisi||'');
-      return '<div class="ritem"><div class="ritem-av" style="background:rgba(240,84,84,.15);color:var(--red)"><i class="ti ti-tool" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+(d.nama||'—')+'</div><div class="ritem-sub">'+d.cid+' · Port: '+(d.port||'—')+' → Kosong · '+d.tgl+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
+      var opRaw=d.operator||d.teknisi||'';var op=opRaw?('<i class="ti ti-user-circle" style="font-size:10px;margin-right:2px"></i>'+fmtOp(opRaw)):'';
+      return '<div class="ritem"><div class="ritem-av" style="background:rgba(240,84,84,.15);color:var(--red)"><i class="ti ti-tool" style="font-size:16px"></i></div><div style="flex:1;min-width:0"><div class="ritem-name">'+(d.nama||'—')+'</div><div class="ritem-sub">'+d.cid+' · Port: '+(d.port||'—')+' → Kosong · '+fmtTgl(d.tgl)+(op?' · '+op:'')+'</div></div><div class="tag '+(d.sent?'tg':'ty')+'" style="margin-left:auto;flex-shrink:0">'+(d.sent?'✓':'⏱')+'</div></div>';
     }).join('');}
   }
 
@@ -11273,81 +11817,25 @@ function renderUntungOdp() {
 }
 
 function populateOdpMonFilters() {
+  // Fungsi ini hanya mengisi dropdown Area (hidden).
+  // Dropdown ODC & ODP dikelola oleh selectOdpMonArea / onOdpMonOdcChange.
+  // Jika area sudah dipilih (filterWrap aktif), skip — jangan overwrite pilihan user.
   var areaFilter = document.getElementById('odp-mon-area-filter');
-  var odcFilter  = document.getElementById('odp-mon-odc-filter');
-  var odpFilter  = document.getElementById('odp-mon-odp-filter');
-  var odcRow     = document.getElementById('odp-mon-odc-row');
-  var odpRow     = document.getElementById('odp-mon-odp-row');
   if (!areaFilter) return;
+  var filterWrap = document.getElementById('odp-mon-odc-odp-filter-wrap');
+  var isActive = filterWrap && filterWrap.style.display !== 'none';
+  if (isActive) return; // filter sedang aktif — jangan sentuh dropdown
 
   var settingData = getOdcOdpData();
   var areas = Object.keys(settingData).sort();
-  var selArea = areaFilter.value;
-  var selOdc  = (odcFilter||{}).value||'';
-  var selOdp  = (odpFilter||{}).value||'';
-
-  // Populate Area
-  areaFilter.innerHTML = '<option value="">Pilih Area...</option>' +
-    areas.map(function(a){ return '<option value="'+a+'"'+(a===selArea?' selected':'')+'>'+a+'</option>'; }).join('');
-
-  // ODC row: hanya tampil jika area dipilih
-  if (selArea) {
-    var odcList = ((settingData[selArea]||{}).odc||[]).filter(function(o){ return o.trim(); }).sort();
-    if (odcFilter) {
-      odcFilter.innerHTML = '<option value="">Pilih ODC...</option>' +
-        odcList.map(function(o){ return '<option value="'+o+'"'+(o===selOdc?' selected':'')+'>'+o+'</option>'; }).join('');
-    }
-    if (odcRow) odcRow.style.display = '';
-  } else {
-    if (odcFilter) odcFilter.innerHTML = '<option value="">Pilih ODC...</option>';
-    if (odcRow) odcRow.style.display = 'none';
-    if (odpRow) odpRow.style.display = 'none';
-    return;
-  }
-
-  // ODP row: hanya tampil jika ODC dipilih
-  if (selOdc) {
-    var odpList = ((settingData[selArea]||{}).odp||[]).filter(function(odp){
-      if (!odp.trim()) return false;
-      var odcCode = selOdc.replace(/^ODC-/i,'').toLowerCase();
-      return odp.toLowerCase().indexOf(odcCode) >= 0;
-    }).sort();
-    if (odpFilter) {
-      odpFilter.innerHTML = '<option value="">Pilih ODP...</option>' +
-        odpList.map(function(o){ return '<option value="'+o+'"'+(o===selOdp?' selected':'')+'>'+o+'</option>'; }).join('');
-    }
-    if (odpRow) odpRow.style.display = '';
-  } else {
-    if (odpFilter) odpFilter.innerHTML = '<option value="">Pilih ODP...</option>';
-    if (odpRow) odpRow.style.display = 'none';
-  }
+  // Isi hidden area select (dipakai JS filter lain)
+  areaFilter.innerHTML = '<option value=""></option>' +
+    areas.map(function(a){ return '<option value="'+a+'">'+a+'</option>'; }).join('');
 }
 
 function onOdpMonAreaChange() {
-  var areaFilter = document.getElementById('odp-mon-area-filter');
-  var odcFilter  = document.getElementById('odp-mon-odc-filter');
-  var odpFilter  = document.getElementById('odp-mon-odp-filter');
-  var odcRow     = document.getElementById('odp-mon-odc-row');
-  var odpRow     = document.getElementById('odp-mon-odp-row');
-  var selArea    = (areaFilter||{}).value||'';
-  var settingData = getOdcOdpData();
-
-  // Reset ODC & ODP
-  if (odcFilter) { odcFilter.innerHTML = '<option value="">Pilih ODC...</option>'; odcFilter.value = ''; }
-  if (odpFilter) { odpFilter.innerHTML = '<option value="">Pilih ODP...</option>'; odpFilter.value = ''; }
-  if (odpRow) odpRow.style.display = 'none';
-
-  if (selArea) {
-    var odcList = ((settingData[selArea]||{}).odc||[]).filter(function(o){ return o.trim(); }).sort();
-    if (odcFilter) {
-      odcFilter.innerHTML = '<option value="">Pilih ODC...</option>' +
-        odcList.map(function(o){ return '<option value="'+o+'">'+o+'</option>'; }).join('');
-    }
-    if (odcRow) odcRow.style.display = '';
-  } else {
-    if (odcRow) odcRow.style.display = 'none';
-  }
-
+  // Sekarang area dipilih lewat selectOdpMonArea (card click)
+  // Fungsi ini tetap dipertahankan untuk kompatibilitas
   renderOdpMonitor();
 }
 
@@ -11356,21 +11844,30 @@ function onOdpMonOdcChange() {
   var odcFilter  = document.getElementById('odp-mon-odc-filter');
   var odpFilter  = document.getElementById('odp-mon-odp-filter');
   var odpRow     = document.getElementById('odp-mon-odp-row');
+  var detPanel   = document.getElementById('odp-mon-odp-detail-panel');
   var selArea    = (areaFilter||{}).value||'';
   var selOdc     = (odcFilter||{}).value||'';
   var settingData = getOdcOdpData();
 
-  // Reset ODP
-  if (odpFilter) { odpFilter.innerHTML = '<option value="">Pilih ODP...</option>'; odpFilter.value = ''; }
+  // Reset ODP & detail panel
+  if (odpFilter) { odpFilter.innerHTML = '<option value="">Semua ODP</option>'; odpFilter.value = ''; }
+  if (detPanel) detPanel.style.display = 'none';
 
-  if (selOdc && selArea) {
-    var odpList = ((settingData[selArea]||{}).odp||[]).filter(function(odp){
-      if (!odp.trim()) return false;
+  if (selArea) {
+    var odpList;
+    if (selOdc) {
+      // Filter ODP sesuai ODC terpilih
       var odcCode = selOdc.replace(/^ODC-/i,'').toLowerCase();
-      return odp.toLowerCase().indexOf(odcCode) >= 0;
-    }).sort();
+      odpList = ((settingData[selArea]||{}).odp||[]).filter(function(odp){
+        if (!odp.trim()) return false;
+        return odp.toLowerCase().indexOf(odcCode) >= 0;
+      }).sort();
+    } else {
+      // Tampilkan semua ODP area ini
+      odpList = ((settingData[selArea]||{}).odp||[]).filter(function(o){ return o.trim(); }).sort();
+    }
     if (odpFilter) {
-      odpFilter.innerHTML = '<option value="">Pilih ODP...</option>' +
+      odpFilter.innerHTML = '<option value="">Semua ODP</option>' +
         odpList.map(function(o){ return '<option value="'+o+'">'+o+'</option>'; }).join('');
     }
     if (odpRow) odpRow.style.display = '';
@@ -11508,6 +12005,7 @@ function renderOdpMonitor() {
 
   // ─── Chart 1: Kapasitas per AREA — hitung dari ODP terdaftar + data pelanggan ───
   var areaChartEl = document.getElementById('odp-mon-area-chart');
+  var _filterActive = (function(){ var fw = document.getElementById('odp-mon-odc-odp-filter-wrap'); return fw && fw.style.display !== 'none'; })();
   if (areaChartEl) {
     var sdArea = getOdcOdpData();
 
@@ -11586,16 +12084,25 @@ function renderOdpMonitor() {
       };
     });
     var areaKeys = Object.keys(areaStatCards).sort();
-    if (!areaKeys.length) {
+    if (_filterActive) {
+      // Filter aktif — jangan rebuild innerHTML agar tombol Filter & state tidak hilang
+      // Hanya update badge angka di card yang sudah ada (tidak dilakukan untuk simplisitas)
+    } else if (!areaKeys.length) {
       areaChartEl.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:14px">Belum ada data area</div>';
     } else {
       areaChartEl.innerHTML = areaKeys.map(function(area) {
         var s = areaStatCards[area];
         var sc = s.pct >= 100 ? 'var(--red)' : s.pct >= 75 ? 'var(--yellow)' : 'var(--green)';
-        return '<div style="margin-bottom:10px;background:var(--bg4);border-radius:var(--rs);padding:10px 11px;border:1px solid var(--border)">' +
+        var isActive = (selArea === area);
+        var cardBorder = isActive ? '1.5px solid rgba(26,86,219,.4)' : '1px solid var(--border)';
+        var cardBg = isActive ? 'rgba(26,86,219,.04)' : 'var(--bg4)';
+        return '<div data-area-card="' + escHtml(area) + '" style="margin-bottom:10px;background:' + cardBg + ';border-radius:var(--rs);padding:10px 11px;border:' + cardBorder + '">' +
           '<div style="font-size:12px;font-weight:700;color:var(--c1);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:5px">' +
             '<div style="display:flex;align-items:center;gap:5px"><i class="ti ti-map-pin" style="font-size:12px"></i>' + escHtml(area) + '</div>' +
-            '<span style="font-size:9px;font-weight:700;color:var(--text3);background:var(--bg3);border-radius:12px;padding:2px 8px;border:1px solid var(--border2)">' + s.odcCount + ' ODC · ' + s.totalOdp + ' ODP</span>' +
+            '<div style="display:flex;align-items:center;gap:5px">' +
+              '<span style="font-size:9px;font-weight:700;color:var(--text3);background:var(--bg3);border-radius:12px;padding:2px 8px;border:1px solid var(--border2)">' + s.odcCount + ' ODC · ' + s.totalOdp + ' ODP</span>' +
+              '<button onclick="selectOdpMonArea(\'' + area + '\')" style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:4px 9px;border-radius:12px;border:1px solid ' + (isActive ? 'rgba(220,38,38,.4)' : 'rgba(26,86,219,.3)') + ';background:' + (isActive ? 'rgba(220,38,38,.1)' : 'rgba(26,86,219,.08)') + ';color:' + (isActive ? 'var(--red)' : 'var(--c1)') + ';cursor:pointer;font-family:\'Sora\',sans-serif;white-space:nowrap"><i class="ti ti-' + (isActive ? 'x' : 'filter') + '" style="font-size:10px"></i>' + (isActive ? 'Reset' : 'Filter') + '</button>' +
+            '</div>' +
           '</div>' +
           '<div style="margin-bottom:7px">' +
             '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px">' +
@@ -11636,7 +12143,7 @@ function renderOdpMonitor() {
           '</div>' +
         '</div>';
       }).join('');
-    }
+    } // end else !_filterActive
   }
 
   // ─── Chart 2: Kapasitas Port per ODC — hanya tampil bila ODC dipilih ───
@@ -11903,17 +12410,151 @@ function resetOdpMonFilter() {
   var oF = document.getElementById('odp-mon-odc-filter');
   var pF = document.getElementById('odp-mon-odp-filter');
   if (aF) aF.value = '';
-  if (oF) { oF.innerHTML = '<option value="">Pilih ODC...</option>'; oF.value = ''; }
-  if (pF) { pF.innerHTML = '<option value="">Pilih ODP...</option>'; pF.value = ''; }
-  var odcRow = document.getElementById('odp-mon-odc-row');
+  if (oF) { oF.innerHTML = '<option value="">Semua ODC</option>'; oF.value = ''; }
+  if (pF) { pF.innerHTML = '<option value="">Semua ODP</option>'; pF.value = ''; }
   var odpRow = document.getElementById('odp-mon-odp-row');
-  if (odcRow) odcRow.style.display = 'none';
   if (odpRow) odpRow.style.display = 'none';
-  var resetBtn = document.getElementById('odp-mon-reset-btn');
-  if (resetBtn) resetBtn.style.display = 'none';
+  var filterWrap = document.getElementById('odp-mon-odc-odp-filter-wrap');
+  if (filterWrap) filterWrap.style.display = 'none';
   var odcWrap = document.getElementById('odp-mon-odc-wrap');
   if (odcWrap) odcWrap.style.display = 'none';
+  var detPanel = document.getElementById('odp-mon-odp-detail-panel');
+  if (detPanel) detPanel.style.display = 'none';
+  var areaLbl = document.getElementById('odp-mon-selected-area-lbl');
+  if (areaLbl) areaLbl.textContent = '';
+  // Kembalikan filter wrap ke posisi semula (setelah anchor)
+  var anchor = document.getElementById('odp-mon-filter-anchor');
+  if (filterWrap && anchor && anchor.parentNode) {
+    anchor.parentNode.insertBefore(filterWrap, anchor.nextSibling);
+  }
   renderOdpMonitor();
+}
+
+/* Pilih area dari card → tampilkan filter ODC & ODP */
+function selectOdpMonArea(area) {
+  var aF = document.getElementById('odp-mon-area-filter');
+  var oF = document.getElementById('odp-mon-odc-filter');
+  var pF = document.getElementById('odp-mon-odp-filter');
+  var filterWrap = document.getElementById('odp-mon-odc-odp-filter-wrap');
+  var odpRow = document.getElementById('odp-mon-odp-row');
+  var detPanel = document.getElementById('odp-mon-odp-detail-panel');
+  var areaLbl = document.getElementById('odp-mon-selected-area-lbl');
+
+  // Toggle: jika area sama → reset
+  if (aF && aF.value === area) {
+    resetOdpMonFilter();
+    return;
+  }
+
+  if (aF) aF.value = area;
+
+  // Populate ODC dari setting
+  var settingData = getOdcOdpData();
+  var odcList = ((settingData[area]||{}).odc||[]).filter(function(o){ return o.trim(); }).sort();
+  if (oF) {
+    oF.innerHTML = '<option value="">Semua ODC</option>' +
+      odcList.map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
+    oF.value = '';
+  }
+  // Populate ODP semua dari area ini
+  var odpListAll = ((settingData[area]||{}).odp||[]).filter(function(o){ return o.trim(); }).sort();
+  if (pF) {
+    pF.innerHTML = '<option value="">Semua ODP</option>' +
+      odpListAll.map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
+    pF.value = '';
+  }
+  if (odpRow) odpRow.style.display = odpListAll.length ? '' : 'none';
+  if (detPanel) detPanel.style.display = 'none';
+  if (filterWrap) filterWrap.style.display = 'block';
+  if (areaLbl) areaLbl.textContent = area;
+
+  // Pindahkan filter wrap langsung ke dalam card area yang dipilih (inline)
+  if (filterWrap) {
+    var areaChart = document.getElementById('odp-mon-area-chart');
+    if (areaChart) {
+      // Cari card area yang dipilih berdasarkan teks nama area
+      var cards = areaChart.querySelectorAll('[data-area-card]');
+      var targetCard = null;
+      for (var ci = 0; ci < cards.length; ci++) {
+        if (cards[ci].getAttribute('data-area-card') === area) { targetCard = cards[ci]; break; }
+      }
+      if (targetCard) {
+        // Sisipkan filterWrap tepat setelah card ini
+        targetCard.parentNode.insertBefore(filterWrap, targetCard.nextSibling);
+      } else {
+        // Fallback: taruh di atas chart area
+        areaChart.insertBefore(filterWrap, areaChart.firstChild);
+      }
+    }
+    setTimeout(function(){ filterWrap.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 80);
+  }
+
+  // Render ulang hanya bagian chart ODC/ODP (bukan full rebuild)
+  renderOdpMonitor();
+}
+
+/* Saat ODP dipilih → tampil detail pelanggan (read only) */
+function onOdpMonOdpChange() {
+  var aF = document.getElementById('odp-mon-area-filter');
+  var oF = document.getElementById('odp-mon-odc-filter');
+  var pF = document.getElementById('odp-mon-odp-filter');
+  var detPanel = document.getElementById('odp-mon-odp-detail-panel');
+  var detList  = document.getElementById('odp-mon-odp-det-list');
+  var detCount = document.getElementById('odp-mon-odp-det-count');
+  var selOdp   = (pF||{}).value||'';
+
+  // Tidak perlu renderOdpMonitor penuh — hanya update detail panel
+  if (!selOdp || !detPanel) {
+    if (detPanel) detPanel.style.display = 'none';
+    return;
+  }
+
+  var allP = getMergedPel();
+  var pels = allP.filter(function(d){ return (d.odp||'').trim().toLowerCase() === selOdp.trim().toLowerCase(); });
+
+  if (detCount) detCount.textContent = pels.length + ' pelanggan';
+  if (detList) {
+    if (!pels.length) {
+      detList.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:10px">Belum ada pelanggan di ODP ini</div>';
+    } else {
+      detList.innerHTML = pels.map(function(d) {
+        var ini2 = function(s){ return (s||'??').substring(0,2).toUpperCase(); };
+        var stCol = (d.status||'').toLowerCase() === 'aktif' ? 'var(--green)' : (d.status||'').toLowerCase() === 'dismantle' ? 'var(--red)' : 'var(--yellow)';
+        var stBg  = (d.status||'').toLowerCase() === 'aktif' ? 'rgba(5,150,105,.12)' : (d.status||'').toLowerCase() === 'dismantle' ? 'rgba(220,38,38,.12)' : 'rgba(217,119,6,.12)';
+        return '<div style="background:var(--bg4);border-radius:var(--rs);border:1px solid var(--border2);padding:10px 12px;margin-bottom:6px">' +
+          '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px">' +
+            '<div style="width:34px;height:34px;border-radius:10px;background:var(--c1b);color:var(--c1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">' + ini2(d.nama) + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(d.nama||'—') + '</div>' +
+              '<div style="font-size:10px;color:var(--text3);margin-top:1px">CID: <b style=\"color:var(--c1)\">' + escHtml(d.cid||'—') + '</b></div>' +
+            '</div>' +
+            '<span style="font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;background:' + stBg + ';color:' + stCol + ';flex-shrink:0">' + escHtml(d.status||'Aktif') + '</span>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:10px">' +
+            '<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">' +
+              '<div style="color:var(--text3);font-size:9px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px">Port ODP</div>' +
+              '<div style="font-weight:700;color:var(--text)">' + escHtml(d.port||'—') + '</div>' +
+            '</div>' +
+            '<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">' +
+              '<div style="color:var(--text3);font-size:9px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px">ODC</div>' +
+              '<div style="font-weight:700;color:var(--pu)">' + escHtml(d.odc||'—') + '</div>' +
+            '</div>' +
+            '<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">' +
+              '<div style="color:var(--text3);font-size:9px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px">Area</div>' +
+              '<div style="font-weight:700;color:var(--text)">' + escHtml(d.area||'—') + '</div>' +
+            '</div>' +
+            '<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">' +
+              '<div style="color:var(--text3);font-size:9px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px">Tanggal</div>' +
+              '<div style="font-weight:700;color:var(--text)">' + escHtml(d.tgl||'—') + '</div>' +
+            '</div>' +
+          '</div>' +
+          (d.alamat ? '<div style="margin-top:6px;font-size:10px;color:var(--text2);background:var(--bg3);border-radius:7px;padding:6px 8px"><span style=\"color:var(--text3);font-size:9px\">Alamat: </span>' + escHtml(d.alamat) + '</div>' : '') +
+          '<div style="margin-top:6px;font-size:9px;color:var(--text3);text-align:right;font-style:italic"><i class="ti ti-lock" style="font-size:10px"></i> Read only</div>' +
+        '</div>';
+      }).join('');
+    }
+    detPanel.style.display = 'block';
+  }
 }
 
 // ═══════════════════════════════
@@ -12261,10 +12902,10 @@ function renderOdpRekap() {
           return '<div style="background:var(--bg4);border-radius:8px;padding:10px 11px;border:1px solid var(--border);margin-bottom:6px">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
               '<div style="display:flex;align-items:center;gap:8px">' +
-                '<div style="width:32px;height:32px;border-radius:9px;background:var(--c1b);color:var(--c1);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;font-family:"JetBrains Mono",monospace">' + ((d.nama||'??').substring(0,2).toUpperCase()) + '</div>' +
+                '<div style="width:32px;height:32px;border-radius:9px;background:var(--c1b);color:var(--c1);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;font-family:JetBrains Mono,monospace">' + ((d.nama||'??').substring(0,2).toUpperCase()) + '</div>' +
                 '<div>' +
                   '<div style="font-size:12px;font-weight:700;color:var(--text)">' + escHtml(d.nama||'—') + '</div>' +
-                  '<div style="font-size:10px;color:var(--text3);font-family:"JetBrains Mono",monospace">CID: ' + escHtml(d.cid||'—') + '</div>' +
+                  '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace">CID: ' + escHtml(d.cid||'—') + '</div>' +
                 '</div>' +
               '</div>' +
               '<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(15,212,148,.12);color:var(--green)">' + escHtml(d.status||'Aktif') + '</span>' +
@@ -12854,7 +13495,7 @@ function renderGrouped(f){
     if(!recs.length){el.innerHTML='<div class="empty-s" style="padding:20px"><i class="ti ti-inbox" style="font-size:28px;margin-bottom:6px"></i><p style="font-size:12px">Belum ada data pelanggan</p></div>';return;}
     el.innerHTML=recs.map(function(d){
       var canEdit=(currentRole==='admin'||rolePerm('input_pel'));
-      var tglDisplay=(d.tgl||'').replace(/T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/,'');
+      var tglDisplay=fmtTgl(d.tgl);
       // Pastikan data ada di db.p — jika dari Sheets, import dulu saat tombol diklik
       var localIdx=db.p.findIndex(function(x){return x.cid&&d.cid&&x.cid.trim().toLowerCase()===d.cid.trim().toLowerCase();});
       var cidKey=escAttr(d.cid||'');
@@ -13223,7 +13864,7 @@ function showPelDetail(cid){
     modal.innerHTML='<div id="pel-detail-sheet" style="background:var(--bg2);border-radius:24px 24px 0 0;padding:22px 18px 36px;width:100%;max-width:480px;border:1px solid var(--border2);max-height:85vh;overflow-y:auto"></div>';
     document.body.appendChild(modal);
   }
-  var tgl=(d.tgl||'').replace(/T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/,'');
+  var tgl=fmtTgl(d.tgl);
   var statusColor=d.status==='Paket 200Mbps'?'var(--green)':d.status==='Fasum'?'var(--c1)':'var(--yellow)';
   var sentBadge=d.sent?'<span style="background:rgba(15,212,148,.15);color:var(--green);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700">✓ Sudah ke Sheets</span>':'<span style="background:var(--yg);color:var(--yellow);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700">⏱ Data Lokal</span>';
   function row(icon,label,val){if(!val)return '';return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><i class="ti '+icon+'" style="font-size:15px;color:var(--text3);margin-top:1px;flex-shrink:0"></i><div><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+label+'</div><div style="font-size:13px;color:var(--text);margin-top:2px">'+val+'</div></div></div>';}
@@ -13277,11 +13918,19 @@ function deleteEntryByCid(cid){
       '<div style="font-size:11px;color:var(--text3);margin-top:2px">CID: '+escHtml(d.cid||'—')+' · ODP: '+escHtml(d.odp||'—')+'</div></div></div>',
     onConfirm:function(){
       var payload=JSON.stringify({_action:'delete',cid:d.cid,type:'p'});
+      // Hapus langsung dari Supabase (pakai ts sebagai row id)
+      var deletedTs = d.ts;
+      logActivity('hapus', 'pelanggan', d.nama, d.cid, {area:d.area});
+      if(deletedTs && _sbGetClient()){
+        sbDeleteRow(deletedTs).catch(function(){});
+      }
       function removeFromCache(){
         var li=db.p.findIndex(function(x){return (x.cid||'').trim().toLowerCase()===cidLow;});
         if(li>=0){db.p.splice(li,1);svP();}
         var pi=pelDB.findIndex(function(x){return (x.cid||'').trim().toLowerCase()===cidLow;});
         if(pi>=0){pelDB.splice(pi,1);try{lss(K.pc,JSON.stringify(pelDB));}catch(e){}}
+        // Pastikan semua row Supabase yg sudah dihapus lokal juga terhapus di server
+        if(_sbGetClient()){ setTimeout(function(){ sbSyncDeletedRows('p').catch(function(){}); }, 800); }
         renderOdpRekap();renderList();updDash();updCounts();
         toast('Data pelanggan berhasil dihapus','ok');
       }
@@ -13359,7 +14008,7 @@ function buildEditPelFields(d){
   var odpOpts=(areaOdcOdp.odp||[]);
   var ontOpts=getMatOntList();
   var preconOpts=getMatPreconList();
-  var tglClean=(d.tgl||'').replace(/T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/,'');
+  var tglClean=fmtTgl(d.tgl);
 
   function selOpts(opts,cur,empty){
     return '<option value="">'+empty+'</option>'+opts.map(function(o){return '<option'+(o===cur?' selected':'')+'>'+esc(o)+'</option>';}).join('');
@@ -13567,6 +14216,12 @@ function saveEditData(){
     try{lss(K.pc,JSON.stringify(pelDB));}catch(e){}
     var li=db.p.findIndex(function(x){return (x.cid||'').trim().toLowerCase()===cidLow;});
     if(li>=0){db.p[li]=updatedForLocal;svP();}
+    // ── Langsung upsert ke Supabase agar tidak tertimpa saat reload ──
+    if(_sbGetClient()){
+      sbUpsertRow(updatedForLocal).catch(function(){});
+    var _etype = updatedForLocal.type==="p"?"pelanggan":updatedForLocal.type==="d"?"maintenance":updatedForLocal.type==="x"?"dismantle":"material";
+    logActivity("edit", _etype, updatedForLocal.nama||updatedForLocal.item||"", updatedForLocal.cid||"", {area:updatedForLocal.area||""});
+    }
     renderOdpRekap();renderList();updDash();updCounts();
     closeEditModal();
     // ── Kirim ke Sheets jika online dan URL ada ──
@@ -14327,11 +14982,14 @@ function renderAcctList(){
   wrap.innerHTML = infoBar + '<div class="acct-list">' + list.map(function(a,i){
     var rc = roleColor[a.role]||'c1';
     var ri = roleIcon[a.role]||'ti-user';
+    var kode = a.kode || '—';
+    var kodeBadgeClass = 'acct-code-badge ' + (a.role||'');
     return '<div class="acct-item">' +
       '<div class="acct-av '+a.role+'">'+ini2(a.name)+'</div>' +
       '<div class="acct-info">' +
         '<div class="acct-name">'+escHtml(a.name)+'</div>' +
         '<div class="acct-meta"><i class="ti '+ri+'" style="font-size:10px;margin-right:3px"></i>'+(roleLabel[a.role]||a.role)+(a.jabatan?' · <b style="color:var(--text)">'+escHtml(a.jabatan)+'</b>':'')+( a.ket?' · '+escHtml(a.ket):'')+'</div>' +
+        '<span class="'+kodeBadgeClass+'" onclick="copyCodeFromList(\''+escHtml(kode)+'\')" title="Klik salin kode"><i class="ti ti-hash" style="font-size:8px"></i>'+escHtml(kode)+'</span>' +
       '</div>' +
       '<div class="acct-actions">' +
         '<button class="acct-btn edit" onclick="openAcctModal('+i+')"><i class="ti ti-pencil"></i></button>' +
@@ -14342,6 +15000,16 @@ function renderAcctList(){
 }
 
 function escHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function copyCodeFromList(code){
+  if(!code||code==='—') return;
+  try{
+    navigator.clipboard.writeText(code).then(function(){toast('Kode '+code+' disalin!','ok');});
+  }catch(e){
+    var ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    toast('Kode '+code+' disalin!','ok');
+  }
+}
 
 function openAcctModal(idx){
   if(currentRole!=='admin'){toast('Hanya Admin yang bisa kelola akun','err');return;}
@@ -14378,6 +15046,7 @@ function openAcctModal(idx){
   }
   onAcctRoleChange();
   updateAreaDropdowns(); // sync area kerja dari Wilayah Setting
+  _refreshCodePreview(); // tampilkan kode akun preview
   document.getElementById('acct-modal').classList.add('show');
   setTimeout(function(){fName.focus();},200);
 }
@@ -14424,11 +15093,18 @@ function saveAcct(){
   var acct = {name:name, role:role, jabatan:jabatan, pin: role==='tamu'?'':pin, ket:ket, ts:new Date().toISOString()};
 
   if(idx !== ''){
+    // Edit: pertahankan kode yang sudah ada
+    var existing2 = list[parseInt(idx)];
+    acct.kode = (existing2 && existing2.kode) ? existing2.kode : generateAcctCode(role).code;
     list[parseInt(idx)] = acct;
     toast('Akun '+name+' diperbarui','ok');
   } else {
+    // Tambah baru: generate kode unik
+    var gen = generateAcctCode(role);
+    acct.kode = gen.code;
     list.push(acct);
-    toast('Akun '+name+' ditambahkan','ok');
+    commitAcctCodeCounter(role, gen.next);
+    toast('Akun '+name+' · Kode: '+acct.kode+' ditambahkan','ok');
   }
   saveAccts(list);
   // Sync PIN ke sistem login: gunakan akun pertama dari tiap peran sebagai PIN global fallback
@@ -14453,6 +15129,146 @@ function delAcct(idx){
   renderAcctList();
   _syncFullRefresh('acct-del');
   toast('Akun dihapus','ok');
+}
+
+// ═══════════════════════════════
+// SISTEM KODE AKUN
+// ═══════════════════════════════
+var K_ACCT_PREFIX = 'acct_prefix_cfg';  // {teknisi:'TKN',gudang:'GDG',sales:'SLS',tamu:'TMU'}
+var K_ACCT_COUNTER = 'acct_code_ctr';   // {teknisi:3,gudang:1,...} — counter per role
+
+var _DEFAULT_PREFIX = {teknisi:'TKN', gudang:'GDG', sales:'SLS', tamu:'TMU'};
+
+function getAcctPrefixes(){
+  try{var r=ls(K_ACCT_PREFIX);if(r)return Object.assign({},_DEFAULT_PREFIX,JSON.parse(r));}catch(e){}
+  return Object.assign({},_DEFAULT_PREFIX);
+}
+
+function saveAcctPrefixesData(obj){
+  lss(K_ACCT_PREFIX, JSON.stringify(obj));
+}
+
+function getAcctCounters(){
+  try{var r=ls(K_ACCT_COUNTER);if(r)return JSON.parse(r);}catch(e){}
+  return {};
+}
+
+function saveAcctCounters(obj){
+  lss(K_ACCT_COUNTER, JSON.stringify(obj));
+}
+
+/* Generate kode baru untuk role tertentu — tidak pakai kode yang sudah ada */
+function generateAcctCode(role){
+  var prefixes = getAcctPrefixes();
+  var prefix = (prefixes[role] || role.slice(0,3)).toUpperCase();
+  var counters = getAcctCounters();
+  var existing = getAccts().map(function(a){ return a.kode||''; });
+
+  // Cari nomor berikutnya yang belum dipakai
+  var next = (counters[role] || 0) + 1;
+  var code;
+  var tries = 0;
+  do {
+    code = prefix + String(next).padStart(5,'0');
+    tries++;
+    if(existing.indexOf(code) >= 0) next++;
+  } while(existing.indexOf(code) >= 0 && tries < 9999);
+
+  return {code: code, next: next};
+}
+
+/* Commit counter setelah kode benar-benar disimpan */
+function commitAcctCodeCounter(role, next){
+  var counters = getAcctCounters();
+  counters[role] = next;
+  saveAcctCounters(counters);
+}
+
+/* Rebuild semua kode akun yang belum punya kode (migrasi data lama) */
+function migrateAcctCodes(){
+  var list = getAccts();
+  var changed = false;
+  var counters = getAcctCounters();
+  list.forEach(function(a){
+    if(!a.kode){
+      var gen = generateAcctCode(a.role);
+      a.kode = gen.code;
+      counters[a.role] = gen.next;
+      changed = true;
+    }
+  });
+  if(changed){
+    saveAccts(list);
+    saveAcctCounters(counters);
+  }
+}
+
+/* Ambil akun berdasarkan kode */
+function getAcctByCode(code){
+  if(!code) return null;
+  return getAccts().find(function(a){ return a.kode === code; }) || null;
+}
+
+/* Tampilkan kode akun preview di modal saat role berubah atau modal dibuka */
+function _refreshCodePreview(){
+  var role = (document.getElementById('acct-f-role')||{}).value || 'teknisi';
+  var idxVal = (document.getElementById('acct-f-id')||{}).value;
+  var display = document.getElementById('acct-f-code-display');
+  if(!display) return;
+
+  if(idxVal !== ''){
+    // Edit mode — tampilkan kode yang ada
+    var existing = getAccts()[parseInt(idxVal)];
+    display.textContent = (existing && existing.kode) ? existing.kode : '—';
+    display.style.color = 'var(--text2)';
+  } else {
+    // Tambah mode — preview kode yang akan digenerate
+    var gen = generateAcctCode(role);
+    display.textContent = gen.code;
+    display.style.color = 'var(--c1)';
+  }
+}
+
+function copyAcctCode(){
+  var display = document.getElementById('acct-f-code-display');
+  if(!display || display.textContent === '—') return;
+  var code = display.textContent;
+  try{
+    navigator.clipboard.writeText(code).then(function(){toast('Kode '+code+' disalin!','ok');});
+  }catch(e){
+    // fallback
+    var ta = document.createElement('textarea');
+    ta.value = code; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('Kode '+code+' disalin!','ok');
+  }
+}
+
+/* Load prefix values ke input fields */
+function loadPrefixInputs(){
+  var p = getAcctPrefixes();
+  ['teknisi','gudang','sales','tamu'].forEach(function(r){
+    var el = document.getElementById('prefix-'+r);
+    if(el) el.value = p[r] || _DEFAULT_PREFIX[r];
+  });
+}
+
+/* Simpan prefix dari input fields */
+function saveAcctPrefixes(){
+  var obj = {};
+  var valid = true;
+  ['teknisi','gudang','sales','tamu'].forEach(function(r){
+    var el = document.getElementById('prefix-'+r);
+    var val = el ? el.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3) : _DEFAULT_PREFIX[r];
+    if(!val || val.length < 1){ valid = false; if(el) el.focus(); }
+    obj[r] = val || _DEFAULT_PREFIX[r];
+  });
+  if(!valid){ toast('Prefix minimal 1 huruf','err'); return; }
+  saveAcctPrefixesData(obj);
+  toast('Prefix kode akun disimpan ✓','ok');
+  // Sync input values
+  loadPrefixInputs();
+  renderAcctList();
 }
 
 // ═══════════════════════════════
@@ -14966,6 +15782,9 @@ function onAcctRoleChange(){
     var map = {teknisi:'Teknisi Lapangan',gudang:'Staff Gudang',sales:'Sales',tamu:'Tamu'};
     if(map[r]) jabEl.value = map[r];
   }
+  // Refresh kode preview saat role berubah (hanya di mode tambah baru)
+  var idxVal2 = (document.getElementById('acct-f-id')||{}).value;
+  if(idxVal2 === '') _refreshCodePreview();
 }
 
 // ─── Tab switcher untuk Manajemen Akun & Akses ───
@@ -14994,6 +15813,8 @@ function switchMgmtTab(tab){
   });
   // Jika tab sales dibuka, render ulang
   if(tab==='sales') renderSalesMgr();
+  // Jika tab akun dibuka, load prefix inputs
+  if(tab==='akun') loadPrefixInputs();
 }
 
 // ─── Jabatan chip helper ───
@@ -15309,10 +16130,20 @@ function deleteEntry(type,idx){
       '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+sub+'</div></div></div>',
     onConfirm:function(){
       var deletedTs = d && d.ts;
+      var _actEntityType = type==='p'?'pelanggan':type==='d'?'maintenance':type==='x'?'dismantle':'material';
+      var _actEntityName = d ? (d.nama||d.item||'') : '';
+      var _actEntityCid  = d ? (d.cid||'') : '';
+      logActivity('hapus', _actEntityType, _actEntityName, _actEntityCid, {type:type});
       if(type==='p'){db.p.splice(idx,1);svP();}
       else if(type==='s'){if(db.s)db.s.splice(idx,1);svS&&svS();}
       else{db.m.splice(idx,1);svM();}
-      if(deletedTs && _sbGetClient()){ sbDeleteRow(deletedTs).catch(function(){}); }
+      // Hapus langsung dari Supabase (realtime channel mungkin belum aktif)
+      if(deletedTs && _sbGetClient()){
+        sbDeleteRow(deletedTs).catch(function(){});
+        // Sync penuh untuk tipe ini setelah delete
+        var syncType = (type==='p') ? 'p' : type;
+        setTimeout(function(){ sbSyncDeletedRows(syncType).catch(function(){}); }, 800);
+      }
       renderList();updDash();updCounts();
       toast('Data '+typeLabel+' berhasil dihapus','ok');
     }
@@ -15888,7 +16719,298 @@ function showComingSoon(menuName, btn) {
   if(typeof closeSidebar === 'function') closeSidebar();
 }
 
-/* ── COMING SOON INLINE HELPER ── */
+/* ── VISUAL VIEWPORT FIX ── */
+(function(){
+  function applyVVH(){
+    var h=window.visualViewport?window.visualViewport.height:window.innerHeight;
+    var shell=document.querySelector('.shell');
+    if(shell)shell.style.height=h+'px';
+  }
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',applyVVH);
+    window.visualViewport.addEventListener('scroll',function(){if(window.visualViewport.offsetTop>0)window.scrollTo(0,0);});
+  }
+  window.addEventListener('resize',applyVVH);
+  applyVVH();
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SMART EXPORT / IMPORT — KONTEKSTUAL PER TAB + BACKUP ALL
+═══════════════════════════════════════════════════════════════ */
+
+// Label & section map per datFilt
+var _EI_MAP = {
+  p:   { sec:'pelanggan',    label:'Pelanggan',   icon:'ti-users',     color:'var(--c1)',    bg:'var(--c1b)',    border:'rgba(61,142,248,.35)' },
+  d:   { sec:'maintenance',  label:'Maintenance', icon:'ti-replace',   color:'var(--pu)',    bg:'rgba(167,139,250,.1)',  border:'rgba(167,139,250,.35)' },
+  x:   { sec:'dismantle',    label:'Dismantle',   icon:'ti-tools',     color:'var(--red)',   bg:'var(--rg2)',    border:'rgba(220,38,38,.3)' },
+  m:   { sec:'material',     label:'Material',    icon:'ti-package',   color:'var(--c2)',    bg:'var(--c2b)',    border:'rgba(249,115,22,.35)' },
+  s:   { sec:'sales',        label:'Sales',       icon:'ti-cash',      color:'var(--green)', bg:'var(--gng2)',   border:'rgba(5,150,105,.3)' },
+  odp: { sec:'pelanggan',    label:'Rekap ODP',   icon:'ti-antenna-bars-5', color:'var(--red)', bg:'var(--rg2)', border:'rgba(220,38,38,.3)' }
+};
+
+// ── EXPORT MODAL ──
+function showExportModal(){
+  var f = datFilt || 'p';
+  var info = _EI_MAP[f] || _EI_MAP.p;
+  var el = document.getElementById('modal-export');
+  var title = document.getElementById('modal-export-title');
+  var sub   = document.getElementById('modal-export-sub');
+  var icon  = document.getElementById('modal-export-icon');
+  if(!el) return;
+  if(title) title.textContent = 'Export ' + info.label;
+  if(sub)   sub.textContent   = 'Download data ' + info.label + ' saja';
+  if(icon){
+    icon.style.background = info.bg;
+    icon.innerHTML = '<i class="ti '+info.icon+'" style="font-size:20px;color:'+info.color+'"></i>';
+  }
+  el.style.display = 'flex';
+  el.style.alignItems = 'flex-end';
+  setTimeout(function(){ document.getElementById('modal-export-sheet').style.transform='translateY(0)'; },10);
+}
+function closeExportModal(){
+  var sheet = document.getElementById('modal-export-sheet');
+  if(sheet) sheet.style.transform='translateY(100%)';
+  setTimeout(function(){ var m=document.getElementById('modal-export'); if(m) m.style.display='none'; },300);
+}
+function doExportFromModal(fmt){
+  closeExportModal();
+  var f = datFilt || 'p';
+  var info = _EI_MAP[f] || _EI_MAP.p;
+  var sec = info.sec;
+  setTimeout(function(){
+    if(fmt==='csv') expDataSection(sec);
+    else            expDataSectionJSON(sec);
+  }, 320);
+}
+
+// ── IMPORT MODAL ──
+function showImportModal(){
+  if(currentRole!=='admin'){toast('Hanya Admin yang bisa import data','err');return;}
+  var f = datFilt || 'p';
+  var info = _EI_MAP[f] || _EI_MAP.p;
+  var el = document.getElementById('modal-import');
+  var title = document.getElementById('modal-import-title');
+  var sub   = document.getElementById('modal-import-sub');
+  var warn  = document.getElementById('modal-import-warn');
+  if(!el) return;
+  if(title) title.textContent = 'Import ' + info.label;
+  if(sub)   sub.textContent   = 'Upload file .csv atau .json untuk data ' + info.label;
+  if(warn)  warn.innerHTML    = 'Data <b>'+info.label+'</b> duplikat (berdasarkan CID) akan dilewati. Data yang sudah ada tidak akan dihapus.';
+  el.style.display = 'flex';
+  el.style.alignItems = 'flex-end';
+  setTimeout(function(){ document.getElementById('modal-import-sheet').style.transform='translateY(0)'; },10);
+}
+function closeImportModal(){
+  var sheet = document.getElementById('modal-import-sheet');
+  if(sheet) sheet.style.transform='translateY(100%)';
+  setTimeout(function(){ var m=document.getElementById('modal-import'); if(m) m.style.display='none'; },300);
+}
+function doImportFromModal(fmt){
+  closeImportModal();
+  var f = datFilt || 'p';
+  var info = _EI_MAP[f] || _EI_MAP.p;
+  var sec = info.sec;
+  setTimeout(function(){
+    impDataSection(sec);
+  }, 320);
+}
+
+/* ── EXPORT ALL — CSV (pelanggan + material dalam 1 file) ── */
+function expFullBackupCSV(){
+  if(!db.p.length && !db.m.length){ toast('Tidak ada data lokal','err'); return; }
+  var h = 'Type,Tanggal,Nama,Area,Kota,Alamat,RT,RW,CID,SN ONT,ODC,ODP,Port,ONT,Precon,Status,Teknisi,Item,Qty,SN,Pengirim,Penerima/Stat,Penggunaan,IKR,Maint,Keterangan\n';
+  var rows = [];
+  db.p.forEach(function(d){
+    rows.push(['p',d.tgl||'','"'+(d.nama||'')+'"',d.area||'',d.kota||'','"'+(d.alamat||'')+'"',d.rt||'',d.rw||'',d.cid||'',d.snont||'',d.odc||'',d.odp||'',d.port||'',d.ont||'',d.precon||'',d.status||'',d.teknisi||'','','','','','','','','',''].join(','));
+  });
+  db.m.forEach(function(d){
+    var tp = d.type||'m';
+    rows.push([tp,d.tgl||'','"'+(d.pgnNama||d.nama||'')+'"',d.area||'','','','','',d.cid||'','','','','','','',d.stat||'',d.teknisi||'','"'+(d.item||'')+'"',d.qty||'',d.sn||'',d.amb||'',d.stat||'',d.pgn||'',d.ikr||'',d.mnt||'','"'+(d.ket||'')+'"'].join(','));
+  });
+  var blob = new Blob([h+rows.join('\n')], {type:'text/csv'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'backup_semua_'+today()+'.csv'; a.click();
+  toast('Export all: '+db.p.length+' pelanggan + '+db.m.length+' material','ok');
+}
+
+/* ── EXPORT ALL — JSON lengkap termasuk konfigurasi ── */
+function expFullBackupJSON(){
+  var payload = {
+    _version: 2,
+    _app: 'DataEntry Pro',
+    exported: new Date().toISOString(),
+    pelanggan: db.p,
+    material: db.m,
+    sales_list: getSalesList(),
+    sales_addr: (function(){ try{ return JSON.parse(ls(K_SALES_ADDR)||'{}'); }catch(e){ return {}; } })(),
+    sales_downline: (function(){ try{ return JSON.parse(ls(K_DOWNLINE)||'{}'); }catch(e){ return {}; } })(),
+    odc_odp: (function(){ try{ return JSON.parse(ls(K_ODCOДP)||'{}'); }catch(e){ return {}; } })(),
+    wilayah: (function(){ try{ return JSON.parse(ls(K_WILAYAH)||'{}'); }catch(e){ return {}; } })(),
+    accts: (function(){ try{ return JSON.parse(ls(K_ACCTS)||'[]'); }catch(e){ return []; } })(),
+    permissions: (function(){ try{ return JSON.parse(ls(K_PERM)||'{}'); }catch(e){ return {}; } })(),
+    custom_pins: (function(){ try{ return JSON.parse(ls(K_CUSTOM_PINS)||'{}'); }catch(e){ return {}; } })(),
+    otf: (function(){ try{ return JSON.parse(ls(K_OTF)||'{}'); }catch(e){ return {}; } })(),
+    sb_url: ls('sb_url')||'',
+    sb_key: ls('sb_anon_key')||'',
+    url_p: ls(K.up)||'', url_m: ls(K.um)||'', url_app: ls(K.ua)||'', url_read: ls(K.ur)||''
+  };
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)], {type:'application/json'}));
+  a.download = 'backup_lengkap_'+today()+'.json'; a.click();
+  toast('Backup lengkap diunduh','ok');
+}
+
+/* ── RESTORE ALL — JSON ── */
+var _restoreAllPending = null;
+function triggerFullRestoreJSON(){
+  if(currentRole!=='admin'){ toast('Hanya Admin yang bisa restore data','err'); return; }
+  var inp = document.getElementById('imp-restore-all-json');
+  if(!inp){
+    inp = document.createElement('input'); inp.type='file'; inp.id='imp-restore-all-json';
+    inp.accept='.json'; inp.style.display='none';
+    inp.addEventListener('change', function(){
+      if(!this.files[0]) return;
+      var reader = new FileReader();
+      reader.onload = function(e){
+        try{
+          var parsed = JSON.parse(e.target.result);
+          _restoreAllPending = { type:'json', data: parsed };
+          var desc = document.getElementById('modal-restore-all-desc');
+          var cnt = (parsed.pelanggan||[]).length + (parsed.material||[]).length;
+          if(desc) desc.innerHTML = 'File berisi <b>'+cnt+' data</b> ('+((parsed.pelanggan||[]).length)+' pelanggan + '+((parsed.material||[]).length)+' material). Semua data aplikasi akan <b style="color:var(--red)">diganti permanen</b>.';
+          var m = document.getElementById('modal-restore-all');
+          if(m){ m.style.display='flex'; m.style.alignItems='center'; m.style.justifyContent='center'; }
+        }catch(err){ toast('File JSON tidak valid','err'); }
+      };
+      reader.readAsText(this.files[0]);
+      this.value='';
+    });
+    document.body.appendChild(inp);
+  }
+  inp.click();
+}
+
+function triggerFullRestoreCSV(){
+  if(currentRole!=='admin'){ toast('Hanya Admin yang bisa restore data','err'); return; }
+  var inp = document.getElementById('imp-restore-all-csv');
+  if(!inp){
+    inp = document.createElement('input'); inp.type='file'; inp.id='imp-restore-all-csv';
+    inp.accept='.csv'; inp.style.display='none';
+    inp.addEventListener('change', function(){
+      if(!this.files[0]) return;
+      var file = this.files[0];
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var lines = e.target.result.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+        if(lines.length < 2){ toast('File CSV kosong','err'); return; }
+        _restoreAllPending = { type:'csv', content: e.target.result };
+        var desc = document.getElementById('modal-restore-all-desc');
+        if(desc) desc.innerHTML = 'File berisi <b>'+(lines.length-1)+' baris data</b>. Semua data aplikasi akan <b style="color:var(--red)">diganti permanen</b>.';
+        var m = document.getElementById('modal-restore-all');
+        if(m){ m.style.display='flex'; m.style.alignItems='center'; m.style.justifyContent='center'; }
+      };
+      reader.readAsText(file);
+      this.value='';
+    });
+    document.body.appendChild(inp);
+  }
+  inp.click();
+}
+
+function confirmRestoreAll(){
+  if(!_restoreAllPending){ cancelRestoreAll(); return; }
+  var m = document.getElementById('modal-restore-all');
+  if(m) m.style.display='none';
+
+  if(_restoreAllPending.type === 'json'){
+    var parsed = _restoreAllPending.data;
+    // Timpa data pelanggan
+    if(Array.isArray(parsed.pelanggan)){
+      db.p = parsed.pelanggan.map(function(d){ d.sent=false; return d; });
+      try{ localStorage.setItem(K.p, JSON.stringify(db.p)); }catch(e){}
+    }
+    // Timpa material
+    if(Array.isArray(parsed.material)){
+      db.m = parsed.material.map(function(d){ d.sent=false; return d; });
+      try{ localStorage.setItem(K.m, JSON.stringify(db.m)); }catch(e){}
+    }
+    // Timpa sales list
+    if(Array.isArray(parsed.sales_list)){
+      try{ lss(K_SALES_LIST, JSON.stringify(parsed.sales_list)); }catch(e){}
+    }
+    // Timpa sales addr
+    if(parsed.sales_addr){ try{ lss(K_SALES_ADDR, JSON.stringify(parsed.sales_addr)); }catch(e){} }
+    // Timpa downline
+    if(parsed.sales_downline){ try{ lss(K_DOWNLINE, JSON.stringify(parsed.sales_downline)); }catch(e){} }
+    // Timpa ODC/ODP
+    if(parsed.odc_odp){ try{ lss(K_ODCOДP, JSON.stringify(parsed.odc_odp)); }catch(e){} }
+    // Timpa wilayah
+    if(parsed.wilayah){ try{ lss(K_WILAYAH, JSON.stringify(parsed.wilayah)); }catch(e){} }
+    // Timpa akun
+    if(Array.isArray(parsed.accts)){ try{ lss(K_ACCTS, JSON.stringify(parsed.accts)); }catch(e){} }
+    // Timpa permissions
+    if(parsed.permissions){ try{ lss(K_PERM, JSON.stringify(parsed.permissions)); }catch(e){} }
+    // Timpa custom pins
+    if(parsed.custom_pins){ try{ lss(K_CUSTOM_PINS, JSON.stringify(parsed.custom_pins)); }catch(e){} }
+    // Timpa OTF
+    if(parsed.otf){ try{ lss(K_OTF, JSON.stringify(parsed.otf)); }catch(e){} }
+    // Timpa URL config jika ada
+    if(parsed.sb_url){ try{ lss('sb_url', parsed.sb_url); }catch(e){} }
+    if(parsed.sb_key){ try{ lss('sb_anon_key', parsed.sb_key); }catch(e){} }
+    if(parsed.url_p){ try{ lss(K.up, parsed.url_p); }catch(e){} }
+    if(parsed.url_m){ try{ lss(K.um, parsed.url_m); }catch(e){} }
+    if(parsed.url_app){ try{ lss(K.ua, parsed.url_app); }catch(e){} }
+    if(parsed.url_read){ try{ lss(K.ur, parsed.url_read); }catch(e){} }
+
+    var tot = db.p.length + db.m.length;
+    updCounts(); updDash(); renderList();
+    if(typeof renderOdpMonitor==='function') renderOdpMonitor();
+    if(typeof renderAcctList==='function') renderAcctList();
+    toast('✓ Restore selesai: '+tot+' data berhasil dimuat','ok');
+
+  } else if(_restoreAllPending.type === 'csv'){
+    // CSV restore: timpa db.p dan db.m
+    var lines = _restoreAllPending.content.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+    var header = lines[0].split(',').map(function(h){return h.toLowerCase().replace(/^"|"$/g,'').trim();});
+    var typeIdx = header.indexOf('type');
+    var newP = [], newM = [], imported = 0;
+    for(var i=1;i<lines.length;i++){
+      var cols = parseCSVLine(lines[i]);
+      if(!cols||!cols.length) continue;
+      if(typeIdx >= 0){
+        var tp = (cols[0]||'').trim();
+        if(tp==='p'){
+          newP.push({type:'p',ts:new Date().toISOString(),sent:false,tgl:cols[1]||'',nama:cols[2]||'',area:cols[3]||'',kota:cols[4]||'',alamat:cols[5]||'',rt:cols[6]||'',rw:cols[7]||'',cid:cols[8]||'',snont:cols[9]||'',odc:cols[10]||'',odp:cols[11]||'',port:cols[12]||'',ont:cols[13]||'',precon:cols[14]||'',status:cols[15]||'',teknisi:cols[16]||''});
+          imported++;
+        } else if(tp==='m'||tp==='d'||tp==='x'){
+          newM.push({type:tp,ts:new Date().toISOString(),sent:false,tgl:cols[1]||'',pgnNama:cols[2]||'',area:cols[3]||'',cid:cols[8]||'',item:cols[17]||'',qty:cols[18]||'',sn:cols[19]||'',amb:cols[20]||'',stat:cols[21]||'',pgn:cols[22]||'',ikr:cols[23]||'',mnt:cols[24]||'',ket:cols[25]||''});
+          imported++;
+        }
+      } else {
+        var colMap={}; header.forEach(function(h,idx){colMap[h]=(cols[idx]||'');});
+        var cid=colMap['cid']||''; var nama=colMap['nama']||'';
+        if(cid||nama){
+          newP.push({type:'p',ts:new Date().toISOString(),sent:false,tgl:colMap['tanggal']||'',nama:nama,area:colMap['area']||'',kota:colMap['kota/kab']||colMap['kota']||'',alamat:colMap['alamat']||'',rt:colMap['rt']||'',rw:colMap['rw']||'',kec:colMap['kecamatan']||'',cid:cid,snont:colMap['sn ont']||'',odc:colMap['odc']||'',odp:colMap['odp']||'',port:colMap['port']||'',ont:colMap['jenis ont']||colMap['ont']||'',precon:colMap['kabel precon']||'',status:colMap['status']||'',teknisi:colMap['teknisi']||''});
+          imported++;
+        }
+      }
+    }
+    db.p = newP; db.m = newM;
+    try{ localStorage.setItem(K.p, JSON.stringify(db.p)); }catch(e){}
+    try{ localStorage.setItem(K.m, JSON.stringify(db.m)); }catch(e){}
+    updCounts(); updDash(); renderList();
+    toast('✓ Restore CSV: '+imported+' data berhasil dimuat','ok');
+  }
+  _restoreAllPending = null;
+}
+
+function cancelRestoreAll(){
+  _restoreAllPending = null;
+  var m = document.getElementById('modal-restore-all');
+  if(m) m.style.display='none';
+}
+
 function csInlineHTML(label) {
   return '<div class="cs-inline">' +
     '<div class="cs-inline-icon"><i class="ti ti-rocket"></i></div>' +
