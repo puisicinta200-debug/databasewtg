@@ -4805,7 +4805,7 @@ p, span, div, label, td, th, li {
               <span id="odp-belumaktif-count" style="margin-left:auto;font-size:10px;color:var(--c1);font-weight:700;background:rgba(79,158,255,.15);padding:2px 7px;border-radius:10px"></span>
             </div>
             <div style="font-size:10px;color:var(--text3);margin-bottom:6px;line-height:1.5">ODP yang sudah terpasang tapi belum diaktifkan / masih dalam proses. Satu nama ODP per baris.</div>
-            <textarea id="odp-belumaktif-input" placeholder="ODP-CIC-02-C&#10;ODP-CIC-02-D" oninput="onOdpBelumAktifInputChange()" style="height:80px;font-size:12px;line-height:1.8;background:rgba(79,158,255,.04);border-color:rgba(79,158,255,.22)"></textarea>
+            <textarea id="odp-belumaktif-input" placeholder="ODP-CIC-02-L3&#10;ODP-CIC-02-L4" oninput="onOdpBelumAktifInputChange()" style="height:80px;font-size:12px;line-height:1.8;background:rgba(79,158,255,.04);border-color:rgba(79,158,255,.22)"></textarea>
           </div>
 
           <div style="display:flex;gap:7px">
@@ -8324,7 +8324,7 @@ function getAllOdpBelumAktifSet(){
 // Nama ODC-CIC-01 → ODP-CIC-01-A, ODP-CIC-01-B, ODP-CIC-01-C, ODP-CIC-01-D
 function generateOdpFromOdc(odcList){
   var odpGen=[];
-  var sufiks=['A','B','C','D'];
+  var sufiks=['L1','L2','L3','L4'];
   odcList.forEach(function(odc){
     // Ganti prefix ODC- menjadi ODP-
     var base=odc.replace(/^ODC-/i,'ODP-');
