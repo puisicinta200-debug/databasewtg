@@ -11946,12 +11946,13 @@ function rstMat(){['m-pgn-nama','m-cid','m-qty','m-sn','m-amb','m-stat','m-area'
 // DASHBOARD — merged pelDB (Sheets) + db.p (lokal)
 // ═══════════════════════════════
 function getMergedPel(){
-  // Gabungkan pelDB (dari Sheets) dengan db.p (lokal), deduplicate by CID
+  // Gabungkan db.p (lokal/Supabase) dengan pelDB (Sheets cache)
+  // db.p MENANG: data lokal selalu prioritas, pelDB hanya sebagai tambahan
   var seen={},merged=[];
-  // Sheets data dulu sebagai base
-  (pelDB||[]).forEach(function(d){if(d.cid&&!seen[d.cid]){seen[d.cid]=1;merged.push(d);}else if(!d.cid){merged.push(d);}});
-  // Tambahkan data lokal yang belum ada di Sheets
+  // Data lokal/Supabase dulu sebagai base (import masuk ke sini)
   (db.p||[]).forEach(function(d){if(d.cid&&!seen[d.cid]){seen[d.cid]=1;merged.push(d);}else if(!d.cid){merged.push(d);}});
+  // Tambahkan data Sheets yang belum ada di lokal
+  (pelDB||[]).forEach(function(d){if(d.cid&&!seen[d.cid]){seen[d.cid]=1;merged.push(d);}else if(!d.cid){merged.push(d);}});
   return merged;
 }
 
@@ -15288,7 +15289,7 @@ function doImportCSV(file){
         if(type==='p'){
           var obj={type:'p',ts:new Date().toISOString(),sent:false,tgl:cols[1]||'',nama:cols[2]||'',area:cols[3]||'',kota:cols[4]||'',alamat:cols[5]||'',rt:cols[6]||'',rw:cols[7]||'',cid:cols[8]||'',snont:cols[9]||'',odc:cols[10]||'',odp:cols[11]||'',port:cols[12]||'',ont:cols[13]||'',precon:cols[14]||'',status:cols[15]||'',teknisi:cols[16]||''};
           if(!obj.cid&&!obj.nama){skipped++;continue;}
-          // Skip duplikat CID
+          // Skip duplikat CID di db.p saja (pelDB tidak jadi halangan import)
           if(obj.cid&&db.p.find(function(d){return d.cid===obj.cid;})){skipped++;continue;}
           db.p.push(obj);imported++;
         }
@@ -15299,6 +15300,7 @@ function doImportCSV(file){
         var cid=colMap['cid']||'';
         var nama=colMap['nama']||'';
         if(!cid&&!nama){skipped++;continue;}
+        // Skip duplikat di db.p saja, bukan pelDB
         if(cid&&db.p.find(function(d){return d.cid===cid;})){skipped++;continue;}
         var obj2={type:'p',ts:new Date().toISOString(),sent:false,
           tgl:colMap['tanggal']||colMap['tgl']||'',
@@ -15366,6 +15368,7 @@ function doImportJSON(file){
       var addP=0,addM=0,skipP=0,skipM=0;
       if(Array.isArray(parsed.pelanggan)){
         parsed.pelanggan.forEach(function(d){
+          // Skip duplikat di db.p saja — data dari pelDB (Sheets) tidak menghalangi import
           if(d.cid&&db.p.find(function(x){return x.cid===d.cid;})){skipP++;return;}
           d.sent=false;db.p.push(d);addP++;
         });
