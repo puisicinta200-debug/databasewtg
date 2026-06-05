@@ -2943,7 +2943,7 @@ p, span, div, label, td, th, li {
               <div id="dash-area-drop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:1.5px solid rgba(16,217,160,.3);border-radius:var(--rs);z-index:500;max-height:180px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
             </div>
             <!-- Chip area terpilih -->
-            <div id="dash-area-chip" style="display:none;margin-top:7px;display:flex;align-items:center;gap:7px;flex-wrap:wrap"></div>
+            <div id="dash-area-chip" style="display:none;margin-top:7px;align-items:center;gap:7px;flex-wrap:wrap"></div>
           </div>
 
           <!-- Total sales per area (tampil saat belum pilih area) -->
@@ -2986,39 +2986,59 @@ p, span, div, label, td, th, li {
       <div id="fp" style="display: block;">
         <div class="card c1">
           <div class="sec-t c1"><i class="ti ti-calendar"></i> Tanggal</div>
-          <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="p-tgl"></div>
+          <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="p-tgl" onchange="_evalFormSteps()"></div>
         </div>
         <div class="card c1">
           <div class="sec-t c1"><i class="ti ti-user"></i> Data Pelanggan</div>
-          <div class="field"><label>Nama Pelanggan <span class="req">*</span></label><input type="text" id="p-nama" placeholder="Nama lengkap pelanggan"></div>
+          <div class="field"><label>Nama Pelanggan <span class="req">*</span>
+            <span id="p-nama-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:none;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Tanggal dulu</span>
+          </label><input type="text" id="p-nama" placeholder="Nama lengkap pelanggan" oninput="_evalFormSteps()"></div>
         </div>
         <div class="card c1">
           <div class="sec-t c1"><i class="ti ti-map-pin"></i> Alamat</div>
-          <div class="field"><label>Area <span class="req">*</span></label>
+          <div class="field"><label>Area <span class="req">*</span>
+            <span id="p-area-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:none;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Nama dulu</span>
+          </label>
             <select id="p-area" onchange="onAreaChange()"><option value="">Pilih area</option></select>
           </div>
-          <div class="field"><label>Kota/Kab <span class="req">*</span></label><input type="text" id="p-kota" placeholder="Sukabumi"></div>
+          <div class="field"><label>Kota/Kab <span class="req">*</span>
+            <span id="p-kota-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Area dulu</span>
+          </label><input type="text" id="p-kota" placeholder="Sukabumi" oninput="onKotaInput(this.value)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></div>
           <div class="r2">
-            <div class="field"><label>Kecamatan <span class="req">*</span></label>
-              <select id="p-kec" onchange="validateKecInput(this.value)"><option value="">Pilih area dulu</option></select>
+            <div class="field"><label>Kecamatan <span class="req">*</span>
+              <span id="p-kec-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Kota dulu</span>
+            </label>
+              <select id="p-kec" onchange="onKecChange(this.value)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"><option value="">Pilih area dulu</option></select>
             </div>
-            <div class="field"><label>Kelurahan</label>
-              <select id="p-kel" onchange="validateKelInput(this.value)"><option value="">Pilih area dulu</option></select>
+            <div class="field"><label>Kelurahan
+              <span id="p-kel-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Kecamatan dulu</span>
+            </label>
+              <select id="p-kel" onchange="validateKelInput(this.value)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"><option value="">Pilih area dulu</option></select>
             </div>
           </div>
-          <div class="field"><label>Alamat Lengkap <span class="req">*</span></label><textarea id="p-alamat" placeholder="Jl. ..."></textarea></div>
+          <div class="field"><label>Alamat Lengkap <span class="req">*</span>
+            <span id="p-alamat-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Kecamatan dulu</span>
+          </label><textarea id="p-alamat" placeholder="Jl. ..." disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></textarea></div>
           <div class="r2">
-            <div class="field"><label>RT</label><input type="text" id="p-rt" placeholder="001" maxlength="5" inputmode="numeric"></div>
-            <div class="field"><label>RW</label><input type="text" id="p-rw" placeholder="002" maxlength="5" inputmode="numeric"></div>
+            <div class="field"><label>RT
+              <span id="p-rt-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i></span>
+            </label><input type="text" id="p-rt" placeholder="001" maxlength="5" inputmode="numeric" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></div>
+            <div class="field"><label>RW
+              <span id="p-rw-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i></span>
+            </label><input type="text" id="p-rw" placeholder="002" maxlength="5" inputmode="numeric" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"></div>
           </div>
         </div>
         <div class="card c1">
           <div class="sec-t c1"><i class="ti ti-cpu"></i> Data Teknis</div>
           <div class="r2">
-            <div class="field"><label>CID <span class="req">*</span></label><input type="text" id="p-cid" placeholder="Customer ID" oninput="validateCidInput(this.value)">
+            <div class="field"><label>CID <span class="req">*</span>
+              <span id="p-cid-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Alamat dulu</span>
+            </label><input type="text" id="p-cid" placeholder="Customer ID" oninput="validateCidInput(this.value)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed">
               <div id="cid-warn" style="display: none; margin-top: 5px; padding: 8px 12px; background: rgba(240, 84, 84, 0.12); border: 1px solid rgba(240, 84, 84, 0.35); border-radius: 8px; font-size: 12px; color: var(--red); font-weight: 700; align-items: center; gap: 6px;"><i class="ti ti-alert-circle"></i><span id="cid-warn-text">CID sudah terdaftar</span><button onclick="this.parentElement.style.display='none'" style="margin-left:auto;background:transparent;border:none;color:var(--red);cursor:pointer;padding:0 2px;font-size:14px;display:flex;align-items:center;flex-shrink:0;opacity:.7" title="Tutup"><i class="ti ti-x"></i></button></div>
             </div>
-            <div class="field"><label>SN ONT</label><input type="text" id="p-snont" placeholder="Serial Number" oninput="validateSnontInput(this.value)">
+            <div class="field"><label>SN ONT
+              <span id="p-snont-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi CID dulu</span>
+            </label><input type="text" id="p-snont" placeholder="Serial Number" oninput="onSnontInput(this.value)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed">
               <div id="snont-warn" style="display:none;margin-top:5px;padding:8px 12px;background:rgba(240,84,84,.12);border:1px solid rgba(240,84,84,.35);border-radius:8px;font-size:12px;color:var(--red);font-weight:700;flex-direction:column;gap:5px">
                 <div style="display:flex;align-items:center;gap:6px"><i class="ti ti-alert-circle"></i><span id="snont-warn-text">SN ONT sudah digunakan</span><button onclick="document.getElementById('snont-warn').style.display='none'" style="margin-left:auto;background:transparent;border:none;color:var(--red);cursor:pointer;padding:0 2px;font-size:14px;display:flex;align-items:center;flex-shrink:0;opacity:.7"><i class="ti ti-x"></i></button></div>
                 <div id="snont-warn-detail" style="margin-top:3px;padding:7px 10px;background:rgba(240,84,84,.08);border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);line-height:1.7"></div>
@@ -3100,15 +3120,21 @@ p, span, div, label, td, th, li {
               <option>Port 7</option><option>Port 8</option>
             </select>
           </div>
-          <div class="field"><label>Jenis ONT <span class="req">*</span></label>
-            <select id="p-ont"><option value="">Pilih jenis ONT</option><option>NOKIA</option><option>HUAWEI</option><option>ZTE</option><option>FIBERHOME</option><option>KAON</option></select>
+          <div class="field"><label>Jenis ONT <span class="req">*</span>
+            <span id="p-ont-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Port dulu</span>
+          </label>
+            <select id="p-ont" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"><option value="">Pilih jenis ONT</option><option>NOKIA</option><option>HUAWEI</option><option>ZTE</option><option>FIBERHOME</option><option>KAON</option></select>
           </div>
           <div class="r2">
-            <div class="field"><label>Kabel Precon <span class="req">*</span></label>
-              <select id="p-precon"><option value="">Pilih</option><option>5m</option><option>10m</option><option>15m</option><option>20m</option><option>25m</option><option>30m</option><option>35m</option><option>40m</option><option>45m</option><option>50m</option><option>60m</option><option>70m</option><option>80m</option><option>100m</option><option>Lebih dari 100m</option></select>
+            <div class="field"><label>Kabel Precon <span class="req">*</span>
+              <span id="p-precon-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih ONT dulu</span>
+            </label>
+              <select id="p-precon" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"><option value="">Pilih</option><option>5m</option><option>10m</option><option>15m</option><option>20m</option><option>25m</option><option>30m</option><option>35m</option><option>40m</option><option>45m</option><option>50m</option><option>60m</option><option>70m</option><option>80m</option><option>100m</option><option>Lebih dari 100m</option></select>
             </div>
-            <div class="field"><label>Status <span class="req">*</span></label>
-              <select id="p-status"><option value="">Pilih</option><option>Paket 200Mbps</option><option>Fasum</option><option>ODP/ODC Tempel</option></select>
+            <div class="field"><label>Status <span class="req">*</span>
+              <span id="p-status-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Precon dulu</span>
+            </label>
+              <select id="p-status" onchange="onStatusChange()" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"><option value="">Pilih</option><option>Paket 200Mbps</option><option>Fasum</option><option>ODP/ODC Tempel</option></select>
             </div>
           </div>
         </div>
@@ -3128,8 +3154,10 @@ p, span, div, label, td, th, li {
             <div style="flex:1;height:1px;background:rgba(26,86,219,.12)"></div>
           </div>
           <div class="field">
-            <label>Teknisi Pelaksana</label>
-            <select id="p-teknisi"><option value="">Pilih teknisi</option></select>
+            <label>Teknisi Pelaksana
+              <span id="p-teknisi-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Status dulu</span>
+            </label>
+            <select id="p-teknisi" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed"><option value="">Pilih teknisi</option></select>
           </div>
 
           <!-- Divider: Sales -->
@@ -3141,8 +3169,10 @@ p, span, div, label, td, th, li {
             <div style="flex:1;height:1px;background:rgba(16,217,160,.18)"></div>
           </div>
           <div class="field">
-            <label>Nama Sales <span class="req">*</span></label>
-            <select id="p-sales" onchange="onSalesChange()" style="border-color:rgba(16,217,160,.3)">
+            <label>Nama Sales <span class="req">*</span>
+              <span id="p-sales-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Teknisi dulu</span>
+            </label>
+            <select id="p-sales" onchange="onSalesChange()" style="border-color:rgba(16,217,160,.3)" disabled style="opacity:.45;pointer-events:none;cursor:not-allowed">
               <option value="">Pilih sales / agen</option>
             </select>
           </div>
@@ -3167,12 +3197,16 @@ p, span, div, label, td, th, li {
           </div>
           <div class="r2">
             <div class="field">
-              <label>Nominal / Harga Paket (Rp)</label>
-              <input type="number" id="p-nominal" placeholder="0" inputmode="numeric" min="0" style="border-color:rgba(249,115,22,.25)">
+              <label>Nominal / Harga Paket (Rp)
+                <span id="p-nominal-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Sales dulu</span>
+              </label>
+              <input type="number" id="p-nominal" placeholder="0" inputmode="numeric" min="0" style="border-color:rgba(249,115,22,.25);opacity:.45;pointer-events:none;cursor:not-allowed" disabled>
             </div>
             <div class="field">
-              <label>Metode Daftar</label>
-              <select id="p-reg-method" style="border-color:rgba(249,115,22,.25)">
+              <label>Metode Daftar
+                <span id="p-reg-method-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Pilih Sales dulu</span>
+              </label>
+              <select id="p-reg-method" style="border-color:rgba(249,115,22,.25);opacity:.45;pointer-events:none;cursor:not-allowed" disabled>
                 <option value="">Pilih</option>
                 <option>Walk-in</option>
                 <option>Via Sales</option>
@@ -3183,8 +3217,10 @@ p, span, div, label, td, th, li {
             </div>
           </div>
           <div class="field">
-            <label>Keterangan / Catatan CRM</label>
-            <textarea id="p-ket" placeholder="Catatan internal, permintaan khusus, kondisi lokasi, dsb..." style="border-color:rgba(26,86,219,.15)"></textarea>
+            <label>Keterangan / Catatan CRM
+              <span id="p-ket-lock-hint" style="margin-left:6px;font-size:10px;font-weight:600;color:var(--text4);display:inline-flex;align-items:center;gap:3px"><i class="ti ti-lock" style="font-size:11px"></i> Isi Nominal dulu</span>
+            </label>
+            <textarea id="p-ket" placeholder="Catatan internal, permintaan khusus, kondisi lokasi, dsb..." style="border-color:rgba(26,86,219,.15);opacity:.45;pointer-events:none;cursor:not-allowed" disabled></textarea>
           </div>
         </div>
 
@@ -4637,14 +4673,8 @@ p, span, div, label, td, th, li {
             <div id="acct-list-wrap"></div>
           </div>
 
-          <!-- ══ DIVIDER: MANAJEMEN SALES (terintegrasi CRM) ══ -->
-          <div style="display:flex;align-items:center;gap:8px;margin:4px 0 14px">
-            <div style="width:28px;height:28px;border-radius:8px;background:rgba(16,217,160,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-trending-up" style="font-size:14px;color:var(--green)"></i></div>
-            <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:.4px;text-transform:uppercase">Manajemen Sales</div>
-            <div style="flex:1;height:1px;background:rgba(16,217,160,.18)"></div>
-          </div>
-
-          <div id="sales-mgr-card" style="background:var(--bg2);border:1px solid rgba(16,217,160,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
+          <!-- Manajemen Sales: hidden (terintegrasi ke Akun Tim) -->
+          <div id="sales-mgr-card" style="display:none">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="ti ti-users-group" style="font-size:14px"></i> Daftar Nama Sales</div>
               <span id="sales-count-badge" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:rgba(16,217,160,.12);color:var(--green)">0 sales</span>
@@ -5106,6 +5136,28 @@ function doGet(e){
       <div id="acct-err-pin-dup" style="display:none;font-size:10px;color:var(--red);margin-top:4px;font-weight:600"><i class="ti ti-alert-circle" style="font-size:11px"></i> PIN sudah dipakai akun lain — gunakan PIN berbeda</div>
     </div>
 
+    <!-- Kode Akun (read-only, generate otomatis) — tampil sebelum HP -->
+    <div class="acct-field" id="acct-code-wrap">
+      <label>Kode Akun <i class="ti ti-sparkles" style="font-size:11px;color:var(--c2);vertical-align:middle"></i>
+        <span style="font-size:9px;color:var(--text3);font-weight:400;margin-left:4px;text-transform:none">— digenerate otomatis</span>
+      </label>
+      <div class="acct-code-display" id="acct-f-code-display" onclick="copyAcctCode()" title="Klik untuk salin"
+        style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;padding:12px 14px;background:rgba(26,86,219,.06);border:1.5px dashed rgba(26,86,219,.3);border-radius:var(--rs);color:var(--c1);letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">—
+        <span style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0"><i class="ti ti-copy" style="font-size:11px"></i> Salin</span>
+      </div>
+    </div>
+
+    <!-- No HP -->
+    <div class="acct-field">
+      <label>No. HP / WhatsApp</label>
+      <div style="position:relative">
+        <i class="ti ti-phone" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
+        <input type="tel" id="acct-f-hp" placeholder="08xxxxxxxxxx" maxlength="16" inputmode="numeric"
+          style="padding-left:36px"
+          oninput="this.value=this.value.replace(/[^0-9+]/g,'')">
+      </div>
+    </div>
+
     <!-- Area Kerja — dropdown WAJIB -->
     <div class="acct-field">
       <label>Area Kerja <span style="color:var(--red)">*</span></label>
@@ -5116,18 +5168,58 @@ function doGet(e){
       <div id="acct-err-ket" style="display:none;font-size:10px;color:var(--red);margin-top:4px;font-weight:600"><i class="ti ti-alert-circle" style="font-size:11px"></i> Area kerja wajib dipilih</div>
     </div>
 
-    <div style="font-size:11px;color:var(--text3);background:rgba(61,142,248,.07);border:1px solid rgba(61,142,248,.15);border-radius:8px;padding:9px 11px;margin-bottom:2px;line-height:1.6" id="acct-sync-note">
+    <!-- Alamat -->
+    <div class="acct-field">
+      <label>Alamat</label>
+      <textarea id="acct-f-alamat" placeholder="Jl. contoh No. 12, RT/RW..." style="height:64px;resize:none;font-size:13px"></textarea>
+    </div>
+
+    <!-- RT / RW -->
+    <div class="acct-field">
+      <label>RT / RW</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <input type="text" id="acct-f-rt" placeholder="RT (cth: 001)" maxlength="5" inputmode="numeric">
+        <input type="text" id="acct-f-rw" placeholder="RW (cth: 002)" maxlength="5" inputmode="numeric">
+      </div>
+    </div>
+
+    <!-- Kecamatan / Kelurahan -->
+    <div class="acct-field">
+      <label>Kecamatan</label>
+      <input type="text" id="acct-f-kec" placeholder="Nama kecamatan..." maxlength="60" autocomplete="off">
+    </div>
+    <div class="acct-field">
+      <label>Kelurahan / Desa</label>
+      <input type="text" id="acct-f-kel" placeholder="Nama kelurahan/desa..." maxlength="60" autocomplete="off">
+    </div>
+
+    <!-- Kota / Kab -->
+    <div class="acct-field">
+      <label>Kota / Kabupaten</label>
+      <input type="text" id="acct-f-kota" placeholder="Kab. Sukabumi / Kota Sukabumi..." maxlength="60" autocomplete="off">
+    </div>
+
+    <!-- Email (opsional) -->
+    <div class="acct-field">
+      <label>Email <span style="font-size:9px;color:var(--text3);font-weight:400;text-transform:none">(opsional)</span></label>
+      <div style="position:relative">
+        <i class="ti ti-mail" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none"></i>
+        <input type="email" id="acct-f-email" placeholder="nama@email.com" maxlength="80" style="padding-left:36px" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- Catatan -->
+    <div class="acct-field">
+      <label>Catatan <span style="font-size:9px;color:var(--text3);font-weight:400;text-transform:none">(opsional)</span></label>
+      <textarea id="acct-f-notes" placeholder="Catatan tambahan tentang anggota tim..." style="height:56px;resize:none;font-size:13px"></textarea>
+    </div>
+
+    <div style="font-size:11px;color:var(--text3);background:rgba(61,142,248,.07);border:1px solid rgba(61,142,248,.15);border-radius:8px;padding:9px 11px;margin-bottom:12px;line-height:1.6" id="acct-sync-note">
       <i class="ti ti-info-circle" style="font-size:12px;vertical-align:middle"></i>
-      PIN akun ini menggantikan PIN peran global. Semua akun dengan peran yang sama pakai PIN masing-masing.
+      PIN akun ini menggantikan PIN peran global. Akun Sales otomatis muncul di dropdown form pelanggan.
     </div>
     <input type="hidden" id="acct-f-id" value="">
 
-    <!-- Kode Akun (read-only, generate otomatis) -->
-    <div class="acct-field" id="acct-code-wrap">
-      <label>Kode Akun <i class="ti ti-sparkles" style="font-size:11px;color:var(--c2);vertical-align:middle"></i></label>
-      <div class="acct-code-display" id="acct-f-code-display" onclick="copyAcctCode()" title="Klik untuk salin">—</div>
-      <div class="acct-code-copy-hint"><i class="ti ti-copy" style="font-size:9px"></i> Klik untuk salin kode</div>
-    </div>
     <div class="acct-modal-btns">
       <button class="acct-modal-cancel" onclick="closeAcctModal()">Batal</button>
       <button class="acct-modal-save" id="acct-modal-save-btn" onclick="saveAcct()"><i class="ti ti-check"></i> Simpan</button>
@@ -6965,6 +7057,10 @@ function init(){
   renderPinMgr();
   // loadTeknisiList() — no-op, teknisi diambil dari akun terpusat
   initOdcOdpDatalist();
+  setTimeout(function(){
+    if(typeof _setupFormStepGuard==='function') _setupFormStepGuard();
+    if(typeof _evalFormSteps==='function') _evalFormSteps();
+  }, 500);
   var _startAreas = getWilayahAreas();
   loadOdcOdpTab(_startAreas.length ? _startAreas[0] : 'Cicurug'); // pakai area pertama dari wilayah
   renderWilayahTabs();
@@ -7539,6 +7635,52 @@ function validateOdpInput(val){
   }
 }
 // Validasi Kecamatan saat user memilih/blur
+function onKotaInput(val){
+  var kota = (val||'').trim();
+  if(!kota){
+    // Kota dikosongkan: reset downstream
+    var kecEl=document.getElementById('p-kec'); if(kecEl) kecEl.value='';
+    var kelEl=document.getElementById('p-kel'); if(kelEl){ kelEl.value=''; kelEl.innerHTML='<option value="">Pilih kecamatan dulu</option>'; }
+    var alamatEl=document.getElementById('p-alamat'); if(alamatEl) alamatEl.value='';
+    var rtEl=document.getElementById('p-rt'); if(rtEl) rtEl.value='';
+    var rwEl=document.getElementById('p-rw'); if(rwEl) rwEl.value='';
+    var cidEl=document.getElementById('p-cid'); if(cidEl) cidEl.value='';
+    var odcEl=document.getElementById('p-odc'); if(odcEl) odcEl.value='';
+    var odpEl=document.getElementById('p-odp'); if(odpEl) odpEl.value='';
+    var portEl=document.getElementById('p-port'); if(portEl) portEl.value='';
+  }
+  _evalFormSteps();
+}
+
+function onKecChange(val){
+  validateKecInput(val);
+  if(val && val.trim()){
+    var area = gv('p-area');
+    var wilData = getWilayahData();
+    var areaWil = wilData[area] || {kel:[]};
+    var kelEl = document.getElementById('p-kel');
+    if(kelEl){
+      if((areaWil.kel||[]).length){
+        kelEl.innerHTML='<option value="">Pilih kelurahan</option>'+
+          areaWil.kel.map(function(k){return '<option>'+k+'</option>';}).join('');
+      } else {
+        kelEl.innerHTML='<option value="">— belum ada data kelurahan —</option>';
+      }
+      kelEl.value='';
+    }
+  } else {
+    // Kecamatan dikosongkan: reset downstream
+    var kelEl2=document.getElementById('p-kel'); if(kelEl2){kelEl2.value='';kelEl2.innerHTML='<option value="">Pilih kecamatan dulu</option>';}
+    var alamatEl=document.getElementById('p-alamat'); if(alamatEl) alamatEl.value='';
+    var rtEl=document.getElementById('p-rt'); if(rtEl) rtEl.value='';
+    var rwEl=document.getElementById('p-rw'); if(rwEl) rwEl.value='';
+    var odcEl=document.getElementById('p-odc'); if(odcEl) odcEl.value='';
+    var odpEl=document.getElementById('p-odp'); if(odpEl) odpEl.value='';
+    var portEl=document.getElementById('p-port'); if(portEl) portEl.value='';
+  }
+  _evalFormSteps();
+}
+
 function validateKecInput(val){
   if(!val||!val.trim())return;
   var area=gv('p-area');
@@ -7630,20 +7772,47 @@ function onAreaChange(){
   var ob = document.getElementById('odp-monitor-box');
   if(ob) ob.style.display = 'none';
 
-  // Lock/unlock berurutan: ODC unlock jika area ada, ODP & Port tetap terkunci
-  _setFieldLocked('p-odc', 'p-odc-lock-hint', !area);
+  // Reset semua field alamat di bawah area
+  var kotaEl = document.getElementById('p-kota');
+  if(kotaEl) kotaEl.value = '';
+  var kecEl = document.getElementById('p-kec');
+  var kelEl = document.getElementById('p-kel');
+  var alamatEl = document.getElementById('p-alamat');
+  var rtEl = document.getElementById('p-rt');
+  var rwEl = document.getElementById('p-rw');
+  if(rtEl) rtEl.value='';
+  if(rwEl) rwEl.value='';
+  if(alamatEl) alamatEl.value='';
+
+  if(!area){
+    // Kunci semua
+    _setFieldLocked('p-kota','p-kota-lock-hint',true);
+    _setFieldLocked('p-kec','p-kec-lock-hint',true);
+    _setFieldLocked('p-kel','p-kel-lock-hint',true);
+    _setFieldLocked('p-alamat','p-alamat-lock-hint',true);
+    _setFieldLocked('p-rt','p-rt-lock-hint',true);
+    _setFieldLocked('p-rw','p-rw-lock-hint',true);
+  } else {
+    // Area dipilih: buka Kota, kunci sisanya
+    _setFieldLocked('p-kota','p-kota-lock-hint',false);
+    _setFieldLocked('p-kec','p-kec-lock-hint',true);
+    _setFieldLocked('p-kel','p-kel-lock-hint',true);
+    _setFieldLocked('p-alamat','p-alamat-lock-hint',true);
+    _setFieldLocked('p-rt','p-rt-lock-hint',true);
+    _setFieldLocked('p-rw','p-rw-lock-hint',true);
+  }
+
+  // Lock/unlock ODC berurutan: ODC unlock hanya jika kecamatan juga sudah diisi (dihandle oleh onKecChange)
+  _setFieldLocked('p-odc', 'p-odc-lock-hint', true);
   _setFieldLocked('p-odp', 'p-odp-lock-hint', true);
   _setFieldLocked('p-port', 'p-port-lock-hint', true);
 
-  // Jika area dikosongkan, kosongkan juga ODP hint dengan teks default
   var odcHint = document.getElementById('p-odc-lock-hint');
   if(odcHint) odcHint.innerHTML = '<i class="ti ti-lock" style="font-size:11px"></i> Pilih Area dulu';
 
-  // ── Update Kecamatan & Kelurahan sesuai area ──
+  // ── Update Kecamatan sesuai area (tapi masih terkunci sampai Kota diisi) ──
   var wilData = getWilayahData();
   var areaWil = wilData[area] || {kec:[], kel:[]};
-  var kecEl = document.getElementById('p-kec');
-  var kelEl = document.getElementById('p-kel');
   if(kecEl){
     if(!area){
       kecEl.innerHTML='<option value="">Pilih area dulu</option>';
@@ -7656,16 +7825,10 @@ function onAreaChange(){
     kecEl.value='';
   }
   if(kelEl){
-    if(!area){
-      kelEl.innerHTML='<option value="">Pilih area dulu</option>';
-    } else if((areaWil.kel||[]).length){
-      kelEl.innerHTML='<option value="">Pilih kelurahan</option>'+
-        areaWil.kel.map(function(k){return '<option>'+k+'</option>';}).join('');
-    } else {
-      kelEl.innerHTML='<option value="">— belum ada data kelurahan —</option>';
-    }
+    kelEl.innerHTML='<option value="">Pilih kecamatan dulu</option>';
     kelEl.value='';
   }
+  _evalFormSteps();
 }
 
 // Dipanggil saat ODC diubah — filter ODP berdasarkan ODC dan unlock ODP
@@ -7709,6 +7872,7 @@ function onOdcChange(val){
     if(odpList2) odpList2.innerHTML = '';
     _setFieldLocked('p-odp', 'p-odp-lock-hint', true);
   }
+  _evalFormSteps();
 }
 
 // Dipanggil saat ODP diinput/diubah — unlock Port jika ODP valid
@@ -7735,25 +7899,86 @@ function onOdpInput(val){
     var ob = document.getElementById('odp-monitor-box');
     if(ob) ob.style.display = 'none';
   }
+  _evalFormSteps();
 }
 
-// Inisialisasi datalist saat app load
+function onSnontInput(val){
+  validateSnontInput(val);
+  _evalFormSteps();
+}
+
+function onStatusChange(){
+  _evalFormSteps();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FORM STEP GUARD — urutan pengisian berurutan + bubble warn
+// ═══════════════════════════════════════════════════════════
+
+// Definisi urutan field dan syarat unlock-nya
+var _FORM_STEPS = [
+  { id:'p-nama',       hint:'p-nama-lock-hint',       need: function(){ return !!gv('p-tgl'); },                                         msg:'⚠️ Isi Tanggal dulu sebelum mengisi Nama!' },
+  { id:'p-area',       hint:null,                      need: function(){ return !!gv('p-nama'); },                                        msg:'⚠️ Isi Nama Pelanggan dulu sebelum memilih Area!' },
+  { id:'p-kota',       hint:'p-kota-lock-hint',        need: function(){ return !!gv('p-area'); },                                        msg:'⚠️ Pilih Area dulu sebelum mengisi Kota/Kab!' },
+  { id:'p-kec',        hint:'p-kec-lock-hint',         need: function(){ return !!(gv('p-kota')&&gv('p-kota').trim()); },                 msg:'⚠️ Isi Kota/Kab dulu sebelum memilih Kecamatan!' },
+  { id:'p-kel',        hint:'p-kel-lock-hint',         need: function(){ return !!gv('p-kec'); },                                         msg:'⚠️ Pilih Kecamatan dulu sebelum memilih Kelurahan!' },
+  { id:'p-alamat',     hint:'p-alamat-lock-hint',      need: function(){ return !!gv('p-kec'); },                                         msg:'⚠️ Pilih Kecamatan dulu sebelum mengisi Alamat!' },
+  { id:'p-rt',         hint:'p-rt-lock-hint',          need: function(){ return !!(gv('p-alamat')&&gv('p-alamat').trim()); },             msg:'⚠️ Isi Alamat Lengkap dulu sebelum mengisi RT!' },
+  { id:'p-rw',         hint:'p-rw-lock-hint',          need: function(){ return !!(gv('p-alamat')&&gv('p-alamat').trim()); },             msg:'⚠️ Isi Alamat Lengkap dulu sebelum mengisi RW!' },
+  { id:'p-cid',        hint:'p-cid-lock-hint',         need: function(){ return !!(gv('p-alamat')&&gv('p-alamat').trim()); },             msg:'⚠️ Isi Alamat Lengkap dulu sebelum mengisi CID!' },
+  { id:'p-snont',      hint:'p-snont-lock-hint',       need: function(){ return !!(gv('p-cid')&&gv('p-cid').trim()); },                  msg:'⚠️ Isi CID dulu sebelum mengisi SN ONT!' },
+  { id:'p-odc',        hint:'p-odc-lock-hint',         need: function(){ return !!gv('p-kec'); },                                         msg:'⚠️ Pilih Kecamatan dulu sebelum memilih ODC!' },
+  { id:'p-odp',        hint:'p-odp-lock-hint',         need: function(){ return !!(gv('p-odc')&&gv('p-odc').trim()); },                  msg:'⚠️ Pilih ODC dulu sebelum memilih ODP!' },
+  { id:'p-port',       hint:'p-port-lock-hint',        need: function(){ return !!(gv('p-odp')&&gv('p-odp').trim()); },                  msg:'⚠️ Pilih ODP dulu sebelum memilih Port!' },
+  { id:'p-ont',        hint:'p-ont-lock-hint',         need: function(){ return !!gv('p-port'); },                                        msg:'⚠️ Pilih Port ODP dulu sebelum memilih Jenis ONT!' },
+  { id:'p-precon',     hint:'p-precon-lock-hint',      need: function(){ return !!gv('p-ont'); },                                         msg:'⚠️ Pilih Jenis ONT dulu sebelum memilih Kabel Precon!' },
+  { id:'p-status',     hint:'p-status-lock-hint',      need: function(){ return !!gv('p-precon'); },                                      msg:'⚠️ Pilih Kabel Precon dulu sebelum memilih Status!' },
+  { id:'p-teknisi',    hint:'p-teknisi-lock-hint',     need: function(){ return !!gv('p-status'); },                                      msg:'⚠️ Pilih Status dulu sebelum memilih Teknisi!' },
+  { id:'p-sales',      hint:'p-sales-lock-hint',       need: function(){ return !!gv('p-teknisi'); },                                     msg:'⚠️ Pilih Teknisi dulu sebelum memilih Sales!' },
+  { id:'p-nominal',    hint:'p-nominal-lock-hint',     need: function(){ return !!gv('p-sales'); },                                       msg:'⚠️ Pilih Sales dulu sebelum mengisi Nominal!' },
+  { id:'p-reg-method', hint:'p-reg-method-lock-hint',  need: function(){ return !!gv('p-sales'); },                                       msg:'⚠️ Pilih Sales dulu sebelum memilih Metode Daftar!' },
+  { id:'p-ket',        hint:'p-ket-lock-hint',         need: function(){ return true; },                                                   msg:'' }
+];
+
+// Pasang event listener "bubble saat klik field terkunci" untuk semua field
+function _setupFormStepGuard(){
+  _FORM_STEPS.forEach(function(step){
+    var el = document.getElementById(step.id);
+    if(!el) return;
+    // Gunakan mousedown + touchstart agar intersep sebelum focus
+    ['mousedown','touchstart'].forEach(function(evt){
+      el.addEventListener(evt, function(e){
+        if(el.disabled){
+          e.preventDefault();
+          e.stopPropagation();
+          if(step.msg) showBubbleWarn(step.id, step.msg);
+        }
+      }, {passive:false});
+    });
+  });
+}
+
+// Evaluasi dan update lock state semua field berdasarkan nilai terkini
+function _evalFormSteps(){
+  _FORM_STEPS.forEach(function(step){
+    var locked = !step.need();
+    _setFieldLocked(step.id, step.hint, locked);
+  });
+}
+
 function initOdcOdpDatalist(){
   var area = gv('p-area');
   if(area){
     onAreaChange();
-    // Cek apakah ODC sudah terisi (misal saat edit)
     var odcVal = gv('p-odc');
     if(odcVal) onOdcChange(odcVal);
     var odpVal = gv('p-odp');
     if(odpVal) onOdpInput(odpVal);
-  } else {
-    // Belum ada area: kunci ODC, ODP, Port
-    _setFieldLocked('p-odc', 'p-odc-lock-hint', true);
-    _setFieldLocked('p-odp', 'p-odp-lock-hint', true);
-    _setFieldLocked('p-port', 'p-port-lock-hint', true);
   }
+  // Evaluasi semua step berdasarkan nilai yang sudah ada (mode edit)
+  _evalFormSteps();
 }
+
 
 // ─── Setting: ODC/ODP tab manager ───
 var currentOdpTab='Cicurug';
@@ -8575,15 +8800,16 @@ function checkPortConflict(portVal){
   if(usedPortNums[pNum]){
     showBubbleWarn('p-port','🚫 Port '+pNum+' sudah terisi oleh: '+usedPortNums[pNum]);
   }
+  _evalFormSteps();
 }
 
 function validateCidInput(val){
   var wEl=document.getElementById('cid-warn');
-  if(!val||!val.trim()){if(wEl)wEl.style.display='none';return;}
+  if(!val||!val.trim()){if(wEl)wEl.style.display='none';_evalFormSteps();return;}
   var cidVal=val.trim().toLowerCase();
   var cidDup=db.p.find(function(d){return d.cid&&d.cid.trim().toLowerCase()===cidVal;});
   if(!cidDup&&pelDB.length){cidDup=pelDB.find(function(d){return d.cid&&d.cid.trim().toLowerCase()===cidVal;});}
-  if(cidDup){showCidWarn('cid-warn','cid-warn-text','CID sudah terdaftar');return;}
+  if(cidDup){showCidWarn('cid-warn','cid-warn-text','CID sudah terdaftar');_evalFormSteps();return;}
   // Cek terbayar
   var payments=getOtfPayments();
   var cidPaidEntry=db.p.find(function(d){return d.cid&&d.cid.trim().toLowerCase()===cidVal;});
@@ -8596,10 +8822,11 @@ function validateCidInput(val){
     if(rwData){
       var totalFee=rwData.count*SALES_FEE_OTF;
       var dibayar=hist.reduce(function(s,p){return s+(p.nominal||0);},0);
-      if(dibayar>=totalFee){showCidWarn('cid-warn','cid-warn-text','CID sudah terbayar');return;}
+      if(dibayar>=totalFee){showCidWarn('cid-warn','cid-warn-text','CID sudah terbayar');_evalFormSteps();return;}
     }
   }
   if(wEl)wEl.style.display='none';
+  _evalFormSteps();
 }
 
 function validateEfSnontInput(val, origSn, origCid){
@@ -8744,7 +8971,7 @@ function onSalesChange(){
   var infoCount = document.getElementById("p-sales-info-count");
   var infoSub = document.getElementById("p-sales-info-sub");
   if(!infoBox) return;
-  if(!salesName){ infoBox.style.display="none"; return; }
+  if(!salesName){ infoBox.style.display="none"; _evalFormSteps(); return; }
   var allP = typeof getMergedPel==="function"?getMergedPel():[];
   var count = allP.filter(function(d){ return (d.sales||"").trim()===salesName.trim(); }).length;
   var feePerPel = typeof SALES_FEE_OTF!=="undefined"?SALES_FEE_OTF:35000;
@@ -8753,6 +8980,7 @@ function onSalesChange(){
   if(infoCount) infoCount.textContent = count + " pelanggan";
   if(infoSub) infoSub.textContent = "Total fee: Rp " + fee.toLocaleString("id-ID") + " (@ Rp "+feePerPel.toLocaleString("id-ID")+"/pelanggan)";
   infoBox.style.display = "block";
+  _evalFormSteps();
 }
 
 // ═══════════════════════════════
@@ -10316,7 +10544,7 @@ function renderDashSalesList(){
 
     return '<div style="background:var(--bg3);border:1.5px solid rgba(255,255,255,.07);border-left:3px solid '+col+';border-radius:var(--rs);overflow:hidden">'+
       // Header sales
-      '<div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'" style="padding:11px 13px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+      '<div onclick="var c=this.parentElement.querySelector(\'.pel-list\');if(c){c.style.display=c.style.display===\'none\'?\'block\':\'none\';}var ic=this.querySelector(\'.ti-chevron-up,.ti-chevron-down\');if(ic){ic.className=ic.className.indexOf(\'up\')>=0?ic.className.replace(\'ti-chevron-up\',\'ti-chevron-down\'):ic.className.replace(\'ti-chevron-down\',\'ti-chevron-up\');}" style="padding:11px 13px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px">'+
         '<div style="display:flex;align-items:center;gap:9px">'+
           '<div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:'+col+';border:1.5px solid rgba(255,255,255,.08)">'+ini(salesName)+'</div>'+
           '<div>'+
@@ -10335,7 +10563,7 @@ function renderDashSalesList(){
       // Progress bar aktif
       '<div style="height:3px;background:var(--bg4);margin:0 13px 10px"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:3px;transition:width .5s"></div></div>'+
       // Pelanggan list (collapsible, default hidden)
-      '<div style="display:none;padding:0 10px 10px">'+
+      '<div class="pel-list" style="display:none;padding:0 10px 10px">'+
         pelCards + noDataHtml + moreHtml +
       '</div>'+
     '</div>';
@@ -11657,7 +11885,7 @@ var svM=function(entryToSync){
     }
   }
 };
-function rstPel(){['p-nama','p-area','p-kota','p-alamat','p-rt','p-rw','p-kec','p-kel','p-cid','p-snont','p-odc','p-odp','p-port','p-ont','p-precon','p-status','p-teknisi','p-sales','p-nominal','p-ket','p-reg-method'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('p-tgl').value=today();var w=document.getElementById('cid-warn');if(w)w.style.display='none';var ob=document.getElementById('odp-monitor-box');if(ob)ob.style.display='none';var si=document.getElementById('p-sales-info');if(si)si.style.display='none';initOdcOdpDatalist();_setFieldLocked('p-odc','p-odc-lock-hint',true);_setFieldLocked('p-odp','p-odp-lock-hint',true);_setFieldLocked('p-port','p-port-lock-hint',true);}
+function rstPel(){['p-nama','p-area','p-kota','p-alamat','p-rt','p-rw','p-kec','p-kel','p-cid','p-snont','p-odc','p-odp','p-port','p-ont','p-precon','p-status','p-teknisi','p-sales','p-nominal','p-ket','p-reg-method'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('p-tgl').value=today();var w=document.getElementById('cid-warn');if(w)w.style.display='none';var ob=document.getElementById('odp-monitor-box');if(ob)ob.style.display='none';var si=document.getElementById('p-sales-info');if(si)si.style.display='none';var kelEl=document.getElementById('p-kel');if(kelEl)kelEl.innerHTML='<option value="">Pilih area dulu</option>';initOdcOdpDatalist();_evalFormSteps();}
 function rstMat(){['m-pgn-nama','m-cid','m-qty','m-sn','m-amb','m-stat','m-area','m-pgn','m-ket'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});var mi=document.getElementById('m-item');if(mi)mi.value='';document.getElementById('m-tgl').value=today();clearCidSearch();}
 
 // ═══════════════════════════════
@@ -14039,7 +14267,11 @@ function renderGrouped(f){
         '<span style="font-size:13px;font-weight:700;color:var(--green);flex:1">'+escHtml(u)+'</span>'+
         '<span style="font-size:9px;background:rgba(16,217,160,.15);color:var(--green);padding:2px 7px;border-radius:10px">'+pelCount+' pel</span>'+
         '<span style="font-size:9px;background:rgba(16,217,160,.12);color:var(--green);padding:2px 7px;border-radius:10px;margin-left:2px">Upline</span>'+
-        (currentRole==='admin'?'<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openEditSalesModal('+uIdx+')" title="Edit nama" style="width:26px;height:26px;font-size:11px;margin-left:4px"><i class="ti ti-pencil"></i></button>':'')+
+        (currentRole==='admin'?
+          '<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openSalesAddrModal(\''+u.replace(/\'/g,"\\'")+'\')" title="Detail Alamat" style="width:28px;height:28px;font-size:11px;margin-left:4px"><i class="ti ti-address-book"></i></button>'+
+          '<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openEditSalesModal('+uIdx+')" title="Edit nama" style="width:28px;height:28px;font-size:11px;margin-left:2px"><i class="ti ti-pencil"></i></button>'+
+          '<button onclick="event.stopPropagation();delSalesName('+uIdx+')" style="width:28px;height:28px;background:var(--rg);color:var(--red);border:none;border-radius:7px;cursor:pointer;font-size:11px;margin-left:2px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="Hapus"><i class="ti ti-trash"></i></button>'
+          :'')+
         '</div>'+
         '<div style="display:none;padding:6px 10px 0;background:var(--bg3);border:1px solid rgba(16,217,160,.12);border-top:none;border-radius:0 0 var(--rs) var(--rs)">'+pelHtml+'</div>';
       if(dls.length){
@@ -14055,7 +14287,11 @@ function renderGrouped(f){
             '<span style="font-size:12px;font-weight:600;color:var(--text);flex:1">'+escHtml(dl)+'</span>'+
             '<span style="font-size:9px;background:rgba(79,158,255,.12);color:var(--c1);padding:2px 7px;border-radius:10px">'+dlPelCount+' pel</span>'+
             '<span style="font-size:9px;background:rgba(167,139,250,.12);color:var(--pu);padding:2px 7px;border-radius:10px;margin-left:2px">↑ '+escHtml(u)+'</span>'+
-            (currentRole==='admin'?'<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openEditSalesModal('+dlIdx+')" title="Edit nama" style="width:26px;height:26px;font-size:11px;margin-left:4px"><i class="ti ti-pencil"></i></button>':'')+
+            (currentRole==='admin'?
+              '<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openSalesAddrModal(\''+dl.replace(/\'/g,"\\'")+'\')" title="Detail Alamat" style="width:28px;height:28px;font-size:11px;margin-left:4px"><i class="ti ti-address-book"></i></button>'+
+              '<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openEditSalesModal('+dlIdx+')" title="Edit nama" style="width:28px;height:28px;font-size:11px;margin-left:2px"><i class="ti ti-pencil"></i></button>'+
+              '<button onclick="event.stopPropagation();delSalesName('+dlIdx+')" style="width:28px;height:28px;background:var(--rg);color:var(--red);border:none;border-radius:7px;cursor:pointer;font-size:11px;margin-left:2px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="Hapus"><i class="ti ti-trash"></i></button>'
+              :'')+
             '</div>'+
             '<div style="display:none;padding:6px 10px 0;background:var(--bg3);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--rs) var(--rs)">'+dlPelHtml+'</div>'+
           '</div>';
@@ -14078,7 +14314,11 @@ function renderGrouped(f){
           '<span style="font-size:12px;font-weight:600;color:var(--text);flex:1">'+escHtml(s)+'</span>'+
           '<span style="font-size:9px;background:rgba(79,158,255,.12);color:var(--c1);padding:2px 7px;border-radius:10px">'+sPelCount+' pel</span>'+
           (up?'<span style="font-size:9px;background:rgba(167,139,250,.12);color:var(--pu);padding:2px 7px;border-radius:10px;margin-left:2px">↑ '+escHtml(up)+'</span>':'')+
-          (currentRole==='admin'?'<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openEditSalesModal('+sIdx+')" title="Edit nama" style="width:26px;height:26px;font-size:11px;margin-left:4px"><i class="ti ti-pencil"></i></button>':'')+
+          (currentRole==='admin'?
+            '<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openSalesAddrModal(\''+s.replace(/\'/g,"\\'")+'\')" title="Detail Alamat" style="width:28px;height:28px;font-size:11px;margin-left:4px"><i class="ti ti-address-book"></i></button>'+
+            '<button class="act-btn act-edit-blue" onclick="event.stopPropagation();openEditSalesModal('+sIdx+')" title="Edit nama" style="width:28px;height:28px;font-size:11px;margin-left:2px"><i class="ti ti-pencil"></i></button>'+
+            '<button onclick="event.stopPropagation();delSalesName('+sIdx+')" style="width:28px;height:28px;background:var(--rg);color:var(--red);border:none;border-radius:7px;cursor:pointer;font-size:11px;margin-left:2px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="Hapus"><i class="ti ti-trash"></i></button>'
+            :'')+
           '</div>'+
           '<div style="display:none;padding:6px 10px 0;background:var(--bg3);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--rs) var(--rs)">'+sPelHtml+'</div>'+
         '</div>';
@@ -15299,7 +15539,7 @@ function renderAcctList(){
       '<div class="acct-av '+a.role+'">'+ini2(a.name)+'</div>' +
       '<div class="acct-info">' +
         '<div class="acct-name">'+escHtml(a.name)+'</div>' +
-        '<div class="acct-meta"><i class="ti '+ri+'" style="font-size:10px;margin-right:3px"></i>'+(roleLabel[a.role]||a.role)+(a.jabatan?' · <b style="color:var(--text)">'+escHtml(a.jabatan)+'</b>':'')+( a.ket?' · '+escHtml(a.ket):'')+'</div>' +
+        '<div class="acct-meta"><i class="ti '+ri+'" style="font-size:10px;margin-right:3px"></i>'+(roleLabel[a.role]||a.role)+(a.jabatan?' · <b style="color:var(--text)">'+escHtml(a.jabatan)+'</b>':'')+(a.hp?' · <i class="ti ti-phone" style="font-size:9px"></i> '+escHtml(a.hp):'')+'</div>' +
         '<span class="'+kodeBadgeClass+'" onclick="copyCodeFromList(\''+escHtml(kode)+'\')" title="Klik salin kode"><i class="ti ti-hash" style="font-size:8px"></i>'+escHtml(kode)+'</span>' +
       '</div>' +
       '<div class="acct-actions">' +
@@ -15384,6 +15624,8 @@ function openAcctModal(idx){
   });
   var _epd=document.getElementById('acct-err-pin-dup');
   if(_epd) _epd.style.display='none';
+  // Helper: set optional field value
+  function _setF(id, val){ var el=document.getElementById(id); if(el) el.value=val||''; }
   if(idx !== null){
     var a = getAccts()[idx];
     if(!a) return;
@@ -15395,6 +15637,16 @@ function openAcctModal(idx){
     fKet.value  = a.ket||'';
     if(fJab) fJab.value = a.jabatan||'';
     fId.value   = idx;
+    // Load extended fields
+    _setF('acct-f-hp', a.hp);
+    _setF('acct-f-alamat', a.alamat);
+    _setF('acct-f-rt', a.rt);
+    _setF('acct-f-rw', a.rw);
+    _setF('acct-f-kec', a.kec);
+    _setF('acct-f-kel', a.kel);
+    _setF('acct-f-kota', a.kota);
+    _setF('acct-f-email', a.email);
+    _setF('acct-f-notes', a.notes);
   } else {
     title.textContent = 'Tambah Akun Baru';
     sub.textContent   = 'Isi data akun anggota tim';
@@ -15403,6 +15655,8 @@ function openAcctModal(idx){
     // Auto-generate PIN unik saat tambah akun baru
     fPin.value = '';
     setTimeout(function(){ autoGenPin(); }, 50);
+    // Clear extended fields
+    ['acct-f-hp','acct-f-alamat','acct-f-rt','acct-f-rw','acct-f-kec','acct-f-kel','acct-f-kota','acct-f-email','acct-f-notes'].forEach(function(id){ _setF(id,''); });
   }
   onAcctRoleChange();
   updateAreaDropdowns(); // sync area kerja dari Wilayah Setting
@@ -15461,8 +15715,61 @@ function saveAcct(){
   }
   if(hasErr){toast('Lengkapi data yang wajib diisi','err');return;}
 
+  // ── Validasi HP tidak boleh sama dengan akun lain ──
+  var hpVal = (document.getElementById('acct-f-hp')||{}).value||'';
+  if(hpVal){
+    var hpNormA = hpVal.replace(/\D/g,'');
+    var acctListHP = getAccts();
+    var idxNum = idx !== '' ? parseInt(idx) : -1;
+    var hpConflictA = acctListHP.find(function(a,i){ return i !== idxNum && a.hp && a.hp.replace(/\D/g,'') === hpNormA; });
+    if(!hpConflictA){
+      // Cek juga di sales addr map
+      var addrMapHP = getSalesAddrMap();
+      var hpConflictS = Object.keys(addrMapHP).find(function(n){
+        // Skip jika nama sales sama dengan nama akun yang sedang diedit
+        if(idxNum >= 0 && acctListHP[idxNum] && acctListHP[idxNum].name === n) return false;
+        return addrMapHP[n].hp && addrMapHP[n].hp.replace(/\D/g,'') === hpNormA;
+      });
+      if(hpConflictS){ hpConflictA = {name: hpConflictS + ' (sales)'}; }
+    }
+    if(hpConflictA){
+      toast('No. HP sudah terdaftar pada "'+hpConflictA.name+'" — gunakan nomor lain','err');
+      var hpEl = document.getElementById('acct-f-hp');
+      if(hpEl){ hpEl.focus(); hpEl.style.borderColor='var(--red)'; setTimeout(function(){hpEl.style.borderColor='';},2500); }
+      return;
+    }
+  }
+
+  // ── Validasi email tidak boleh sama dengan akun lain ──
+  var emailVal = (document.getElementById('acct-f-email')||{}).value||'';
+  if(emailVal){
+    var emailNorm = emailVal.trim().toLowerCase();
+    var acctListEM = getAccts();
+    var idxNumEM = idx !== '' ? parseInt(idx) : -1;
+    var emailConflict = acctListEM.find(function(a,i){ return i !== idxNumEM && a.email && a.email.trim().toLowerCase() === emailNorm; });
+    if(emailConflict){
+      toast('Email sudah terdaftar pada akun "'+emailConflict.name+'" — gunakan email lain','err');
+      var emEl = document.getElementById('acct-f-email');
+      if(emEl){ emEl.focus(); emEl.style.borderColor='var(--red)'; setTimeout(function(){emEl.style.borderColor='';},2500); }
+      return;
+    }
+  }
+
   var list = getAccts();
-  var acct = {name:name, role:role, jabatan:jabatan, pin: role==='tamu'?'':pin, ket:ket, ts:new Date().toISOString()};
+  var acct = {
+    name: name, role: role, jabatan: jabatan,
+    pin: role==='tamu'?'':pin, ket: ket,
+    hp:       (document.getElementById('acct-f-hp')||{}).value||'',
+    alamat:   (document.getElementById('acct-f-alamat')||{}).value||'',
+    rt:       (document.getElementById('acct-f-rt')||{}).value||'',
+    rw:       (document.getElementById('acct-f-rw')||{}).value||'',
+    kec:      (document.getElementById('acct-f-kec')||{}).value||'',
+    kel:      (document.getElementById('acct-f-kel')||{}).value||'',
+    kota:     (document.getElementById('acct-f-kota')||{}).value||'',
+    email:    (document.getElementById('acct-f-email')||{}).value||'',
+    notes:    (document.getElementById('acct-f-notes')||{}).value||'',
+    ts: new Date().toISOString()
+  };
 
   if(idx !== ''){
     // Edit: pertahankan kode yang sudah ada
@@ -15479,6 +15786,10 @@ function saveAcct(){
     toast('Akun '+name+' · Kode: '+acct.kode+' ditambahkan','ok');
   }
   saveAccts(list);
+  // Auto-sync akun Sales ke daftar nama sales (agar muncul di dropdown)
+  _syncAcctSalesToSalesList();
+  // Auto-sync alamat detail sales dari data akun
+  _syncAcctSalesToAddrMap();
   // Sync PIN ke sistem login: gunakan akun pertama dari tiap peran sebagai PIN global fallback
   syncAcctPins();
   updateAllDropdowns(); // sinkron semua dropdown dari akun terpusat
@@ -15641,6 +15952,51 @@ function saveAcctPrefixes(){
   // Sync input values
   loadPrefixInputs();
   renderAcctList();
+}
+
+// ═══════════════════════════════
+// SYNC AKUN SALES → SALES LIST & ADDR MAP
+// ═══════════════════════════════
+/* Sinkron otomatis: akun dengan role='sales' masuk ke daftar nama sales */
+function _syncAcctSalesToSalesList(){
+  var list = getAccts();
+  var salesNames = list.filter(function(a){ return a.role==='sales'; }).map(function(a){ return a.name; });
+  var existing = getSalesList();
+  // Tambahkan sales dari akun yang belum ada di daftar
+  var changed = false;
+  salesNames.forEach(function(n){
+    if(existing.indexOf(n) < 0){ existing.push(n); changed = true; }
+  });
+  // Hapus dari daftar jika akun sales sudah dihapus (opsional — hanya hapus yg punya kode akun)
+  var allAcctNames = list.map(function(a){ return a.name; });
+  existing = existing.filter(function(n){
+    // Pertahankan nama yang bukan dari akun (manual) atau masih punya akun aktif
+    var acct = list.find(function(a){ return a.name===n && a.role==='sales'; });
+    if(!acct) return true; // nama manual, tetap simpan
+    return allAcctNames.indexOf(n) >= 0; // hapus hanya jika sudah tidak ada akunnya sama sekali
+  });
+  if(changed) lss('sales_list', JSON.stringify(existing));
+}
+
+/* Sinkron otomatis: alamat detail akun sales ke salesAddrMap */
+function _syncAcctSalesToAddrMap(){
+  var list = getAccts();
+  var addrMap = getSalesAddrMap();
+  list.filter(function(a){ return a.role==='sales'; }).forEach(function(a){
+    // Hanya update jika ada data baru, tidak timpa yang sudah ada kecuali dari akun
+    addrMap[a.name] = {
+      hp:     a.hp||addrMap[a.name]&&addrMap[a.name].hp||'',
+      alamat: a.alamat||addrMap[a.name]&&addrMap[a.name].alamat||'',
+      rt:     a.rt||addrMap[a.name]&&addrMap[a.name].rt||'',
+      rw:     a.rw||addrMap[a.name]&&addrMap[a.name].rw||'',
+      kec:    a.kec||addrMap[a.name]&&addrMap[a.name].kec||'',
+      kel:    a.kel||addrMap[a.name]&&addrMap[a.name].kel||'',
+      kota:   a.kota||addrMap[a.name]&&addrMap[a.name].kota||'',
+      area:   a.ket||addrMap[a.name]&&addrMap[a.name].area||'',
+      jabatan:a.jabatan||addrMap[a.name]&&addrMap[a.name].jabatan||''
+    };
+  });
+  saveSalesAddrMap(addrMap);
 }
 
 // ═══════════════════════════════
@@ -15821,6 +16177,53 @@ function saveSalesAddr(){
     area: (document.getElementById('sales-addr-area')||{}).value||'',
     jabatan: (document.getElementById('sales-addr-jabatan')||{}).value||''
   };
+
+  // ── Validasi HP tidak boleh sama dengan akun lain ──
+  if(addr.hp){
+    var hpNorm = addr.hp.replace(/\D/g,'');
+    // Cek di acct list (kecuali akun sales dengan nama yang sama)
+    var acctList = getAccts();
+    var hpConflict = acctList.find(function(a){
+      return a.name !== name && a.hp && a.hp.replace(/\D/g,'') === hpNorm;
+    });
+    if(hpConflict){
+      toast('No. HP sudah terdaftar pada akun "'+hpConflict.name+'" — gunakan nomor lain','err');
+      document.getElementById('sales-addr-hp').focus();
+      document.getElementById('sales-addr-hp').style.borderColor='var(--red)';
+      setTimeout(function(){document.getElementById('sales-addr-hp').style.borderColor='';},2500);
+      return;
+    }
+    // Cek di sales addr map (sales lain)
+    var addrMapCheck = getSalesAddrMap();
+    var hpConflictSales = Object.keys(addrMapCheck).find(function(n){
+      return n !== name && addrMapCheck[n].hp && addrMapCheck[n].hp.replace(/\D/g,'') === hpNorm;
+    });
+    if(hpConflictSales){
+      toast('No. HP sudah terdaftar pada sales "'+hpConflictSales+'" — gunakan nomor lain','err');
+      document.getElementById('sales-addr-hp').focus();
+      document.getElementById('sales-addr-hp').style.borderColor='var(--red)';
+      setTimeout(function(){document.getElementById('sales-addr-hp').style.borderColor='';},2500);
+      return;
+    }
+  }
+
+  // ── Validasi alamat tidak boleh sama dengan sales lain ──
+  var testAddr = {alamat:addr.alamat,rt:addr.rt,rw:addr.rw,kec:addr.kec,kota:addr.kota};
+  if(addr.kec||addr.alamat){
+    var testKey = makeAddrKey(testAddr);
+    var addrMapCheck2 = getSalesAddrMap();
+    var addrConflict = Object.keys(addrMapCheck2).find(function(n){
+      if(n === name) return false;
+      var other = addrMapCheck2[n];
+      if(!(other.kec||other.alamat)) return false;
+      return makeAddrKey(other) === testKey;
+    });
+    if(addrConflict){
+      toast('Alamat sudah terdaftar pada sales "'+addrConflict+'" — data tidak boleh sama','err');
+      return;
+    }
+  }
+
   var map=getSalesAddrMap();
   map[name]=addr;
   saveSalesAddrMap(map);
@@ -15915,6 +16318,13 @@ function addSalesName(){
   if(!nama){toast('Isi nama sales dulu','err');if(inp)inp.focus();return;}
   var list = getSalesList();
   if(list.indexOf(nama)>=0){toast('"'+nama+'" sudah ada','err');return;}
+  // Cek nama tidak boleh sama dengan nama akun tim
+  var acctListCheck = getAccts();
+  var acctConflict = acctListCheck.find(function(a){ return a.name.toLowerCase().trim() === nama.toLowerCase().trim(); });
+  if(acctConflict){
+    toast('"'+nama+'" sudah terdaftar sebagai akun tim ('+acctConflict.role+') — gunakan Akun Tim untuk menambah sales','err');
+    if(inp)inp.focus(); return;
+  }
   // Simpan sales baru dulu
   list.push(nama);
   saveSalesList(list);
@@ -15987,7 +16397,14 @@ function saveEditSalesName(){
   var oldName=list[idx];
   if(!oldName){toast('Sales tidak ditemukan','err');return;}
   if(newName===oldName){closeEditSalesModal();return;}
-  if(list.indexOf(newName)>=0){toast('"'+newName+'" sudah ada','err');return;}
+  if(list.indexOf(newName)>=0){toast('"'+newName+'" sudah ada di daftar sales','err');return;}
+  // Cek nama tidak boleh sama dengan nama di akun tim
+  var acctList = getAccts();
+  var nameConflictAcct = acctList.find(function(a){ return a.name.toLowerCase().trim() === newName.toLowerCase().trim() && a.name !== oldName; });
+  if(nameConflictAcct){
+    toast('"'+newName+'" sudah terdaftar sebagai akun tim ('+nameConflictAcct.role+') — gunakan nama berbeda','err');
+    return;
+  }
   // Update list
   list[idx]=newName;
   saveSalesList(list);
@@ -16902,6 +17319,11 @@ document.addEventListener('DOMContentLoaded', function(){
   if(hd){ hd.classList.add('open'); }
   // Refresh dashboard data from localStorage on load
   if(typeof updDash === 'function') setTimeout(updDash, 300);
+  // Setup form step guard (bubble peringatan urutan isian)
+  setTimeout(function(){
+    if(typeof _setupFormStepGuard === 'function') _setupFormStepGuard();
+    if(typeof _evalFormSteps === 'function') _evalFormSteps();
+  }, 400);
 });
 
 /* ── SUPABASE CONFIG UI FUNCTIONS ── */
