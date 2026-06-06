@@ -7728,6 +7728,15 @@ function _syncFullRefresh(reason){
     if(typeof renderOdpRekap==='function'&&curTab==='data')renderOdpRekap();
     if(typeof updSetStats==='function'&&curTab==='set')updSetStats();
     if(typeof updCfgPushStatus==='function'&&curTab==='set')updCfgPushStatus();
+    // Pastikan field tanggal tidak kosong sebelum evaluasi form step guard
+    var _tglEl=document.getElementById('p-tgl');
+    if(_tglEl&&!_tglEl.value&&typeof today==='function')_tglEl.value=today();
+    var _mtglEl=document.getElementById('m-tgl');
+    if(_mtglEl&&!_mtglEl.value&&typeof today==='function')_mtglEl.value=today();
+    var _dtglEl=document.getElementById('d-tgl');
+    if(_dtglEl&&!_dtglEl.value&&typeof today==='function')_dtglEl.value=today();
+    var _xtglEl=document.getElementById('x-tgl');
+    if(_xtglEl&&!_xtglEl.value&&typeof today==='function')_xtglEl.value=today();
     // Refresh datalist ODC/ODP di form
     if(typeof initOdcOdpDatalist==='function')initOdcOdpDatalist();
     if(typeof updateWilayahDropdowns==='function')updateWilayahDropdowns();
@@ -7973,6 +7982,12 @@ function setMode(m){
   document.getElementById('fp').style.display=m==='p'?'block':'none';
   document.getElementById('fm').style.display=m==='m'?'block':'none';
   document.getElementById('fd').style.display=m==='d'?'block':'none';
+  // Saat form pelanggan dibuka: pastikan tanggal terisi dan form step guard dievaluasi ulang
+  if(m==='p'){
+    var _pTglEl=document.getElementById('p-tgl');
+    if(_pTglEl&&!_pTglEl.value&&typeof today==='function')_pTglEl.value=today();
+    if(typeof _evalFormSteps==='function')_evalFormSteps();
+  }
   // Saat form maintenance dibuka: pastikan area select ter-populate dan tipe terkunci
   if(m==='d'){
     populateMaintAreaSelect();
@@ -8023,6 +8038,12 @@ function setTab(t,btn,skipDataReset){
   if(t==='form'){
     var canAnyInput=rolePerm('input_pel')||rolePerm('input_mat')||rolePerm('input_maint');
     if(!canAnyInput){toast('Peran '+(currentRole||'?')+' tidak punya akses input data','err');return;}
+    // Pastikan tanggal terisi dan form step guard dievaluasi saat form dibuka
+    setTimeout(function(){
+      var _fTglEl=document.getElementById('p-tgl');
+      if(_fTglEl&&!_fTglEl.value&&typeof today==='function')_fTglEl.value=today();
+      if(typeof _evalFormSteps==='function')_evalFormSteps();
+    },50);
   }
   ['dash','form','data','share','set','coming','odp','overview','master-pel','master-odp'].forEach(function(id){var _pe=document.getElementById('pane-'+id);if(_pe)_pe.classList.remove('on');});
   document.querySelectorAll('.bni').forEach(function(b){b.classList.remove('on');});
