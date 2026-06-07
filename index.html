@@ -8813,14 +8813,16 @@ var DEFAULT_ODCODP = {
   Parungkuda: { odc: ['ODC-PRK-01','ODC-PRK-02'], odp: ['ODP-PRK-01','ODP-PRK-02','ODP-PRK-03'] }
 };
 
-// ── [SSOT] getOdcOdpData: Baca PERTAMA dari Master ODP, fallback ke legacy setting ──
-// Semua modul yang membaca area→{odc, odp} akan otomatis mendapatkan data dari Master ODP.
+// ── [SSOT] getOdcOdpData: Baca dari Master ODP + Master ODC — SSOT ──
+// Selalu merge dari Master ODC walau Master ODP kosong.
+// Legacy fallback hanya untuk ODP string-list, bukan sumber ODC aktif.
 function getOdcOdpData(){
-  // [SSOT] Primary: build dari Master ODP (Single Source of Truth)
+  var result = {};
+
+  // [SSOT] Build ODP list dari Master ODP
   if (typeof getMasterOdpData === 'function') {
     var masterArr = getMasterOdpData();
     if (masterArr && masterArr.length) {
-      var result = {};
       masterArr.forEach(function(o) {
         var area = o.area || o.wilayah || '';
         if (!area) return;
@@ -8830,22 +8832,24 @@ function getOdcOdpData(){
         var odcKode = o.odcKode || o.odc || '';
         if (odcKode && result[area].odc.indexOf(odcKode) < 0) result[area].odc.push(odcKode);
       });
-      // Merge dengan ODC dari Master ODC
-      if (typeof getMasterOdcData === 'function') {
-        var masterOdc = getMasterOdcData();
-        masterOdc.forEach(function(c) {
-          var area = c.area || c.wilayah || '';
-          if (!area) return;
-          if (!result[area]) result[area] = { odc: [], odp: [] };
-          var kode = c.kode || '';
-          if (kode && result[area].odc.indexOf(kode) < 0) result[area].odc.push(kode);
-        });
-      }
-      if (Object.keys(result).length) return result;
     }
   }
-  // [SSOT] Fallback: legacy setting storage
-  try{var r=ls(K_ODCOДP);if(r)return JSON.parse(r);}catch(e){}
+
+  // [SSOT] Selalu merge ODC dari master_odc — walau Master ODP kosong sekalipun
+  if (typeof getMasterOdcData === 'function') {
+    getMasterOdcData().forEach(function(c) {
+      var area = c.area || c.wilayah || '';
+      if (!area) return;
+      if (!result[area]) result[area] = { odc: [], odp: [] };
+      var kode = c.kode || '';
+      if (kode && result[area].odc.indexOf(kode) < 0) result[area].odc.push(kode);
+    });
+  }
+
+  if (Object.keys(result).length) return result;
+
+  // Fallback terakhir: legacy setting (READ-ONLY, hanya ODP lama)
+  try { var r=ls(K_ODCOДP); if(r) return JSON.parse(r); } catch(e) {}
   return DEFAULT_ODCODP;
 }
 
@@ -13514,12 +13518,12 @@ function updMainDashboard() {
   var utilPct = totalPort > 0 ? Math.round(portTerpakai / totalPort * 100) : 0;
   _setElText('kpi-odp-util-pct', utilPct + '%');
 
-  // ── KPI ODC (dari Master ODC localStorage) ──
-  var odcAll = typeof getMasterOdcData === 'function' ? getMasterOdcData() : [];
-  var odcTotal = odcAll.length;
-  var odcAktif = odcAll.filter(function(o){ return (o.status||'Aktif') === 'Aktif'; }).length;
-  var odcMaint = odcAll.filter(function(o){ return (o.status||'') === 'Maintenance'; }).length;
-  var odcRusak = odcAll.filter(function(o){ return (o.status||'') === 'Rusak'; }).length;
+  // ── KPI ODC [SSOT] — WAJIB pakai getODCStats(), jangan hitung sendiri ──
+  var _odcStats = typeof getODCStats === 'function' ? getODCStats() : { total:0, aktif:0, maintenance:0, rusak:0 };
+  var odcTotal = _odcStats.total;
+  var odcAktif = _odcStats.aktif;
+  var odcMaint = _odcStats.maintenance;
+  var odcRusak = _odcStats.rusak;
   _setEl('kpi-odc-total', odcTotal);
   _setEl('kpi-odc-aktif', odcAktif);
   _setEl('kpi-odc-maintenance', odcMaint);
@@ -19978,10 +19982,10 @@ function updOverview(){
   set('ov-odp-penuh', odpPenuh.toLocaleString('id-ID'));
   set('ov-odp-kosong', odpKosong.toLocaleString('id-ID'));
   set('ov-sales-total', salesTotal.toLocaleString('id-ID'));
-  // ODC summary di overview
-  var ovOdcAll = typeof getMasterOdcData === 'function' ? getMasterOdcData() : [];
-  set('ov-odc-total', ovOdcAll.length.toLocaleString('id-ID'));
-  set('ov-odc-aktif', ovOdcAll.filter(function(o){ return (o.status||'Aktif')==='Aktif'; }).length.toLocaleString('id-ID'));
+  // ODC summary di overview [SSOT] — pakai getODCStats()
+  var _ovOdcStats = typeof getODCStats === 'function' ? getODCStats() : { total:0, aktif:0 };
+  set('ov-odc-total', _ovOdcStats.total.toLocaleString('id-ID'));
+  set('ov-odc-aktif', _ovOdcStats.aktif.toLocaleString('id-ID'));
 
   // ── 2. Pelanggan aktif per area ──
   renderOvAreaCards(allP, dismantlePel);
@@ -22667,6 +22671,23 @@ function masterOdpResetFilter() {
 }
 
 // ═══════════════════════════════
+// [SSOT] modpRefreshOdcDropdown — Refresh dropdown ODC di form ODP dari Master ODC
+// Dipanggil otomatis saat Master ODC berubah via realtime
+function modpRefreshOdcDropdown() {
+  var odcF = document.getElementById('modp-f-odc');
+  if (!odcF) return; // Form ODP tidak sedang terbuka
+  var curVal = odcF.value;
+  odcF.innerHTML = '<option value="">-- Pilih ODC --</option>';
+  (typeof getMasterOdcData === 'function' ? getMasterOdcData() : []).forEach(function(o) {
+    var opt = document.createElement('option');
+    opt.value = o.id;
+    opt.textContent = o.kode + (o.nama ? ' — ' + o.nama : '');
+    if (o.id === curVal) opt.selected = true;
+    odcF.appendChild(opt);
+  });
+}
+window.modpRefreshOdcDropdown = modpRefreshOdcDropdown;
+
 // ADD MODAL
 // ═══════════════════════════════
 function masterOdpOpenAddModal() {
@@ -23382,6 +23403,21 @@ function modcInfoRow(label, val, icon) {
   + '</div>';
 }
 
+// ═══════════════════════════════════════════════════
+// [SSOT] getODCStats() — Single Source of Truth untuk Dashboard & KPI Vendor
+// Dashboard dan KPI Vendor WAJIB memanggil fungsi ini. Jangan hitung ODC sendiri.
+// ═══════════════════════════════════════════════════
+function getODCStats() {
+  var all   = typeof getMasterOdcData === 'function' ? getMasterOdcData() : [];
+  var total    = all.length;
+  var aktif    = all.filter(function(o){ return (o.status||'Aktif') === 'Aktif'; }).length;
+  var maint    = all.filter(function(o){ return (o.status||'') === 'Maintenance'; }).length;
+  var rusak    = all.filter(function(o){ return (o.status||'') === 'Rusak'; }).length;
+  var nonAktif = total - aktif;
+  return { total: total, aktif: aktif, maintenance: maint, rusak: rusak, nonAktif: nonAktif };
+}
+window.getODCStats = getODCStats; // expose ke global scope
+
 // Hitung jumlah ODP yang terhubung ke ODC tertentu (dari Master ODP SSOT)
 function modcCountOdp(odcId) {
   if (typeof getMasterOdpData !== 'function') return 0;
@@ -23681,12 +23717,20 @@ function masterOdcSave() {
   var portTersedia = parseInt(gv('modc-f-port-tersedia')) || 0;
   var status       = (document.getElementById('modc-f-status')||{}).value || 'Aktif';
 
-  if (!kode) { toast('Kode ODC wajib diisi','err'); document.getElementById('modc-f-kode').focus(); return; }
-  if (!area) { toast('Coverage Area wajib dipilih','err'); return; }
+  // ── [SSOT] Validasi wajib sebelum simpan ODC ──
+  if (!kode)      { toast('Kode ODC wajib diisi','err');          (document.getElementById('modc-f-kode')      ||{}).focus && document.getElementById('modc-f-kode').focus();      return; }
+  if (!nama)      { toast('Nama ODC wajib diisi','err');          (document.getElementById('modc-f-nama')      ||{}).focus && document.getElementById('modc-f-nama').focus();      return; }
+  if (!area)      { toast('Coverage Area wajib dipilih','err');   return; }
+  if (!kecamatan) { toast('Kecamatan wajib dipilih','err');       return; }
+  if (!kelurahan) { toast('Kelurahan wajib dipilih','err');       return; }
 
   var all = getMasterOdcData();
+  // Cek duplikat kode_odc (abaikan record yang sedang diedit)
   var dup = all.find(function(o){ return (o.kode||'').toLowerCase()===kode.toLowerCase() && o.id!==_modcEditId; });
-  if (dup) { toast('Kode ODC '+kode+' sudah ada','err'); return; }
+  if (dup) { toast('Kode ODC "'+kode+'" sudah ada — duplikat tidak diizinkan','err'); return; }
+  // Cek duplikat nama_odc (abaikan record yang sedang diedit)
+  var dupNama = all.find(function(o){ return (o.nama||'').toLowerCase()===nama.toLowerCase() && o.id!==_modcEditId; });
+  if (dupNama) { toast('Nama ODC "'+nama+'" sudah ada — duplikat tidak diizinkan','err'); return; }
 
   var record = { kode:kode, nama:nama, area:area, kecamatan:kecamatan, kelurahan:kelurahan,
     wilayah:wilayah, lat:lat, lng:lng, totalOdp:totalOdp, totalPort:totalPort,
@@ -23723,23 +23767,29 @@ function masterOdcSave() {
 function masterOdcConfirmDel(id) {
   if (currentRole!=='admin') { toast('Hanya Admin yang bisa hapus ODC','err'); return; }
   var odc=getMasterOdcById(id); if(!odc) return;
-  var odpCount=modcCountOdp(id);
+  // [SSOT] Cek ODP yang masih memakai ODC ini — tolak hapus jika masih ada
+  var odpCount = modcCountOdp(id);
+  if (odpCount > 0) {
+    toast('❌ ODC masih digunakan oleh '+odpCount+' ODP. Pindahkan atau hapus ODP terlebih dahulu.', 'err');
+    return;
+  }
   showConfirm({
     mode:'delete', title:'Hapus ODC?', typeLabel:'Master ODC',
     detail:escHtml(odc.kode)+(odc.nama?' — '+escHtml(odc.nama):''),
-    desc:odpCount>0 ? 'ODC ini memiliki '+odpCount+' ODP terhubung. Hapus ODC akan melepaskan relasi ODP tersebut.' : 'ODC ini akan dihapus permanen.',
+    desc:'ODC ini tidak memiliki ODP terhubung dan akan dihapus permanen.',
     onConfirm:function(){ masterOdcDoDelete(id); }
   });
 }
 
 function masterOdcDoDelete(id) {
+  // [SSOT] Validasi ulang: tolak hapus jika ODC masih digunakan ODP
+  var odpCount = modcCountOdp(id);
+  if (odpCount > 0) {
+    toast('❌ ODC masih digunakan oleh '+odpCount+' ODP. Hapus tidak diizinkan.', 'err');
+    return;
+  }
   var all=getMasterOdcData().filter(function(o){ return o.id!==id; });
   saveMasterOdcData(all);
-  if (typeof getMasterOdpData==='function' && typeof saveMasterOdpData==='function') {
-    var odpAll=getMasterOdpData();
-    odpAll.forEach(function(o){ if(o.odcId===id){ o.odcId=''; o.odcKode=''; } });
-    saveMasterOdpData(odpAll);
-  }
   masterOdcRender();
   toast('ODC dihapus','ok');
 }
@@ -24306,10 +24356,17 @@ async function _sbLoadMasterOdc() {
   _odcCache = arr;
   _odcCacheLoaded = true;
   try { localStorage.setItem('master_odc_v1', JSON.stringify(arr)); } catch(e) {}
-  // Refresh UI
+  // [SSOT] Refresh semua UI yang bergantung pada Master ODC
   if (typeof masterOdcRender === 'function') masterOdcRender();
   if (typeof masterOdcPopulateAreaFilter === 'function') masterOdcPopulateAreaFilter();
   if (typeof updDash === 'function') updDash();
+  // Refresh dropdown ODC di form ODP (jika sedang terbuka)
+  if (typeof modpRefreshOdcDropdown === 'function') modpRefreshOdcDropdown();
+  // Refresh Monitoring ODC jika tab aktif
+  if (typeof renderOdcMonitor === 'function') renderOdcMonitor();
+  if (typeof updMainDashboard === 'function') updMainDashboard();
+  // Refresh rekap ODP (karena ODC memengaruhi tampilan)
+  if (typeof renderOdpRekap === 'function') renderOdpRekap();
 }
 
 // Konversi dari row Supabase ke objek JS
@@ -25182,6 +25239,7 @@ window.auditLog = function(opts) {
     menu:         opts.menu    || '',
     action:       opts.action  || '',
     target_id:    opts.target_id || null,
+    kode_odc:     opts.kode_odc  || null,   // [SSOT] field wajib untuk ODC audit
     data_lama:    opts.data_lama  ? JSON.stringify(opts.data_lama)  : null,
     data_baru:    opts.data_baru  ? JSON.stringify(opts.data_baru)  : null,
     device:       _deviceInfo,
@@ -25322,8 +25380,17 @@ function _patchCrudForAudit() {
       origOdcSave.apply(this, arguments);
       setTimeout(function(){
         var all = typeof getMasterOdcData === 'function' ? getMasterOdcData() : [];
-        var baru = all[all.length-1] || null;
-        auditLog({ menu:'ODC', action: lama?'UPDATE':'INSERT', target_id: baru&&baru.id, data_lama:lama, data_baru:baru });
+        // Cari record yang baru saja disimpan (edit: by id, tambah: last)
+        var baru = editId ? all.find(function(o){ return o.id === editId; }) : all[all.length-1];
+        baru = baru || all[all.length-1] || null;
+        auditLog({
+          menu: 'ODC',
+          action: lama ? 'UPDATE' : 'INSERT',
+          target_id: baru && baru.id,
+          kode_odc: baru && baru.kode,   // [SSOT] wajib sertakan kode_odc
+          data_lama: lama,
+          data_baru: baru
+        });
       }, 300);
     };
     window.masterOdcSave._rtAudit = true;
@@ -25335,7 +25402,13 @@ function _patchCrudForAudit() {
     window.masterOdcDoDelete = function(id) {
       var lama = typeof getMasterOdcById === 'function' ? getMasterOdcById(id) : {id:id};
       origOdcDel.apply(this, arguments);
-      auditLog({ menu:'ODC', action:'DELETE', target_id:id, data_lama:lama });
+      auditLog({
+        menu: 'ODC',
+        action: 'DELETE',
+        target_id: id,
+        kode_odc: lama && lama.kode,     // [SSOT] wajib sertakan kode_odc
+        data_lama: lama
+      });
     };
     window.masterOdcDoDelete._rtAudit = true;
   }
@@ -25631,14 +25704,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
   menu        TEXT,
   action      TEXT,          -- INSERT | UPDATE | DELETE
   target_id   TEXT,
+  kode_odc    TEXT,          -- [SSOT] kode ODC, diisi saat menu=ODC
   data_lama   TEXT,          -- JSON string
   data_baru   TEXT,          -- JSON string
   device      TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_log_user    ON audit_log(user_name);
-CREATE INDEX IF NOT EXISTS idx_audit_log_menu    ON audit_log(menu);
+-- Jalankan ini jika tabel sudah ada: ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS kode_odc TEXT;
+CREATE INDEX IF NOT EXISTS idx_audit_log_created  ON audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_user     ON audit_log(user_name);
+CREATE INDEX IF NOT EXISTS idx_audit_log_menu     ON audit_log(menu);
+CREATE INDEX IF NOT EXISTS idx_audit_log_kode_odc ON audit_log(kode_odc);
 
 -- 2. MASTER ODC TABLE (sudah ada, pastikan kolom lengkap)
 CREATE TABLE IF NOT EXISTS master_odc (
