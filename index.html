@@ -7132,6 +7132,9 @@ var BAKED={url_p:'',url_m:'',url_read:'',url_app:''};
 // Google Sheets tetap berjalan sebagai cadangan (write-only backup)
 // ═══════════════════════════════════════════════════════════════
 
+// Deklarasi awal _isLoggedIn — mencegah ReferenceError di sbStartRealtime
+if (typeof _isLoggedIn === "undefined") var _isLoggedIn = false;
+
 // ── Konfigurasi Database — URL & Key tertanam permanen di kode ──
 // ═══════════════════════════════════════════════════════════════
 // ONLINE-FIRST: Supabase adalah satu-satunya sumber kebenaran.
