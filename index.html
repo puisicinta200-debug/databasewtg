@@ -26029,20 +26029,60 @@ CREATE TABLE IF NOT EXISTS app_activity (
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 7. MASTER_PORT TABLE (SSOT untuk seluruh data port ISP)
+CREATE TABLE IF NOT EXISTS master_port (
+  id            TEXT PRIMARY KEY,
+  odp_id        TEXT NOT NULL,
+  nomor_port    INTEGER NOT NULL,
+  status        TEXT DEFAULT 'AVAILABLE',  -- AVAILABLE | USED | RESERVED
+  cid           TEXT,
+  pelanggan_id  TEXT,
+  pelanggan_nama TEXT,
+  catatan       TEXT,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (odp_id, nomor_port)
+);
+CREATE INDEX IF NOT EXISTS idx_mp_odp    ON master_port(odp_id);
+CREATE INDEX IF NOT EXISTS idx_mp_status ON master_port(status);
+CREATE INDEX IF NOT EXISTS idx_mp_cid    ON master_port(cid);
+
 -- ═══════════════════════════════════════════════
--- ENABLE REALTIME UNTUK SEMUA TABEL
+-- ENABLE REALTIME UNTUK SEMUA TABEL (IDEMPOTENT)
 -- ═══════════════════════════════════════════════
 -- Jalankan di Supabase Dashboard:
 -- Settings → Database → Replication → Add tables:
---   audit_log, master_odc, master_odp, app_rows, app_kv, app_activity
+--   audit_log, master_odc, master_odp, app_rows, app_kv, app_activity, master_port
 
--- ATAU via SQL:
-ALTER PUBLICATION supabase_realtime ADD TABLE audit_log;
-ALTER PUBLICATION supabase_realtime ADD TABLE master_odc;
-ALTER PUBLICATION supabase_realtime ADD TABLE master_odp;
-ALTER PUBLICATION supabase_realtime ADD TABLE app_rows;
-ALTER PUBLICATION supabase_realtime ADD TABLE app_kv;
-ALTER PUBLICATION supabase_realtime ADD TABLE app_activity;
+-- ATAU via SQL (aman dijalankan berulang kali):
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='audit_log') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE audit_log; END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='master_odc') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE master_odc; END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='master_odp') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE master_odp; END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='app_rows') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE app_rows; END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='app_kv') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE app_kv; END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='app_activity') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE app_activity; END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='master_port') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE master_port; END IF;
+END $$;
 
 -- ═══════════════════════════════════════════════
 -- ROW LEVEL SECURITY (RLS) — Opsional
