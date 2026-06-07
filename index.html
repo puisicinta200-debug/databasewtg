@@ -7919,6 +7919,8 @@ var _syncRefreshBusy=false;
 function _syncFullRefresh(reason){
   if(_syncRefreshBusy)return;
   _syncRefreshBusy=true;
+  /* [SSOT §15] Invalidate metrics cache sebelum refresh — agar semua modul pakai data fresh */
+  if(typeof _ssotInvalidate==='function')_ssotInvalidate();
   try{
     // Re-load state dari localStorage (antisipasi perubahan dari tab lain)
     try{var _rp=ls(K.p);if(_rp)db.p=JSON.parse(_rp);}catch(e){}
@@ -13208,6 +13210,10 @@ function getMergedPel(){
 }
 
 function updDash(){
+  /* [SSOT §15] Invalidate cache metrik supaya data fresh */
+  _ssotInvalidate();
+  _ssotAuditLog('refresh_dashboard');
+
   var tod=today();
   // Gunakan data gabungan Sheets + lokal
   var allP=getMergedPel();
@@ -13479,28 +13485,31 @@ function updDash(){
 // Mengisi semua KPI, Alarm, dan Grafik di pane-dash
 // ═══════════════════════════════════════════════════
 function updMainDashboard() {
-  var allP = getMergedPel();
+  /* [SSOT] Semua metrik dari getDashboardMetrics() — satu sumber tunggal */
+  var M = getDashboardMetrics();
+  _ssotAuditLog('refresh_kpi');
+
   var tod = today();
   var curMonth = tod.substring(0, 7);
+  var allP = typeof getMergedPel === 'function' ? getMergedPel() : (db.p || []);
 
-  // ── KPI PELANGGAN ──
-  var pelTotal = allP.length;
-  var pelAktif = allP.filter(function(d){ return (d.status||'').toLowerCase().indexOf('aktif') >= 0 && (d.status||'').toLowerCase().indexOf('non') < 0; }).length;
-  var pelNonAktif = allP.filter(function(d){ var s=(d.status||'').toLowerCase(); return s.indexOf('non') >= 0 || s === 'nonaktif' || s === 'non aktif'; }).length;
-  var pelArsip = allP.filter(function(d){ return (d.status||'').toLowerCase() === 'arsip' || (d.status||'').toLowerCase() === 'dismantle'; }).length;
+  // ── KPI PELANGGAN [SSOT] ──
+  var pelTotal   = M.total_pelanggan;
+  var pelAktif   = M.pelanggan_aktif;
+  var pelNonAktif= M.pelanggan_nonaktif;
+  var pelArsip   = M.pelanggan_dismantle;
 
   _setEl('kpi-pel-total', pelTotal);
   _setEl('kpi-pel-aktif', pelAktif);
   _setEl('kpi-pel-nonaktif', pelNonAktif);
   _setEl('kpi-pel-arsip', pelArsip);
 
-  // ── KPI ODP ── [SSOT §11] Gunakan getODPStats() — fungsi terpadu dari master_odp
-  var _odpStats = typeof getODPStats === 'function' ? getODPStats() : { total:0, totalPort:0, terpakai:0, kosong:0, rusak:0 };
-  var totalOdp     = _odpStats.total;
-  var totalPort    = _odpStats.totalPort;
-  var portTerpakai = _odpStats.terpakai;
-  var portKosong   = _odpStats.kosong;
-  var portRusak    = _odpStats.rusak;
+  // ── KPI ODP [SSOT] — dari getDashboardMetrics() yang memanggil getODPStats() ──
+  var totalOdp     = M.total_odp;
+  var totalPort    = M.total_port;
+  var portTerpakai = M.port_terpakai;
+  var portKosong   = M.port_tersedia;
+  var portRusak    = M.port_rusak;
 
   _setEl('kpi-odp-total', totalOdp);
   _setEl('kpi-port-total', totalPort);
@@ -13511,12 +13520,11 @@ function updMainDashboard() {
   var utilPct = totalPort > 0 ? Math.round(portTerpakai / totalPort * 100) : 0;
   _setElText('kpi-odp-util-pct', utilPct + '%');
 
-  // ── KPI ODC [SSOT] — WAJIB pakai getODCStats(), jangan hitung sendiri ──
-  var _odcStats = typeof getODCStats === 'function' ? getODCStats() : { total:0, aktif:0, maintenance:0, rusak:0 };
-  var odcTotal = _odcStats.total;
-  var odcAktif = _odcStats.aktif;
-  var odcMaint = _odcStats.maintenance;
-  var odcRusak = _odcStats.rusak;
+  // ── KPI ODC [SSOT] — dari getDashboardMetrics() yang memanggil getODCStats() ──
+  var odcTotal = M.total_odc;
+  var odcAktif = M.odc_aktif;
+  var odcMaint = M.odc_maintenance;
+  var odcRusak = M.odc_rusak;
   _setEl('kpi-odc-total', odcTotal);
   _setEl('kpi-odc-aktif', odcAktif);
   _setEl('kpi-odc-maintenance', odcMaint);
@@ -13543,13 +13551,13 @@ function updMainDashboard() {
   _setEl('kpi-wo-progress', woProgress);
   _setEl('kpi-wo-closed', woClosed);
 
-  // ── KPI OPERASIONAL ──
-  var maintD = db.m.filter(function(d){ return d.type === 'd'; });
-  var dismantleX = db.m.filter(function(d){ return d.type === 'x'; });
-  var maintToday = maintD.filter(function(d){ return (d.tgl||'').substring(0,10) === tod; }).length;
-  var maintMonth = maintD.filter(function(d){ return (d.tgl||'').substring(0,7) === curMonth; }).length;
-  var disToday = dismantleX.filter(function(d){ return (d.tgl||'').substring(0,10) === tod; }).length;
-  var disMonth = dismantleX.filter(function(d){ return (d.tgl||'').substring(0,7) === curMonth; }).length;
+  // ── KPI OPERASIONAL [SSOT] — dari getDashboardMetrics() ──
+  var _maintList = _getMaintList();
+  var _disList   = _getDismantleList();
+  var maintToday = _maintList.filter(function(d){ return (d.tgl||'').substring(0,10) === tod; }).length;
+  var maintMonth = _maintList.filter(function(d){ return (d.tgl||'').substring(0,7) === curMonth; }).length;
+  var disToday   = _disList.filter(function(d){ return (d.tgl||'').substring(0,10) === tod; }).length;
+  var disMonth   = _disList.filter(function(d){ return (d.tgl||'').substring(0,7) === curMonth; }).length;
   _setEl('kpi-maint-today', maintToday);
   _setEl('kpi-maint-month', maintMonth);
   _setEl('kpi-dis-today', disToday);
@@ -13614,6 +13622,12 @@ function updMainDashboard() {
   // Update timestamp
   var updEl = document.getElementById('dash-last-update');
   if(updEl) updEl.textContent = 'Update: ' + new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+
+  /* [SSOT §2 & §13] Render KPI Vendor dari getDashboardMetrics() — sumber identik dengan Dashboard */
+  updMainDashboard();
+
+  /* [SSOT §16] Validasi konsistensi setelah render selesai */
+  setTimeout(_ssotValidate, 200);
 }
 
 function _setEl(id, val) {
@@ -13623,6 +13637,152 @@ function _setEl(id, val) {
 function _setElText(id, val) {
   var el = document.getElementById(id);
   if(el) el.textContent = val;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ██████████████████████████████████████████████████████████████████████
+   §SSOT  getDashboardMetrics() — SINGLE SOURCE OF TRUTH
+   ─────────────────────────────────────────────────────────────────────
+   WAJIB digunakan oleh: Dashboard Utama, KPI Vendor, dan semua modul.
+   DILARANG: menghitung sendiri, getDashboardData(), getKPIData(), dst.
+   ██████████████████████████████████████████████████████████████████████
+═══════════════════════════════════════════════════════════════════════ */
+
+/* Helper SSOT: filter aktif — satu rumus, digunakan di semua modul */
+function _isAktif(d) {
+  var s = (d.status || '').toLowerCase();
+  return s.indexOf('aktif') >= 0 && s.indexOf('non') < 0;
+}
+
+/* Helper SSOT: filter dismantle */
+function _isDismantle(d) {
+  var s = (d.status || '').toLowerCase();
+  return s === 'dismantle' || s === 'arsip';
+}
+
+/* Helper SSOT: filter maintenance (db.m type='d') */
+function _getMaintList() {
+  return (db.m || []).filter(function(d){ return d.type === 'd'; });
+}
+
+/* Helper SSOT: filter dismantle entries (db.m type='x') */
+function _getDismantleList() {
+  return (db.m || []).filter(function(d){ return d.type === 'x'; });
+}
+
+/* ── getDashboardMetrics() ── SSOT Service Global ─────────────────── */
+var _ssotMetricsCache = null;
+var _ssotMetricsCacheTs = 0;
+var _SSOT_CACHE_TTL = 500; /* 500ms debounce agar rapid calls tidak boros */
+
+function getDashboardMetrics() {
+  var now = Date.now();
+  if (_ssotMetricsCache && (now - _ssotMetricsCacheTs) < _SSOT_CACHE_TTL) {
+    return _ssotMetricsCache;
+  }
+
+  /* 1. Pelanggan — dari master_pelanggan (getMergedPel) */
+  var allP = typeof getMergedPel === 'function' ? getMergedPel() : (db.p || []);
+  var total_pelanggan = allP.length;
+  var pelanggan_aktif = allP.filter(_isAktif).length;
+  var pelanggan_nonaktif = allP.filter(function(d){
+    var s = (d.status||'').toLowerCase();
+    return s.indexOf('non') >= 0 || s === 'nonaktif' || s === 'non aktif';
+  }).length;
+  var pelanggan_dismantle = allP.filter(_isDismantle).length;
+
+  /* 2. ODC — dari master_odc (getODCStats) */
+  var _odcS = typeof getODCStats === 'function' ? getODCStats() : { total:0, aktif:0, maintenance:0, rusak:0 };
+  var total_odc = _odcS.total;
+  var odc_aktif = _odcS.aktif;
+  var odc_maintenance = _odcS.maintenance;
+  var odc_rusak = _odcS.rusak;
+
+  /* 3. ODP & Port — dari master_odp (getODPStats) */
+  var _odpS = typeof getODPStats === 'function' ? getODPStats() : { total:0, totalPort:0, terpakai:0, kosong:0, rusak:0 };
+  var total_odp = _odpS.total;
+  var total_port = _odpS.totalPort;
+  var port_terpakai = _odpS.terpakai;
+  var port_tersedia = _odpS.kosong;
+  var port_rusak = _odpS.rusak;
+
+  /* 4. Aktivasi — pelanggan_aktif adalah jumlah teraktivasi */
+  var total_aktivasi = pelanggan_aktif;
+
+  /* 5. Maintenance — dari db.m type='d' */
+  var _maintList = _getMaintList();
+  var total_maintenance = _maintList.length;
+
+  /* 6. Dismantle — dari db.m type='x' */
+  var _disList = _getDismantleList();
+  var total_dismantle = _disList.length;
+
+  _ssotMetricsCache = {
+    total_pelanggan:   total_pelanggan,
+    pelanggan_aktif:   pelanggan_aktif,
+    pelanggan_nonaktif: pelanggan_nonaktif,
+    pelanggan_dismantle: pelanggan_dismantle,
+    total_odc:         total_odc,
+    odc_aktif:         odc_aktif,
+    odc_maintenance:   odc_maintenance,
+    odc_rusak:         odc_rusak,
+    total_odp:         total_odp,
+    total_port:        total_port,
+    port_terpakai:     port_terpakai,
+    port_tersedia:     port_tersedia,
+    port_rusak:        port_rusak,
+    total_aktivasi:    total_aktivasi,
+    total_maintenance: total_maintenance,
+    total_dismantle:   total_dismantle,
+    _ts: now
+  };
+  _ssotMetricsCacheTs = now;
+  return _ssotMetricsCache;
+}
+window.getDashboardMetrics = getDashboardMetrics;
+
+/* Invalidate cache metrik saat data berubah */
+function _ssotInvalidate() {
+  _ssotMetricsCache = null;
+  _ssotMetricsCacheTs = 0;
+}
+window._ssotInvalidate = _ssotInvalidate;
+
+/* ── SSOT Validation — deteksi mismatch antar modul ─────────────── */
+function _ssotValidate() {
+  try {
+    var m = getDashboardMetrics();
+    var dashTotal = parseInt((document.getElementById('ds-total-p')||{}).textContent) || null;
+    var kpiTotal  = parseInt((document.getElementById('kpi-pel-total')||{}).textContent) || null;
+    var ovTotal   = parseInt(((document.getElementById('ov-pel-total')||{}).textContent||'0').replace(/\./g,'')) || null;
+
+    var mismatches = [];
+    if (dashTotal !== null && kpiTotal !== null && dashTotal !== kpiTotal) {
+      mismatches.push('total_pelanggan: dash=' + dashTotal + ' kpi=' + kpiTotal);
+    }
+    if (dashTotal !== null && ovTotal !== null && dashTotal !== ovTotal) {
+      mismatches.push('total_pelanggan: dash=' + dashTotal + ' overview=' + ovTotal);
+    }
+    if (mismatches.length) {
+      console.warn('%c[SSOT] KPI MISMATCH DETECTED:', 'color:#dc2626;font-weight:bold', mismatches.join(' | '));
+      /* Catat ke audit_log jika tersedia */
+      if (typeof auditLog === 'function') {
+        try { auditLog({ menu:'SSOT', action:'METRIC_MISMATCH', data_baru: { mismatches: mismatches, ts: new Date().toISOString() } }); } catch(e){}
+      }
+      return false;
+    }
+    return true;
+  } catch(e) { return true; }
+}
+window._ssotValidate = _ssotValidate;
+
+/* ── SSOT Audit Log helper ───────────────────────────────────────── */
+function _ssotAuditLog(action) {
+  try {
+    if (typeof auditLog === 'function') {
+      auditLog({ menu:'SSOT', action: action || 'metric_rebuild', data_baru: { ts: new Date().toISOString() } });
+    }
+  } catch(e) {}
 }
 
 function _renderAlarms(allP, usageMap, matMap, matMenipis) {
@@ -19935,26 +20095,31 @@ function switchOvChart(mode){
 }
 
 function updOverview(){
-  var allP = getMergedPel ? getMergedPel() : (db.p || []);
+  /* [SSOT] Semua metrik dari getDashboardMetrics() — satu sumber tunggal */
+  /* [SSOT §15] Invalidate cache sebelum build ulang */
+  _ssotInvalidate();
+  var M = getDashboardMetrics();
+  _ssotAuditLog('refresh_dashboard');
+
+  var allP = typeof getMergedPel === 'function' ? getMergedPel() : (db.p || []);
   var allM = db.m || [];
 
-  // ── 1. Hitung summary ──
-  var totalPel = allP.length;
-  var dismantlePel = allP.filter(function(d){ return (d.status||'').toLowerCase() === 'dismantle'; }).length;
-  var aktifPel = totalPel - dismantlePel;
+  // ── 1. Hitung summary [SSOT] ──
+  var totalPel    = M.total_pelanggan;
+  var dismantlePel= M.pelanggan_dismantle;
+  var aktifPel    = M.pelanggan_aktif;    /* [SSOT] Konsisten dengan updDash & updMainDashboard */
 
   var matMasuk = allM.filter(function(d){ return d.type === 'm' && ['Masuk','Teknisi','Pasang Baru'].indexOf(d.stat||'') >= 0; }).length;
   var matKeluar = allM.filter(function(d){ return d.type === 'm' && ['Keluar','Rusak'].indexOf(d.stat||'') >= 0; }).length;
   var matStok = matMasuk - matKeluar;
 
-  // [SSOT §10 & §11] ODP count — WAJIB dari master_odp via getODPStats()
-  var _ovOdpStats = typeof getODPStats === 'function' ? getODPStats() : { total:0, penuh:0, normal:0, kosong:0 };
-  var odpTotal  = _ovOdpStats.total;
-  var odpPenuh  = _ovOdpStats.penuh  || 0;
-  var odpKosong = _ovOdpStats.normal || 0;
+  // [SSOT §10 & §11] ODP count — dari getDashboardMetrics() via getODPStats()
+  var odpTotal  = M.total_odp;
+  var odpPenuh  = (typeof getODPStats === 'function' ? getODPStats() : {penuh:0}).penuh || 0;
+  var odpKosong = (typeof getODPStats === 'function' ? getODPStats() : {normal:0}).normal || 0;
 
   // Sales count (pelanggan aktif yang punya sales)
-  var salesTotal = allP.filter(function(d){ return d.sales && d.sales.trim() && d.status !== 'Dismantle'; }).length;
+  var salesTotal = allP.filter(function(d){ return d.sales && d.sales.trim() && !_isDismantle(d); }).length;
 
   // Update DOM
   function set(id,val){ var e=document.getElementById(id); if(e) e.textContent=val; }
@@ -19968,8 +20133,8 @@ function updOverview(){
   set('ov-odp-penuh', odpPenuh.toLocaleString('id-ID'));
   set('ov-odp-kosong', odpKosong.toLocaleString('id-ID'));
   set('ov-sales-total', salesTotal.toLocaleString('id-ID'));
-  // ODC summary di overview [SSOT] — pakai getODCStats()
-  var _ovOdcStats = typeof getODCStats === 'function' ? getODCStats() : { total:0, aktif:0 };
+  // ODC summary di overview [SSOT] — dari getDashboardMetrics() via getODCStats()
+  var _ovOdcStats = { total: M.total_odc, aktif: M.odc_aktif };
   set('ov-odc-total', _ovOdcStats.total.toLocaleString('id-ID'));
   set('ov-odc-aktif', _ovOdcStats.aktif.toLocaleString('id-ID'));
 
@@ -20005,6 +20170,9 @@ function updOverview(){
 
   // ── 8. Heatmap Coverage Area (dipindah dari Coverage Area Dashboard) ──
   renderOvHeatmapCoverage(allP);
+
+  /* [SSOT §16] Validasi konsistensi antar modul setelah render */
+  setTimeout(_ssotValidate, 200);
 }
 
 function renderOvAreaCards(allP, totalDis){
@@ -24477,6 +24645,8 @@ var _origSaveMasterOdcData = window.saveMasterOdcData;
 window.saveMasterOdcData = function(arr) {
   // Update cache in-memory
   _odcCache = arr;
+  /* [SSOT §15] Invalidate metrik cache agar getDashboardMetrics() baca data baru */
+  if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
   // Simpan ke localStorage sebagai cache
   try { localStorage.setItem('master_odc_v1', JSON.stringify(arr)); } catch(e) {}
   // Panggil _sbDebouncedKvWrite untuk sync KV (jika perlu)
@@ -24605,6 +24775,8 @@ window.saveMasterOdpData = function(arr) {
   // [SSOT §14] Supabase adalah sumber utama. localStorage hanya cache.
   // Cache in-memory selalu diperbarui dulu agar UI responsif.
   _odpCache = arr;
+  /* [SSOT §15] Invalidate metrik cache agar getDashboardMetrics() baca data baru */
+  if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
   // Cache localStorage (offline fallback — BUKAN sumber primer)
   try { localStorage.setItem('master_odp_v1', JSON.stringify(arr)); } catch(e) {}
   // Skip KV write — master_odp punya tabel Supabase sendiri (dihandle di _patchMasterOdpFunctions)
@@ -25589,7 +25761,12 @@ function _startAutoRefresh() {
   clearInterval(_autoRefreshTimer);
   _autoRefreshTimer = setInterval(function() {
     if (document.hidden) return; /* skip jika tab tidak aktif */
+    /* [SSOT §15] Invalidate cache sebelum refresh */
+    if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
+    /* Dashboard Utama + KPI Vendor dari sumber yang sama */
     if (typeof updDash === 'function') updDash();
+    /* updDash sudah memanggil updMainDashboard() — tidak perlu panggil lagi */
+    /* updKpiDash tetap dipanggil untuk backward compat jika ada */
     if (typeof updKpiDash === 'function') updKpiDash();
     /* Sync dari Supabase jika online */
     if (navigator.onLine && typeof sbAutoSync === 'function') {
@@ -25601,6 +25778,8 @@ function _startAutoRefresh() {
 /* Refresh saat tab kembali aktif */
 document.addEventListener('visibilitychange', function() {
   if (!document.hidden) {
+    /* [SSOT §15] Invalidate cache agar data fresh saat tab aktif kembali */
+    if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
     if (typeof updDash === 'function') setTimeout(updDash, 400);
     if (navigator.onLine && typeof sbAutoSync === 'function') setTimeout(sbAutoSync, 600);
   }
@@ -26004,7 +26183,7 @@ function _bootstrap() {
   };
 
   /* 5. Console report */
-  console.log('%c╔═══════════════════════════════════════════════════════╗\n║  iCRM REALTIME v2.0 — LOGIN-GATED MODE               ║\n║  ✓ Realtime aktif HANYA setelah login                 ║\n║  ✓ Tidak ada popup Device Bergabung                   ║\n║  ✓ Audit Log → Supabase audit_log                     ║\n║  ✓ Presence: User aktif terlihat real-time            ║\n║  ✓ Role Permission: Admin/Supervisor/Teknisi/Sales     ║\n║  SQL Schema: ketik rtShowSqlSchema() di console       ║\n╚═══════════════════════════════════════════════════════╝',
+  console.log('%c╔═══════════════════════════════════════════════════════╗\n║  iCRM REALTIME v2.0 — LOGIN-GATED MODE               ║\n║  ✓ Realtime aktif HANYA setelah login                 ║\n║  ✓ Tidak ada popup Device Bergabung                   ║\n║  ✓ Audit Log → Supabase audit_log                     ║\n║  ✓ Presence: User aktif terlihat real-time            ║\n║  ✓ Role Permission: Admin/Supervisor/Teknisi/Sales     ║\n║  ✓ SSOT: getDashboardMetrics() — Dashboard = KPI      ║\n║  ✓ SSOT: KPI Mismatch detection aktif                 ║\n║  SQL Schema: ketik rtShowSqlSchema() di console       ║\n╚═══════════════════════════════════════════════════════╝',
     'color:#3ecf8e;font-family:monospace;font-size:11px;font-weight:bold');
 }
 
