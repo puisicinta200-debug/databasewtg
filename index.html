@@ -8848,9 +8848,9 @@ function getOdcOdpData(){
 
   if (Object.keys(result).length) return result;
 
-  // Fallback terakhir: legacy setting (READ-ONLY, hanya ODP lama)
-  try { var r=ls(K_ODCOДP); if(r) return JSON.parse(r); } catch(e) {}
-  return DEFAULT_ODCODP;
+  // [SSOT §1 & §17] Fallback legacy dihapus — tidak boleh pakai odcoдp_list sebagai sumber aktif.
+  // Jika Master ODP dan Master ODC kosong, kembalikan objek kosong.
+  return {};
 }
 
 function saveOdcOdpData(data){
@@ -8978,14 +8978,25 @@ function onOdcChange(val){
   });
 
   if(odcValid){
-    // Filter ODP yang namanya mengandung prefix ODC ini
-    var prefix = odcVal.replace(/^ODC-/i,'').split('-')[0]; // e.g. "ODC-CIC-01" → "CIC-01"
-    var filteredOdp = areaData.odp.filter(function(o){
-      return o.toLowerCase().indexOf(odcVal.toLowerCase().replace(/^odc-/i,'').split('-').slice(0,2).join('-').toLowerCase()) >= 0
-          || o.toLowerCase().indexOf(odcVal.toLowerCase()) >= 0;
-    });
-    // Jika filter terlalu ketat dan hasilnya kosong, tampilkan semua ODP area
-    if(!filteredOdp.length) filteredOdp = areaData.odp;
+    // [SSOT §8] Filter ODP: gunakan master_odp, hanya yang odcKode cocok dengan ODC terpilih
+    var filteredOdp = [];
+    if (typeof getMasterOdpData === 'function') {
+      var masterOdpArr = getMasterOdpData();
+      // Filter berdasarkan odcKode dari master_odp (strict SSOT)
+      filteredOdp = masterOdpArr
+        .filter(function(o) {
+          return (o.area || '') === area && (o.odcKode || '').toLowerCase() === odcVal.toLowerCase();
+        })
+        .map(function(o){ return o.kode || o.nama || ''; })
+        .filter(Boolean);
+    }
+    // Safety-net: jika master_odp belum ada datanya, fallback ke filter prefix lama
+    if (!filteredOdp.length && areaData.odp && areaData.odp.length) {
+      filteredOdp = areaData.odp.filter(function(o){
+        return o.toLowerCase().indexOf(odcVal.toLowerCase().replace(/^odc-/i,'').split('-').slice(0,2).join('-').toLowerCase()) >= 0
+            || o.toLowerCase().indexOf(odcVal.toLowerCase()) >= 0;
+      });
+    }
 
     var odpList = document.getElementById('odp-list');
     if(odpList) odpList.innerHTML = filteredOdp.map(function(n){ return '<option value="'+n+'">'; }).join('');
@@ -13483,31 +13494,13 @@ function updMainDashboard() {
   _setEl('kpi-pel-nonaktif', pelNonAktif);
   _setEl('kpi-pel-arsip', pelArsip);
 
-  // ── KPI ODP ──
-  var odpData = getOdcOdpData ? getOdcOdpData() : {};
-  var totalOdp = 0, totalPort = 0, portTerpakai = 0, portKosong = 0, portRusak = 0;
-
-  // Hitung total ODP dari semua area
-  var allOdpNames = [];
-  Object.keys(odpData).forEach(function(area) {
-    var aData = odpData[area] || {};
-    var odpList = (aData.odp || []).filter(function(o){ return o.trim(); });
-    allOdpNames = allOdpNames.concat(odpList);
-    totalOdp += odpList.length;
-    // Port rusak dari odp_rusak
-    var rusakList = aData.odp_rusak || [];
-    rusakList.forEach(function(r) {
-      var obj = typeof r === 'string' ? {tipe:'semua', portRusak:0} : r;
-      if(obj.tipe === 'sebagian') portRusak += (obj.portRusak || 0);
-      else if(obj.tipe === 'semua') portRusak += ODP_MAX_PORTS;
-      else portRusak += ODP_MAX_PORTS;
-    });
-  });
-  // Hitung dari usage map
-  totalPort = totalOdp * ODP_MAX_PORTS;
-  var usageMap = getOdpUsageMap ? getOdpUsageMap(allP) : {};
-  portTerpakai = Object.keys(usageMap).reduce(function(s, k){ return s + usageMap[k].used; }, 0);
-  portKosong = Math.max(0, totalPort - portTerpakai - portRusak);
+  // ── KPI ODP ── [SSOT §11] Gunakan getODPStats() — fungsi terpadu dari master_odp
+  var _odpStats = typeof getODPStats === 'function' ? getODPStats() : { total:0, totalPort:0, terpakai:0, kosong:0, rusak:0 };
+  var totalOdp     = _odpStats.total;
+  var totalPort    = _odpStats.totalPort;
+  var portTerpakai = _odpStats.terpakai;
+  var portKosong   = _odpStats.kosong;
+  var portRusak    = _odpStats.rusak;
 
   _setEl('kpi-odp-total', totalOdp);
   _setEl('kpi-port-total', totalPort);
@@ -19954,18 +19947,11 @@ function updOverview(){
   var matKeluar = allM.filter(function(d){ return d.type === 'm' && ['Keluar','Rusak'].indexOf(d.stat||'') >= 0; }).length;
   var matStok = matMasuk - matKeluar;
 
-  // ODP usage
-  var odpMap = {};
-  allP.filter(function(d){ return d.status !== 'Dismantle'; }).forEach(function(d){
-    var odp = (d.odp||'').trim().toLowerCase();
-    if(!odp) return;
-    if(!odpMap[odp]) odpMap[odp] = 0;
-    odpMap[odp]++;
-  });
-  var odpKeys = Object.keys(odpMap);
-  var odpPenuh = odpKeys.filter(function(k){ return odpMap[k] >= 8; }).length;
-  var odpKosong = odpKeys.filter(function(k){ return odpMap[k] < 8; }).length;
-  var odpTotal = odpKeys.length;
+  // [SSOT §10 & §11] ODP count — WAJIB dari master_odp via getODPStats()
+  var _ovOdpStats = typeof getODPStats === 'function' ? getODPStats() : { total:0, penuh:0, normal:0, kosong:0 };
+  var odpTotal  = _ovOdpStats.total;
+  var odpPenuh  = _ovOdpStats.penuh  || 0;
+  var odpKosong = _ovOdpStats.normal || 0;
 
   // Sales count (pelanggan aktif yang punya sales)
   var salesTotal = allP.filter(function(d){ return d.sales && d.sales.trim() && d.status !== 'Dismantle'; }).length;
@@ -22400,6 +22386,39 @@ function getMasterOdpById(id) {
   return getMasterOdpData().find(function(o){ return o.id === id; }) || null;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// [SSOT §11] getODPStats() — Fungsi global terpadu untuk Dashboard & KPI Vendor
+// Wajib digunakan oleh semua modul yang perlu menghitung statistik ODP
+// ═══════════════════════════════════════════════════════════════
+function getODPStats() {
+  var all = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+  var total = all.length;
+  var totalPort = 0, terpakai = 0, kosong = 0, rusak = 0, normal = 0;
+  var hampirPenuh = 0, penuh = 0;
+  all.forEach(function(o) {
+    var s = typeof modpCalcStats === 'function' ? modpCalcStats(o) : { total: o.jumlahPort || 8, terpakai: 0, kosong: o.jumlahPort || 8, rusak: 0 };
+    totalPort += s.total;
+    terpakai  += s.terpakai;
+    kosong    += s.kosong;
+    rusak     += s.rusak;
+    var st = typeof modpCalcStatus === 'function' ? modpCalcStatus(o) : 'Normal';
+    if (st === 'Normal')       normal++;
+    else if (st === 'Hampir Penuh') hampirPenuh++;
+    else if (st === 'Penuh')   penuh++;
+  });
+  return {
+    total:       total,
+    totalPort:   totalPort,
+    terpakai:    terpakai,
+    kosong:      kosong,
+    rusak:       rusak,
+    normal:      normal,
+    hampirPenuh: hampirPenuh,
+    penuh:       penuh
+  };
+}
+window.getODPStats = getODPStats;
+
 // ═══════════════════════════════
 // HELPERS
 // ═══════════════════════════════
@@ -22857,10 +22876,18 @@ function masterOdpSave() {
   var odcObj = getMasterOdcById(odcId);
   var odcKode = odcObj ? odcObj.kode : '';
 
+  // [SSOT §3] Validasi kapasitas port > 0
+  if (!jp || jp < 1) { toast('Kapasitas port harus lebih dari 0', 'err'); document.getElementById('modp-f-jumlah-port').focus(); return; }
+
   var all = getMasterOdpData();
-  // Cek duplikat kode (kecuali edit sendiri)
+  // [SSOT §3] Cek duplikat kode (kecuali edit sendiri)
   var dup = all.find(function(o){ return o.kode.toLowerCase()===kode.toLowerCase() && o.id!==_modpEditId; });
-  if (dup) { toast('Kode ODP '+kode+' sudah ada', 'err'); return; }
+  if (dup) { toast('Kode ODP "'+kode+'" sudah ada — gunakan kode yang berbeda', 'err'); document.getElementById('modp-f-kode').focus(); return; }
+  // [SSOT §3] Cek duplikat nama (kecuali edit sendiri)
+  if (nama) {
+    var dupNama = all.find(function(o){ return o.nama && o.nama.toLowerCase()===nama.toLowerCase() && o.id!==_modpEditId; });
+    if (dupNama) { toast('Nama ODP "'+nama+'" sudah ada — gunakan nama yang berbeda', 'err'); document.getElementById('modp-f-nama').focus(); return; }
+  }
 
   var ports = {};
   for (var pi = 1; pi <= jp; pi++) {
@@ -22917,9 +22944,23 @@ function _modpSaveAudit(arr) {
   try { localStorage.setItem(MODP_AUDIT_KEY, JSON.stringify(arr.slice(0, 500))); } catch(e) {}
 }
 function _modpLogAudit(kode, action, who, changes) {
+  // [SSOT §16] Simpan ke localStorage sebagai cache lokal
   var trail = _modpGetAudit();
   trail.unshift({ kode: kode, action: action, who: who || currentAcctName || currentRole || 'Sistem', when: new Date().toISOString(), changes: changes || null });
   _modpSaveAudit(trail);
+
+  // [SSOT §16] Kirim ke Supabase audit_log (fungsi global dari modul realtime)
+  try {
+    if (typeof auditLog === 'function') {
+      var actionMap = { 'Tambah ODP': 'INSERT', 'Edit ODP': 'UPDATE', 'Hapus ODP': 'DELETE', 'Arsip ODP': 'ARCHIVE', 'Restore ODP': 'RESTORE' };
+      auditLog({
+        menu: 'Master ODP',
+        action: actionMap[action] || action,
+        target_id: null,
+        data_baru: { kode_odp: kode, aksi: action, who: who || currentAcctName || currentRole || 'Sistem', changes: changes || null }
+      });
+    }
+  } catch(e) {}
 }
 
 // ═══════════════════════════════
@@ -22984,12 +23025,31 @@ function masterOdpConfirmDel(id) {
 
 function masterOdpDoDelete(id) {
   var odp = getMasterOdpById(id);
-  var kode = odp ? odp.kode : '?';
+  if (!odp) { toast('Data ODP tidak ditemukan', 'err'); return; }
+  var kode = odp.kode || '?';
+
+  // [SSOT §5] Cek apakah masih ada Pelanggan yang memakai ODP ini
+  var allP = typeof getMergedPel === 'function' ? getMergedPel() : (typeof db !== 'undefined' ? db.p : []);
+  var pelPakai = (allP || []).filter(function(d) {
+    return (d.odp || '').trim().toLowerCase() === kode.trim().toLowerCase();
+  });
+  if (pelPakai.length > 0) {
+    toast('ODP masih digunakan oleh ' + pelPakai.length + ' Pelanggan — tidak bisa dihapus', 'err');
+    return;
+  }
+
+  // [SSOT §5] Cek port terpakai di ODP ini
+  var s = typeof modpCalcStats === 'function' ? modpCalcStats(odp) : { terpakai: 0 };
+  if (s.terpakai > 0) {
+    toast('ODP masih memiliki ' + s.terpakai + ' port terpakai — tidak bisa dihapus', 'err');
+    return;
+  }
+
   var all = getMasterOdpData().filter(function(o){ return o.id !== id; });
   saveMasterOdpData(all);
   _modpLogAudit(kode, 'Hapus ODP', currentAcctName || currentRole || 'Sistem', null);
   masterOdpRender();
-  toast('ODP dihapus', 'ok');
+  toast('ODP ' + kode + ' berhasil dihapus', 'ok');
 }
 
 // ═══════════════════════════════
@@ -24542,11 +24602,13 @@ function _sbOdpToRow(odp) {
 
 var _origSaveMasterOdpData = window.saveMasterOdpData;
 window.saveMasterOdpData = function(arr) {
+  // [SSOT §14] Supabase adalah sumber utama. localStorage hanya cache.
+  // Cache in-memory selalu diperbarui dulu agar UI responsif.
   _odpCache = arr;
+  // Cache localStorage (offline fallback — BUKAN sumber primer)
   try { localStorage.setItem('master_odp_v1', JSON.stringify(arr)); } catch(e) {}
-  if (typeof _sbDebouncedKvWrite === 'function') {
-    _sbDebouncedKvWrite('master_odp_v1', JSON.stringify(arr));
-  }
+  // Skip KV write — master_odp punya tabel Supabase sendiri (dihandle di _patchMasterOdpFunctions)
+  // _sbDebouncedKvWrite di-skip via _SB_PRIMARY_KV_SKIP
 };
 
 // Patch Master ODP save/delete setelah DOM ready
@@ -24688,8 +24750,16 @@ function _sbStartMasterRealtime() {
         _sbLoadMasterOdc();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: SB_TBL_MASTER_ODP }, function(payload) {
-        // Reload Master ODP dari Supabase
-        _sbLoadMasterOdp();
+        // [SSOT §15] Realtime: invalidate cache dan reload dari Supabase
+        _odpCache = null;
+        try { localStorage.removeItem('master_odp_v1'); } catch(e) {}
+        _sbLoadMasterOdp().then(function() {
+          // [SSOT §15] Update semua modul yang bergantung pada master_odp
+          if (typeof masterOdpRender === 'function') masterOdpRender();
+          if (typeof renderOdpMonitor === 'function') renderOdpMonitor();
+          if (typeof updDash === 'function') updDash();
+          if (typeof updOverview === 'function') updOverview();
+        });
       })
       .subscribe(function(status) {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
