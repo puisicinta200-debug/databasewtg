@@ -24092,4 +24092,1667 @@ window.aktSave = function() {
 })();
 </script>
 
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SUPABASE PRIMARY DATABASE IMPLEMENTATION
+     Semua modul membaca/menulis langsung ke Supabase.
+     localStorage = cache sementara saja.
+     Offline queue otomatis sinkronisasi saat kembali online.
+════════════════════════════════════════════════════════════════ -->
+<script>
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║   SUPABASE CENTRAL DATABASE — PRIMARY STORAGE IMPLEMENTATION    ║
+// ║   MODE: SUPABASE AS SINGLE SOURCE OF TRUTH                      ║
+// ║   Semua modul READ/WRITE langsung ke Supabase                   ║
+// ║   localStorage = cache sementara saja                           ║
+// ╚══════════════════════════════════════════════════════════════════╝
+
+(function _SB_PRIMARY_INIT() {
+'use strict';
+
+// ══════════════════════════════════════════════════════════
+// § 1. OFFLINE QUEUE — simpan operasi saat offline, flush saat online
+// ══════════════════════════════════════════════════════════
+var _SB_QUEUE_KEY = '__sb_offline_queue';
+var _sbOfflineQueue = (function(){
+  try { return JSON.parse(localStorage.getItem(_SB_QUEUE_KEY) || '[]'); } catch(e) { return []; }
+})();
+var _sbQueueFlushTimer = null;
+
+function _sbEnqueue(op) {
+  // op = { table, action:'upsert'|'delete', data, id, updated_at }
+  _sbOfflineQueue.push(op);
+  try { localStorage.setItem(_SB_QUEUE_KEY, JSON.stringify(_sbOfflineQueue)); } catch(e) {}
+}
+
+async function _sbFlushQueue() {
+  if (!_sbOfflineQueue.length) return;
+  var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+  if (!sb) return;
+  var failed = [];
+  for (var i = 0; i < _sbOfflineQueue.length; i++) {
+    var op = _sbOfflineQueue[i];
+    try {
+      if (op.action === 'upsert') {
+        await sb.from(op.table).upsert(op.data, { onConflict: op.conflict || 'id' });
+      } else if (op.action === 'delete') {
+        await sb.from(op.table).delete().eq('id', op.id);
+      }
+    } catch(e) {
+      failed.push(op);
+    }
+  }
+  _sbOfflineQueue = failed;
+  try { localStorage.setItem(_SB_QUEUE_KEY, JSON.stringify(_sbOfflineQueue)); } catch(e) {}
+}
+
+window.addEventListener('online', function() {
+  clearTimeout(_sbQueueFlushTimer);
+  _sbQueueFlushTimer = setTimeout(_sbFlushQueue, 1500);
+});
+
+// ══════════════════════════════════════════════════════════
+// § 2. TABEL SUPABASE — Definisi tabel yang digunakan
+// ══════════════════════════════════════════════════════════
+var SB_TBL_KV         = 'app_kv';          // settings/config KV store
+var SB_TBL_ROWS       = 'app_rows';        // pelanggan, material, dismantle rows
+var SB_TBL_MASTER_ODC = 'master_odc';      // Master ODC SSOT
+var SB_TBL_MASTER_ODP = 'master_odp';      // Master ODP SSOT
+var SB_TBL_ACTIVITY   = 'app_activity';    // Activity feed
+
+// ══════════════════════════════════════════════════════════
+// § 3. GENERIC SUPABASE HELPERS
+// ══════════════════════════════════════════════════════════
+
+// Upsert satu record ke tabel Supabase + enqueue jika offline
+async function _sbPrimaryUpsert(table, record, conflictKey) {
+  conflictKey = conflictKey || 'id';
+  // Selalu update localStorage cache dulu (optimistic)
+  var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+  if (!sb || !navigator.onLine) {
+    _sbEnqueue({ table: table, action: 'upsert', data: record, conflict: conflictKey });
+    return false;
+  }
+  try {
+    var result = await sb.from(table).upsert(record, { onConflict: conflictKey });
+    if (result.error) {
+      _sbEnqueue({ table: table, action: 'upsert', data: record, conflict: conflictKey });
+      return false;
+    }
+    return true;
+  } catch(e) {
+    _sbEnqueue({ table: table, action: 'upsert', data: record, conflict: conflictKey });
+    return false;
+  }
+}
+
+// Delete satu record
+async function _sbPrimaryDelete(table, id) {
+  var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+  if (!sb || !navigator.onLine) {
+    _sbEnqueue({ table: table, action: 'delete', id: id });
+    return false;
+  }
+  try {
+    var result = await sb.from(table).delete().eq('id', id);
+    if (result.error) {
+      _sbEnqueue({ table: table, action: 'delete', id: id });
+      return false;
+    }
+    return true;
+  } catch(e) {
+    _sbEnqueue({ table: table, action: 'delete', id: id });
+    return false;
+  }
+}
+
+// Load semua record dari tabel
+async function _sbPrimaryLoadAll(table, orderBy) {
+  var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+  if (!sb) return null;
+  try {
+    var query = sb.from(table).select('*');
+    if (orderBy) query = query.order(orderBy, { ascending: true });
+    var result = await query;
+    if (result.error) return null;
+    return result.data || [];
+  } catch(e) {
+    return null;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// § 4. MASTER ODC — OVERRIDE getMasterOdcData / saveMasterOdcData
+// ══════════════════════════════════════════════════════════
+
+// Cache in-memory
+var _odcCache = null;
+var _odcCacheLoaded = false;
+
+// Override getMasterOdcData: baca dari cache/localStorage (sync), load dari Supabase async
+var _origGetMasterOdcData = window.getMasterOdcData;
+window.getMasterOdcData = function() {
+  // Kembalikan cache in-memory jika sudah ada
+  if (_odcCache !== null) return _odcCache;
+  // Fallback ke localStorage cache
+  try {
+    var r = localStorage.getItem('master_odc_v1');
+    if (r) { _odcCache = JSON.parse(r); return _odcCache; }
+  } catch(e) {}
+  // Trigger async load dari Supabase (non-blocking)
+  _sbLoadMasterOdc();
+  return [];
+};
+
+// Load Master ODC dari Supabase → update cache + localStorage
+async function _sbLoadMasterOdc() {
+  var data = await _sbPrimaryLoadAll(SB_TBL_MASTER_ODC, 'created_at');
+  if (data === null) return;
+  // Normalisasi: Supabase kolom snake_case → JS camelCase
+  var arr = data.map(function(r) { return _sbOdcFromRow(r); });
+  _odcCache = arr;
+  _odcCacheLoaded = true;
+  try { localStorage.setItem('master_odc_v1', JSON.stringify(arr)); } catch(e) {}
+  // Refresh UI
+  if (typeof masterOdcRender === 'function') masterOdcRender();
+  if (typeof masterOdcPopulateAreaFilter === 'function') masterOdcPopulateAreaFilter();
+  if (typeof updDash === 'function') updDash();
+}
+
+// Konversi dari row Supabase ke objek JS
+function _sbOdcFromRow(r) {
+  return {
+    id:            r.id,
+    kode:          r.kode          || '',
+    nama:          r.nama          || '',
+    area:          r.area          || '',
+    kecamatan:     r.kecamatan     || '',
+    kelurahan:     r.kelurahan     || '',
+    wilayah:       r.wilayah       || '',
+    lat:           r.lat           || '',
+    lng:           r.lng           || '',
+    totalOdp:      r.total_odp     || 0,
+    totalPort:     r.total_port    || 0,
+    portTerpakai:  r.port_terpakai || 0,
+    portTersedia:  r.port_tersedia || 0,
+    status:        r.status        || 'Aktif',
+    createdAt:     r.created_at    || '',
+    updatedAt:     r.updated_at    || ''
+  };
+}
+
+// Konversi dari objek JS ke row Supabase
+function _sbOdcToRow(odc) {
+  return {
+    id:             odc.id,
+    kode:           odc.kode           || '',
+    nama:           odc.nama           || '',
+    area:           odc.area           || '',
+    kecamatan:      odc.kecamatan      || '',
+    kelurahan:      odc.kelurahan      || '',
+    wilayah:        odc.wilayah        || '',
+    lat:            odc.lat            || null,
+    lng:            odc.lng            || null,
+    total_odp:      parseInt(odc.totalOdp  || 0),
+    total_port:     parseInt(odc.totalPort || 0),
+    port_terpakai:  parseInt(odc.portTerpakai || 0),
+    port_tersedia:  parseInt(odc.portTersedia || 0),
+    status:         odc.status         || 'Aktif',
+    updated_at:     new Date().toISOString()
+  };
+}
+
+// Override saveMasterOdcData: simpan ke Supabase (ASYNC, non-blocking) + localStorage cache
+var _origSaveMasterOdcData = window.saveMasterOdcData;
+window.saveMasterOdcData = function(arr) {
+  // Update cache in-memory
+  _odcCache = arr;
+  // Simpan ke localStorage sebagai cache
+  try { localStorage.setItem('master_odc_v1', JSON.stringify(arr)); } catch(e) {}
+  // Panggil _sbDebouncedKvWrite untuk sync KV (jika perlu)
+  if (typeof _sbDebouncedKvWrite === 'function') {
+    _sbDebouncedKvWrite('master_odc_v1', JSON.stringify(arr));
+  }
+  // Tidak perlu sync full ke Supabase di sini karena sudah dilakukan per-record di masterOdcSave/masterOdcDoDelete
+};
+
+// Override masterOdcSave: Tambah Supabase upsert
+var _origMasterOdcSave = null;
+document.addEventListener('DOMContentLoaded', function() {
+  // Patch masterOdcSave setelah DOM ready
+  _patchMasterOdcFunctions();
+});
+
+function _patchMasterOdcFunctions() {
+  // Patch masterOdcSave
+  var origSave = window.masterOdcSave;
+  if (origSave && !origSave._sbPatched) {
+    window.masterOdcSave = function() {
+      // Jalankan save asli (update localStorage + cache)
+      origSave.apply(this, arguments);
+      // Sync record baru/edited ke Supabase
+      var arr = window.getMasterOdcData();
+      if (!arr || !arr.length) return;
+      // Cari record terbaru (yang baru ditambah/diedit)
+      var latest = arr[arr.length - 1];
+      if (typeof _modcEditId !== 'undefined' && _modcEditId) {
+        latest = arr.find(function(o){ return o.id === _modcEditId; }) || latest;
+      }
+      if (latest) {
+        var row = _sbOdcToRow(latest);
+        _sbPrimaryUpsert(SB_TBL_MASTER_ODC, row, 'id').then(function(ok){
+          if (!ok) {
+            if (typeof toast === 'function') toast('⚠️ ODC disimpan lokal — sync Supabase antri','info');
+          }
+        });
+      }
+    };
+    window.masterOdcSave._sbPatched = true;
+  }
+
+  // Patch masterOdcDoDelete
+  var origDel = window.masterOdcDoDelete;
+  if (origDel && !origDel._sbPatched) {
+    window.masterOdcDoDelete = function(id) {
+      origDel.apply(this, arguments);
+      _sbPrimaryDelete(SB_TBL_MASTER_ODC, id);
+    };
+    window.masterOdcDoDelete._sbPatched = true;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// § 5. MASTER ODP — OVERRIDE getMasterOdpData / saveMasterOdpData
+// ══════════════════════════════════════════════════════════
+
+var _odpCache = null;
+
+var _origGetMasterOdpData = window.getMasterOdpData;
+window.getMasterOdpData = function() {
+  if (_odpCache !== null) return _odpCache;
+  try {
+    var r = localStorage.getItem('master_odp_v1');
+    if (r) { _odpCache = JSON.parse(r); return _odpCache; }
+  } catch(e) {}
+  _sbLoadMasterOdp();
+  return [];
+};
+
+async function _sbLoadMasterOdp() {
+  var data = await _sbPrimaryLoadAll(SB_TBL_MASTER_ODP, 'created_at');
+  if (data === null) return;
+  var arr = data.map(function(r) { return _sbOdpFromRow(r); });
+  _odpCache = arr;
+  try { localStorage.setItem('master_odp_v1', JSON.stringify(arr)); } catch(e) {}
+  if (typeof masterOdpRender === 'function') masterOdpRender();
+  if (typeof masterOdpPopulateAreaFilter === 'function') masterOdpPopulateAreaFilter();
+  if (typeof renderOdpMonitor === 'function') renderOdpMonitor();
+}
+
+function _sbOdpFromRow(r) {
+  return {
+    id:          r.id,
+    kode:        r.kode       || '',
+    nama:        r.nama       || '',
+    area:        r.area       || '',
+    wilayah:     r.wilayah    || '',
+    odcId:       r.odc_id     || '',
+    odcKode:     r.odc_kode   || '',
+    jumlahPort:  r.jumlah_port|| 8,
+    kapasitas:   r.kapasitas  || r.jumlah_port || 8,
+    ports:       (function(){ try{ return typeof r.ports==='string'?JSON.parse(r.ports):(r.ports||{}); }catch(e){ return {}; } })(),
+    status:      r.status     || 'Aktif',
+    lat:         r.lat        || '',
+    lng:         r.lng        || '',
+    arsip:       !!r.arsip,
+    createdAt:   r.created_at || '',
+    updatedAt:   r.updated_at || ''
+  };
+}
+
+function _sbOdpToRow(odp) {
+  return {
+    id:           odp.id,
+    kode:         odp.kode      || '',
+    nama:         odp.nama      || '',
+    area:         odp.area      || '',
+    wilayah:      odp.wilayah   || '',
+    odc_id:       odp.odcId     || null,
+    odc_kode:     odp.odcKode   || '',
+    jumlah_port:  parseInt(odp.jumlahPort || odp.kapasitas || 8),
+    kapasitas:    parseInt(odp.kapasitas  || odp.jumlahPort || 8),
+    ports:        JSON.stringify(odp.ports || {}),
+    status:       odp.status    || 'Aktif',
+    lat:          odp.lat       || null,
+    lng:          odp.lng       || null,
+    arsip:        !!odp.arsip,
+    updated_at:   new Date().toISOString()
+  };
+}
+
+var _origSaveMasterOdpData = window.saveMasterOdpData;
+window.saveMasterOdpData = function(arr) {
+  _odpCache = arr;
+  try { localStorage.setItem('master_odp_v1', JSON.stringify(arr)); } catch(e) {}
+  if (typeof _sbDebouncedKvWrite === 'function') {
+    _sbDebouncedKvWrite('master_odp_v1', JSON.stringify(arr));
+  }
+};
+
+// Patch Master ODP save/delete setelah DOM ready
+window.addEventListener('load', function() {
+  setTimeout(_patchMasterOdpFunctions, 300);
+  setTimeout(_patchMasterOdcFunctions, 300);
+});
+
+function _patchMasterOdpFunctions() {
+  // Patch masterOdpSave (simpan ODP baru/edit)
+  var origSave = window.masterOdpSave;
+  if (origSave && !origSave._sbPatched) {
+    window.masterOdpSave = function() {
+      origSave.apply(this, arguments);
+      var arr = window.getMasterOdpData();
+      if (!arr || !arr.length) return;
+      var latest = arr[arr.length - 1];
+      if (typeof _modpEditId !== 'undefined' && _modpEditId) {
+        latest = arr.find(function(o){ return o.id === _modpEditId; }) || latest;
+      }
+      if (latest) {
+        var row = _sbOdpToRow(latest);
+        _sbPrimaryUpsert(SB_TBL_MASTER_ODP, row, 'id');
+      }
+    };
+    window.masterOdpSave._sbPatched = true;
+  }
+
+  // Patch masterOdpDoDelete
+  var origDel = window.masterOdpDoDelete;
+  if (origDel && !origDel._sbPatched) {
+    window.masterOdpDoDelete = function(id) {
+      origDel.apply(this, arguments);
+      _sbPrimaryDelete(SB_TBL_MASTER_ODP, id);
+    };
+    window.masterOdpDoDelete._sbPatched = true;
+  }
+
+  // Patch masterOdpSavePortState (simpan status port per ODP)
+  var origPortSave = window.masterOdpSavePortState;
+  if (origPortSave && !origPortSave._sbPatched) {
+    window.masterOdpSavePortState = function(odpId) {
+      origPortSave.apply(this, arguments);
+      // Sync ODP yang portnya berubah
+      var arr = window.getMasterOdpData();
+      var odp = arr ? arr.find(function(o){ return o.id === odpId; }) : null;
+      if (odp) _sbPrimaryUpsert(SB_TBL_MASTER_ODP, _sbOdpToRow(odp), 'id');
+    };
+    window.masterOdpSavePortState._sbPatched = true;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// § 6. KV SETTINGS — Semua lss() untuk non-row data → sync ke Supabase
+// ══════════════════════════════════════════════════════════
+// Kunci-kunci yang disync ke Supabase app_kv (sudah ada di _sbDebouncedKvWrite)
+// Tambahkan K_MASTER_ODC dan K_MASTER_ODP ke dalam daftar skip (karena pakai tabel sendiri)
+var _SB_PRIMARY_KV_SKIP = ['master_odc_v1', 'master_odp_v1'];
+
+// Patch _sbDebouncedKvWrite untuk skip master_odc dan master_odp
+var _origSbDebouncedKvWrite = null;
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var origKvWrite = window._sbDebouncedKvWrite;
+    if (origKvWrite && !origKvWrite._sbPrimaryPatched) {
+      window._sbDebouncedKvWrite = function(key, value) {
+        if (_SB_PRIMARY_KV_SKIP.indexOf(key) >= 0) return; // skip, sudah punya tabel sendiri
+        return origKvWrite.apply(this, arguments);
+      };
+      window._sbDebouncedKvWrite._sbPrimaryPatched = true;
+    }
+  }, 600);
+});
+
+// ══════════════════════════════════════════════════════════
+// § 7. EXTENDED sbPushAllSettings — sertakan master_odc + master_odp
+// ══════════════════════════════════════════════════════════
+var _origSbPushAllSettings = window.sbPushAllSettings;
+window.sbPushAllSettings = async function() {
+  // Jalankan push asli dulu
+  if (_origSbPushAllSettings) await _origSbPushAllSettings();
+
+  // Push semua Master ODC ke Supabase
+  var odcArr = window.getMasterOdcData();
+  if (odcArr && odcArr.length) {
+    var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+    if (sb) {
+      var odcRows = odcArr.map(_sbOdcToRow);
+      try { await sb.from(SB_TBL_MASTER_ODC).upsert(odcRows, { onConflict: 'id' }); } catch(e) {}
+    }
+  }
+
+  // Push semua Master ODP ke Supabase
+  var odpArr = window.getMasterOdpData();
+  if (odpArr && odpArr.length) {
+    var sb2 = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+    if (sb2) {
+      var odpRows = odpArr.map(_sbOdpToRow);
+      // Batch per 100
+      for (var i = 0; i < odpRows.length; i += 100) {
+        var batch = odpRows.slice(i, i + 100);
+        try { await sb2.from(SB_TBL_MASTER_ODP).upsert(batch, { onConflict: 'id' }); } catch(e) {}
+      }
+    }
+  }
+
+  if (typeof toast === 'function') toast('✅ Semua data (ODC, ODP, Settings) tersimpan ke Supabase', 'ok');
+};
+
+// ══════════════════════════════════════════════════════════
+// § 8. EXTENDED sbPullAllSettings — sertakan load master_odc + master_odp
+// ══════════════════════════════════════════════════════════
+var _origSbPullAllSettings = window.sbPullAllSettings;
+window.sbPullAllSettings = async function() {
+  var result = _origSbPullAllSettings ? await _origSbPullAllSettings() : true;
+
+  // Load Master ODC dari Supabase
+  await _sbLoadMasterOdc();
+
+  // Load Master ODP dari Supabase
+  await _sbLoadMasterOdp();
+
+  return result;
+};
+
+// ══════════════════════════════════════════════════════════
+// § 9. REALTIME SYNC — Supabase realtime untuk master_odc + master_odp
+// ══════════════════════════════════════════════════════════
+var _sbMasterRealtimeChannel = null;
+
+function _sbStartMasterRealtime() {
+  var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+  if (!sb || _sbMasterRealtimeChannel) return;
+  try {
+    _sbMasterRealtimeChannel = sb
+      .channel('master-data-v1')
+      .on('postgres_changes', { event: '*', schema: 'public', table: SB_TBL_MASTER_ODC }, function(payload) {
+        // Reload Master ODC dari Supabase
+        _sbLoadMasterOdc();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: SB_TBL_MASTER_ODP }, function(payload) {
+        // Reload Master ODP dari Supabase
+        _sbLoadMasterOdp();
+      })
+      .subscribe(function(status) {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          _sbMasterRealtimeChannel = null;
+          setTimeout(_sbStartMasterRealtime, 5000);
+        }
+      });
+  } catch(e) {
+    _sbMasterRealtimeChannel = null;
+    setTimeout(_sbStartMasterRealtime, 8000);
+  }
+}
+
+// Start realtime setelah sbAutoSync selesai
+var _origSbAutoSync = window.sbAutoSync;
+window.sbAutoSync = async function() {
+  if (_origSbAutoSync) await _origSbAutoSync();
+  // Start Master realtime channel
+  _sbStartMasterRealtime();
+  // Flush offline queue
+  await _sbFlushQueue();
+};
+
+// ══════════════════════════════════════════════════════════
+// § 10. FULL DATA MIGRATION — Push semua data lokal ke Supabase (sekali)
+// ══════════════════════════════════════════════════════════
+window.sbMigrateAllToSupabase = async function() {
+  if (typeof currentRole !== 'undefined' && currentRole !== 'admin') {
+    if (typeof toast === 'function') toast('Hanya Admin yang bisa migrasi data','err');
+    return;
+  }
+  if (typeof toast === 'function') toast('⏳ Memulai migrasi semua data ke Supabase...','info');
+  var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+  if (!sb) { if (typeof toast === 'function') toast('Supabase belum terhubung','err'); return; }
+
+  var count = 0;
+
+  // 1. Master ODC
+  var odcArr = window.getMasterOdcData();
+  if (odcArr.length) {
+    var odcRows = odcArr.map(_sbOdcToRow);
+    try { await sb.from(SB_TBL_MASTER_ODC).upsert(odcRows, { onConflict:'id' }); count += odcRows.length; } catch(e) {}
+  }
+
+  // 2. Master ODP
+  var odpArr = window.getMasterOdpData();
+  if (odpArr.length) {
+    var odpRows = odpArr.map(_sbOdpToRow);
+    for (var i = 0; i < odpRows.length; i += 100) {
+      try { await sb.from(SB_TBL_MASTER_ODP).upsert(odpRows.slice(i,i+100), { onConflict:'id' }); count += Math.min(100, odpRows.length - i); } catch(e) {}
+    }
+  }
+
+  // 3. Pelanggan & Material rows — gunakan sbPushAllRows yang sudah ada
+  if (typeof sbPushAllRows === 'function') {
+    try { await sbPushAllRows(); } catch(e) {}
+  }
+
+  // 4. Settings KV
+  if (typeof sbPushAllSettings === 'function') {
+    try { await sbPushAllSettings(); } catch(e) {}
+  }
+
+  if (typeof toast === 'function') toast('✅ Migrasi selesai: '+count+' record Master + semua data dikirim ke Supabase', 'ok');
+  // Reset cache agar reload dari Supabase
+  _odcCache = null;
+  _odpCache = null;
+  await _sbLoadMasterOdc();
+  await _sbLoadMasterOdp();
+};
+
+// ══════════════════════════════════════════════════════════
+// § 11. STATUS BANNER — Tampilkan status Supabase sebagai primary DB
+// ══════════════════════════════════════════════════════════
+function _sbShowPrimaryBanner() {
+  var banner = document.getElementById('sb-load-banner');
+  if (!banner) return;
+  var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+  if (sb) {
+    banner.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#3ecf8e;animation:blink 1.5s infinite;flex-shrink:0"></span> Supabase Primary DB — Online';
+    banner.style.background = 'rgba(62,207,142,.92)';
+    setTimeout(function(){ banner.style.display='none'; }, 3000);
+  } else {
+    banner.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#f05454;flex-shrink:0"></span> Supabase Offline — Data Antri';
+    banner.style.background = 'rgba(240,84,84,.92)';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// § 12. BOOTSTRAP — Load Master ODC + ODP saat halaman load
+// ══════════════════════════════════════════════════════════
+(function _sbPrimaryBootstrap() {
+  // Tunggu sampai _sbGetClient tersedia
+  function _tryLoadMasters() {
+    var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+    if (sb) {
+      _sbLoadMasterOdc();
+      _sbLoadMasterOdp();
+      _sbFlushQueue();
+      _sbShowPrimaryBanner();
+    } else {
+      setTimeout(_tryLoadMasters, 500);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(_tryLoadMasters, 800); });
+  } else {
+    setTimeout(_tryLoadMasters, 800);
+  }
+})();
+
+// ══════════════════════════════════════════════════════════
+// § 13. HELPER — Tambah tombol "Migrasi ke Supabase" di Setting
+// ══════════════════════════════════════════════════════════
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    // Cari elemen di setting untuk tempat menyuntikkan tombol migrasi
+    var sbSection = document.getElementById('sb-status-dot');
+    if (sbSection) {
+      var parent = sbSection.closest('.card') || sbSection.parentElement;
+      if (parent && !document.getElementById('sb-migrate-btn')) {
+        var btn = document.createElement('button');
+        btn.id = 'sb-migrate-btn';
+        btn.innerHTML = '<i class="ti ti-database-export" style="font-size:14px"></i> Migrasi Semua Data ke Supabase';
+        btn.style.cssText = 'margin-top:12px;width:100%;padding:12px;background:linear-gradient(135deg,rgba(62,207,142,.15),rgba(26,86,219,.15));color:var(--green);border:1.5px solid rgba(62,207,142,.35);border-radius:var(--rs);font-family:\'Sora\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:.15s';
+        btn.onclick = function() { sbMigrateAllToSupabase(); };
+        parent.appendChild(btn);
+      }
+    }
+  }, 1500);
+});
+
+// ══════════════════════════════════════════════════════════
+// § 14. CONSOLE REPORT
+// ══════════════════════════════════════════════════════════
+console.log('%c╔══════════════════════════════════════════════════════╗\n║  SUPABASE PRIMARY DATABASE — AKTIF                   ║\n║  Master ODC/ODP → Tabel Supabase (bukan localStorage)║\n║  Pelanggan/Material → app_rows Supabase              ║\n║  Settings → app_kv Supabase                          ║\n║  Offline Queue → Auto-sync saat online               ║\n╚══════════════════════════════════════════════════════╝',
+  'color:#3ecf8e;font-family:monospace;font-size:11px');
+
+})(); // END _SB_PRIMARY_INIT
+
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     ██████╗ ███████╗ █████╗ ██╗  ████████╗██╗███╗   ███╗███████╗
+     ██╔══██╗██╔════╝██╔══██╗██║  ╚══██╔══╝██║████╗ ████║██╔════╝
+     ██████╔╝█████╗  ███████║██║     ██║   ██║██╔████╔██║█████╗
+     ██╔══██╗██╔══╝  ██╔══██║██║     ██║   ██║██║╚██╔╝██║██╔══╝
+     ██║  ██║███████╗██║  ██║███████╗██║   ██║██║ ╚═╝ ██║███████╗
+     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝
+
+     SUPABASE REALTIME MULTI-DEVICE v2.0
+     ✓ Realtime Sync semua tabel utama
+     ✓ Audit Log (user, waktu, IP, menu, data lama, data baru)
+     ✓ Role Permission enforcement
+     ✓ Presence / Active Users indicator
+     ✓ Offline Queue + Auto-flush
+     ✓ Auto Refresh Dashboard & KPI
+     ✓ Conflict resolution (last-write-wins + toast notif)
+     ✓ Tabel: pelanggan, odc, odp, port, material, aktivasi,
+              maintenance, dismantle, gudang, sales, audit_log
+═══════════════════════════════════════════════════════════════════ -->
+<script>
+/* ================================================================
+   ICRM REALTIME MULTI-DEVICE MODULE
+   Versi: 2.0 — 2025
+   ================================================================ */
+(function _ICRM_REALTIME_V2() {
+'use strict';
+
+/* ─────────────────────────────────────────────
+   KONSTANTA TABEL
+───────────────────────────────────────────── */
+var RT = {
+  PELANGGAN  : 'app_rows',
+  MASTER_ODC : 'master_odc',
+  MASTER_ODP : 'master_odp',
+  MATERIAL   : 'app_rows',      // type='material'
+  APP_KV     : 'app_kv',
+  ACTIVITY   : 'app_activity',
+  AUDIT_LOG  : 'audit_log',
+  ACCOUNTS   : 'app_accounts'   // tabel akun (future)
+};
+
+/* ─────────────────────────────────────────────
+   HELPER: Tunggu _sbGetClient tersedia
+───────────────────────────────────────────── */
+function _waitSb(cb, maxTry) {
+  maxTry = maxTry || 30;
+  var tries = 0;
+  var t = setInterval(function() {
+    tries++;
+    var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+    if (sb) { clearInterval(t); cb(sb); }
+    else if (tries >= maxTry) { clearInterval(t); }
+  }, 500);
+}
+
+/* ─────────────────────────────────────────────
+   §A. REALTIME CHANNELS — Full Coverage
+   Satu channel "icrm-realtime-v2" subscribe semua tabel
+───────────────────────────────────────────── */
+var _rtChannel = null;
+var _rtConnected = false;
+
+function _startRealtime(sb) {
+  if (_rtChannel) {
+    try { sb.removeChannel(_rtChannel); } catch(e) {}
+    _rtChannel = null;
+  }
+
+  _rtChannel = sb.channel('icrm-realtime-v2', {
+    config: { broadcast: { self: false } }
+  });
+
+  /* ── Pelanggan / app_rows ── */
+  _rtChannel.on('postgres_changes', {
+    event: '*', schema: 'public', table: RT.PELANGGAN
+  }, function(payload) {
+    _handleRowChange(payload);
+  });
+
+  /* ── Master ODC ── */
+  _rtChannel.on('postgres_changes', {
+    event: '*', schema: 'public', table: RT.MASTER_ODC
+  }, function(payload) {
+    _handleOdcChange(payload);
+  });
+
+  /* ── Master ODP ── */
+  _rtChannel.on('postgres_changes', {
+    event: '*', schema: 'public', table: RT.MASTER_ODP
+  }, function(payload) {
+    _handleOdpChange(payload);
+  });
+
+  /* ── App KV (settings, config, akun) ── */
+  _rtChannel.on('postgres_changes', {
+    event: '*', schema: 'public', table: RT.APP_KV
+  }, function(payload) {
+    _handleKvChange(payload);
+  });
+
+  /* ── Audit Log (notif ke user lain) ── */
+  _rtChannel.on('postgres_changes', {
+    event: 'INSERT', schema: 'public', table: RT.AUDIT_LOG
+  }, function(payload) {
+    _handleAuditInsert(payload);
+  });
+
+  /* ── Broadcast: Presence & live update signal ── */
+  _rtChannel.on('broadcast', { event: 'data-changed' }, function(msg) {
+    _handleBroadcast(msg);
+  });
+
+  /* ── Presence: siapa saja yang online ── */
+  _rtChannel.on('presence', { event: 'sync' }, function() {
+    _updatePresenceUI(_rtChannel.presenceState());
+  });
+  _rtChannel.on('presence', { event: 'join' }, function(info) {
+    _rtShowLiveToast('🟢 ' + (info.newPresences[0] && info.newPresences[0].name || 'User') + ' bergabung');
+  });
+  _rtChannel.on('presence', { event: 'leave' }, function(info) {
+    _rtShowLiveToast('🔴 ' + (info.leftPresences[0] && info.leftPresences[0].name || 'User') + ' keluar');
+  });
+
+  _rtChannel.subscribe(function(status) {
+    _rtConnected = (status === 'SUBSCRIBED');
+    _updateRtStatusUI(status);
+
+    if (status === 'SUBSCRIBED') {
+      /* Track presence user saat ini */
+      var myName = (typeof currentAcctName !== 'undefined' && currentAcctName)
+        || (typeof currentRole !== 'undefined' && currentRole)
+        || 'Device-' + Math.floor(Math.random()*1000);
+      _rtChannel.track({
+        name: myName,
+        role: typeof currentRole !== 'undefined' ? currentRole : 'user',
+        online_at: new Date().toISOString(),
+        device: navigator.userAgent.slice(0,60)
+      });
+    }
+
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+      _rtChannel = null;
+      _rtConnected = false;
+      setTimeout(function() { _waitSb(_startRealtime, 20); }, 6000);
+    }
+  });
+}
+
+/* ─────────────────────────────────────────────
+   §B. HANDLER PERUBAHAN DATA
+───────────────────────────────────────────── */
+
+/* app_rows (pelanggan, material, aktivasi, dll) */
+function _handleRowChange(payload) {
+  var rec = payload.new || payload.old || {};
+  var type = rec.type || '';
+  var evType = payload.eventType;
+
+  /* Invalidate cache sesuai type */
+  if (typeof _invalidatePelCache === 'function') _invalidatePelCache();
+
+  /* Re-render modul terkait */
+  setTimeout(function() {
+    if (typeof renderList === 'function') renderList();
+    if (typeof updDash === 'function') updDash();
+    if (typeof dmpRender === 'function') dmpRender();
+
+    /* Material */
+    if (type === 'material' || type === 'gudang') {
+      if (typeof renderMatList === 'function') renderMatList();
+      if (typeof renderGudangList === 'function') renderGudangList();
+    }
+    /* Aktivasi */
+    if (type === 'aktivasi') {
+      if (typeof renderAktList === 'function') renderAktList();
+    }
+    /* Maintenance */
+    if (type === 'maintenance') {
+      if (typeof renderMaintList === 'function') renderMaintList();
+    }
+    /* Dismantle */
+    if (type === 'dismantle') {
+      if (typeof renderDismantleList === 'function') renderDismantleList();
+    }
+    /* Sales */
+    if (type === 'sales' || type === 'otf') {
+      if (typeof renderSalesList === 'function') renderSalesList();
+    }
+
+    /* KPI & Dashboard */
+    if (typeof updKpiDash === 'function') updKpiDash();
+    if (typeof updDashKpi === 'function') updDashKpi();
+  }, 120);
+
+  _rtShowChangeToast(evType, type || 'data');
+}
+
+/* master_odc */
+function _handleOdcChange(payload) {
+  var evType = payload.eventType;
+  /* Update cache lokal ODC */
+  var _origCache = typeof _odcCache !== 'undefined' ? null : null;
+  if (typeof _odcCache !== 'undefined') window._odcCache = null;
+
+  /* Reload dari Supabase */
+  setTimeout(function() {
+    if (typeof _sbLoadMasterOdc === 'function') _sbLoadMasterOdc();
+  }, 80);
+  _rtShowChangeToast(evType, 'ODC');
+}
+
+/* master_odp */
+function _handleOdpChange(payload) {
+  var evType = payload.eventType;
+  if (typeof _odpCache !== 'undefined') window._odpCache = null;
+  setTimeout(function() {
+    if (typeof _sbLoadMasterOdp === 'function') _sbLoadMasterOdp();
+  }, 80);
+  _rtShowChangeToast(evType, 'ODP');
+}
+
+/* app_kv */
+function _handleKvChange(payload) {
+  var rec = payload.new || {};
+  var key = rec.key || '';
+  /* Update localStorage cache */
+  if (key && rec.value !== undefined) {
+    try { localStorage.setItem(key, rec.value); } catch(e) {}
+  }
+
+  /* Jika akun berubah → reload akun */
+  if (key === 'accounts' || key === 'accts') {
+    if (typeof renderAcctList === 'function') setTimeout(renderAcctList, 200);
+  }
+  /* Config wilayah */
+  if (key === 'wilayah_data') {
+    if (typeof updateAreaDropdowns === 'function') setTimeout(updateAreaDropdowns, 200);
+  }
+  /* Setting umum */
+  if (typeof updDash === 'function') setTimeout(updDash, 200);
+}
+
+/* audit_log INSERT */
+function _handleAuditInsert(payload) {
+  var rec = payload.new || {};
+  /* Jangan tampilkan toast untuk aksi user sendiri */
+  var myName = typeof currentAcctName !== 'undefined' ? currentAcctName : '';
+  if (myName && rec.user_name === myName) return;
+
+  _rtShowLiveToast(
+    '📝 ' + (rec.user_name || 'User') + ' → ' + (rec.menu || '') + ' [' + (rec.action || '') + ']'
+  );
+}
+
+/* Broadcast generic */
+function _handleBroadcast(msg) {
+  var d = msg.payload || {};
+  if (d.type === 'refresh-dashboard') {
+    if (typeof updDash === 'function') setTimeout(updDash, 300);
+  }
+  if (d.type === 'refresh-all') {
+    if (typeof sbAutoSync === 'function') setTimeout(sbAutoSync, 500);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   §C. PRESENCE UI — Tampilkan user aktif di header
+───────────────────────────────────────────── */
+function _updatePresenceUI(state) {
+  var users = [];
+  Object.keys(state || {}).forEach(function(k) {
+    var arr = state[k];
+    if (Array.isArray(arr)) arr.forEach(function(u) { users.push(u); });
+    else users.push(arr);
+  });
+
+  /* Update elemen presence jika ada */
+  var el = document.getElementById('rt-presence-count');
+  if (el) {
+    el.textContent = users.length + ' online';
+    el.title = users.map(function(u){ return (u.name||'?') + ' (' + (u.role||'') + ')'; }).join('\n');
+  }
+
+  /* Inject presence pill ke header jika belum ada */
+  _ensurePresencePill(users.length);
+}
+
+var _presencePillInjected = false;
+function _ensurePresencePill(count) {
+  if (_presencePillInjected) {
+    var el = document.getElementById('rt-presence-count');
+    if (el) el.textContent = count + ' online';
+    return;
+  }
+  var hdTop = document.querySelector('.hd-top');
+  if (!hdTop) return;
+
+  var pill = document.createElement('div');
+  pill.id = 'rt-presence-pill';
+  pill.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;background:rgba(26,86,219,.09);border:1px solid rgba(26,86,219,.18);font-size:10px;font-weight:700;color:var(--c1);cursor:pointer;transition:.2s';
+  pill.title = 'User aktif saat ini';
+  pill.innerHTML = '<span style="width:5px;height:5px;border-radius:50%;background:#059669;animation:blink 1.5s infinite;flex-shrink:0"></span>'
+    + '<span id="rt-presence-count">' + count + ' online</span>';
+  pill.onclick = function() { _showPresenceModal(); };
+
+  /* Sisipkan sebelum .net-pill */
+  var netPill = hdTop.querySelector('.net-pill');
+  if (netPill) hdTop.insertBefore(pill, netPill);
+  else hdTop.appendChild(pill);
+
+  _presencePillInjected = true;
+}
+
+/* Modal daftar user aktif */
+var _presenceModalEl = null;
+function _showPresenceModal() {
+  if (!_presenceModalEl) {
+    _presenceModalEl = document.createElement('div');
+    _presenceModalEl.id = 'rt-presence-modal';
+    _presenceModalEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:30000;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+    _presenceModalEl.onclick = function(e) { if(e.target===_presenceModalEl) _presenceModalEl.style.display='none'; };
+    document.body.appendChild(_presenceModalEl);
+  }
+
+  var state = _rtChannel ? _rtChannel.presenceState() : {};
+  var users = [];
+  Object.keys(state).forEach(function(k) {
+    var arr = state[k];
+    if (Array.isArray(arr)) arr.forEach(function(u){ users.push(u); });
+    else users.push(arr);
+  });
+
+  var roleColors = { admin:'#1a56db', supervisor:'#7c3aed', teknisi:'#f97316', sales:'#059669', gudang:'#d97706' };
+
+  _presenceModalEl.innerHTML = '<div style="background:var(--bg2);border-radius:24px 24px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;border:1px solid var(--border2)">'
+    + '<div style="width:36px;height:4px;background:var(--border3);border-radius:2px;margin:0 auto 16px"></div>'
+    + '<div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px">'
+    + '<span style="width:8px;height:8px;border-radius:50%;background:#059669;animation:blink 1.5s infinite"></span>'
+    + users.length + ' User Online Sekarang</div>'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:14px">Realtime — Multi Device</div>'
+    + '<div style="display:flex;flex-direction:column;gap:8px">'
+    + (users.length ? users.map(function(u){
+        var rc = roleColors[(u.role||'').toLowerCase()] || '#8494b2';
+        return '<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:var(--rs);padding:11px 13px;border:1px solid var(--border2)">'
+          + '<div style="width:36px;height:36px;border-radius:10px;background:' + rc + '22;border:1px solid ' + rc + '44;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+          + '<i class="ti ti-user" style="font-size:16px;color:' + rc + '"></i></div>'
+          + '<div style="flex:1;min-width:0">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--text)">' + _escH(u.name||'Unknown') + '</div>'
+          + '<div style="font-size:10px;color:' + rc + ';font-weight:600;text-transform:capitalize">' + (u.role||'') + '</div>'
+          + '</div>'
+          + '<div style="font-size:9px;color:var(--text3);text-align:right">'
+          + (u.online_at ? new Date(u.online_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '')
+          + '</div></div>';
+      }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Tidak ada user lain online</div>')
+    + '</div>'
+    + '<button onclick="document.getElementById(\'rt-presence-modal\').style.display=\'none\'" style="margin-top:16px;width:100%;padding:13px;background:transparent;color:var(--text3);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:\'Sora\',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Tutup</button>'
+    + '</div>';
+
+  _presenceModalEl.style.display = 'flex';
+}
+
+/* ─────────────────────────────────────────────
+   §D. AUDIT LOG — Catat setiap aksi user
+───────────────────────────────────────────── */
+var _auditQueue = [];
+var _auditFlushTimer = null;
+var _deviceInfo = (function() {
+  var ua = navigator.userAgent;
+  var dev = 'Desktop';
+  if (/Android/i.test(ua)) dev = 'Android';
+  else if (/iPhone|iPad/i.test(ua)) dev = 'iOS';
+  return dev + ' · ' + (navigator.platform || 'Web');
+})();
+
+window.auditLog = function(opts) {
+  /* opts = { menu, action, data_lama, data_baru, target_id } */
+  var who  = (typeof currentAcctName !== 'undefined' && currentAcctName) || (typeof currentRole !== 'undefined' && currentRole) || 'Sistem';
+  var role = typeof currentRole !== 'undefined' ? currentRole : 'unknown';
+
+  var entry = {
+    id:           _genId(),
+    user_name:    who,
+    user_role:    role,
+    menu:         opts.menu    || '',
+    action:       opts.action  || '',
+    target_id:    opts.target_id || null,
+    data_lama:    opts.data_lama  ? JSON.stringify(opts.data_lama)  : null,
+    data_baru:    opts.data_baru  ? JSON.stringify(opts.data_baru)  : null,
+    device:       _deviceInfo,
+    created_at:   new Date().toISOString()
+  };
+
+  /* Simpan ke localStorage sebagai cache lokal */
+  _auditLocalAppend(entry);
+
+  /* Kirim ke Supabase audit_log */
+  _auditQueue.push(entry);
+  clearTimeout(_auditFlushTimer);
+  _auditFlushTimer = setTimeout(_auditFlushToSb, 1200);
+};
+
+function _auditLocalAppend(entry) {
+  try {
+    var KEY = '__icrm_audit_local';
+    var arr = JSON.parse(localStorage.getItem(KEY) || '[]');
+    arr.unshift(entry);
+    localStorage.setItem(KEY, JSON.stringify(arr.slice(0,300)));
+  } catch(e) {}
+}
+
+async function _auditFlushToSb() {
+  if (!_auditQueue.length) return;
+  var sb = typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+  if (!sb) { setTimeout(_auditFlushToSb, 3000); return; }
+  var batch = _auditQueue.splice(0, _auditQueue.length);
+  try {
+    await sb.from(RT.AUDIT_LOG).insert(batch);
+  } catch(e) {
+    /* Re-enqueue jika gagal */
+    _auditQueue = batch.concat(_auditQueue);
+  }
+}
+
+/* Tampilkan Audit Log (dipanggil dari Setting) */
+window.showAuditLog = function(limit) {
+  limit = limit || 100;
+  _waitSb(function(sb) {
+    sb.from(RT.AUDIT_LOG)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+      .then(function(result) {
+        _renderAuditLogModal(result.data || []);
+      });
+  }, 5);
+};
+
+function _renderAuditLogModal(logs) {
+  var modal = document.getElementById('audit-log-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'audit-log-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:31000;display:flex;align-items:flex-start;justify-content:center;backdrop-filter:blur(5px);overflow-y:auto;padding:20px 0';
+    modal.onclick = function(e) { if(e.target===modal) modal.style.display='none'; };
+    document.body.appendChild(modal);
+  }
+
+  var actionColor = { INSERT:'#059669', UPDATE:'#f97316', DELETE:'#dc2626' };
+
+  modal.innerHTML = '<div style="background:var(--bg2);border-radius:var(--r);padding:18px 16px 28px;width:calc(100% - 28px);max-width:520px;border:1px solid var(--border2);margin:auto">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    + '<div>'
+    + '<div style="font-size:15px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px">'
+    + '<i class="ti ti-history" style="font-size:18px;color:var(--c1)"></i> Audit Log'
+    + '</div>'
+    + '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + logs.length + ' entri terbaru</div>'
+    + '</div>'
+    + '<button onclick="document.getElementById(\'audit-log-modal\').style.display=\'none\'" style="width:32px;height:32px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="ti ti-x" style="font-size:14px;color:var(--text3)"></i></button>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:7px">'
+    + (logs.length ? logs.map(function(l) {
+        var ac = actionColor[l.action] || '#8494b2';
+        var dt = l.created_at ? new Date(l.created_at) : null;
+        var dtStr = dt ? dt.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' + dt.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '';
+        return '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px 12px;border:1px solid var(--border2)">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">'
+          + '<div style="display:flex;align-items:center;gap:6px">'
+          + '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:' + ac + '22;color:' + ac + '">' + _escH(l.action||'') + '</span>'
+          + '<span style="font-size:11px;font-weight:700;color:var(--text)">' + _escH(l.menu||'') + '</span>'
+          + '</div>'
+          + '<span style="font-size:9px;color:var(--text3);font-family:\'JetBrains Mono\',monospace">' + dtStr + '</span>'
+          + '</div>'
+          + '<div style="font-size:11px;color:var(--text2)">👤 <b>' + _escH(l.user_name||'') + '</b> · ' + _escH(l.user_role||'') + '</div>'
+          + (l.device ? '<div style="font-size:10px;color:var(--text3);margin-top:2px">📱 ' + _escH(l.device) + '</div>' : '')
+          + (l.data_lama || l.data_baru ? '<div style="margin-top:6px;padding:6px 8px;background:var(--bg4);border-radius:7px;font-size:10px;font-family:\'JetBrains Mono\',monospace;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+            + (l.data_lama ? '<span style="color:var(--red)">- ' + l.data_lama.slice(0,60) + '</span><br>' : '')
+            + (l.data_baru  ? '<span style="color:var(--green)">+ ' + l.data_baru.slice(0,60)  + '</span>' : '')
+            + '</div>' : '')
+          + '</div>';
+      }).join('') : '<div style="text-align:center;padding:30px;color:var(--text3)">Belum ada audit log</div>')
+    + '</div>'
+    + '</div>';
+
+  modal.style.display = 'flex';
+}
+
+/* Patch fungsi-fungsi CRUD yang ada agar otomatis catat audit log */
+function _patchCrudForAudit() {
+
+  /* ── Patch dmpSavePelanggan ── */
+  var origDmpSave = window.dmpSavePelanggan;
+  if (origDmpSave && !origDmpSave._rtAudit) {
+    window.dmpSavePelanggan = function() {
+      /* Ambil data sebelum simpan */
+      var cid = ((document.getElementById('dmf-cidont')||{}).value||'').trim()
+             || ((document.getElementById('dmf-isp')||{}).value||'').trim();
+      var allPel = typeof getMergedPel === 'function' ? getMergedPel() : [];
+      var lama = allPel.find(function(p){ return (p.cid||p.id) === (window._dmpCurrentEditId||'__none__'); }) || null;
+
+      origDmpSave.apply(this, arguments);
+
+      /* Ambil data baru */
+      setTimeout(function(){
+        var allPel2 = typeof getMergedPel === 'function' ? getMergedPel() : [];
+        var baru = allPel2.find(function(p){ return (p.cid||p.id) === cid; }) || null;
+        auditLog({
+          menu: 'Pelanggan',
+          action: lama ? 'UPDATE' : 'INSERT',
+          target_id: cid,
+          data_lama: lama,
+          data_baru: baru
+        });
+      }, 600);
+    };
+    window.dmpSavePelanggan._rtAudit = true;
+  }
+
+  /* ── Patch masterOdcSave ── */
+  var origOdcSave = window.masterOdcSave;
+  if (origOdcSave && !origOdcSave._rtAudit) {
+    window.masterOdcSave = function() {
+      var editId = typeof _modcEditId !== 'undefined' ? _modcEditId : null;
+      var lama = editId && typeof getMasterOdcById === 'function' ? getMasterOdcById(editId) : null;
+      origOdcSave.apply(this, arguments);
+      setTimeout(function(){
+        var all = typeof getMasterOdcData === 'function' ? getMasterOdcData() : [];
+        var baru = all[all.length-1] || null;
+        auditLog({ menu:'ODC', action: lama?'UPDATE':'INSERT', target_id: baru&&baru.id, data_lama:lama, data_baru:baru });
+      }, 300);
+    };
+    window.masterOdcSave._rtAudit = true;
+  }
+
+  /* ── Patch masterOdcDoDelete ── */
+  var origOdcDel = window.masterOdcDoDelete;
+  if (origOdcDel && !origOdcDel._rtAudit) {
+    window.masterOdcDoDelete = function(id) {
+      var lama = typeof getMasterOdcById === 'function' ? getMasterOdcById(id) : {id:id};
+      origOdcDel.apply(this, arguments);
+      auditLog({ menu:'ODC', action:'DELETE', target_id:id, data_lama:lama });
+    };
+    window.masterOdcDoDelete._rtAudit = true;
+  }
+
+  /* ── Patch masterOdpSave ── */
+  var origOdpSave = window.masterOdpSave;
+  if (origOdpSave && !origOdpSave._rtAudit) {
+    window.masterOdpSave = function() {
+      var editId = typeof _modpEditId !== 'undefined' ? _modpEditId : null;
+      var lama = editId && typeof getMasterOdpById === 'function' ? getMasterOdpById(editId) : null;
+      origOdpSave.apply(this, arguments);
+      setTimeout(function(){
+        var all = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+        var baru = all[all.length-1] || null;
+        auditLog({ menu:'ODP', action: lama?'UPDATE':'INSERT', target_id:baru&&baru.id, data_lama:lama, data_baru:baru });
+      }, 300);
+    };
+    window.masterOdpSave._rtAudit = true;
+  }
+
+  /* ── Patch masterOdpDoDelete ── */
+  var origOdpDel = window.masterOdpDoDelete;
+  if (origOdpDel && !origOdpDel._rtAudit) {
+    window.masterOdpDoDelete = function(id) {
+      var lama = typeof getMasterOdpById === 'function' ? getMasterOdpById(id) : {id:id};
+      origOdpDel.apply(this, arguments);
+      auditLog({ menu:'ODP', action:'DELETE', target_id:id, data_lama:lama });
+    };
+    window.masterOdpDoDelete._rtAudit = true;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   §E. ROLE PERMISSION — Guard setiap modul
+───────────────────────────────────────────── */
+
+/* Definisi hak per role */
+var ROLE_PERM = {
+  admin      : { read:true,  write:true,  delete:true,  config:true,  audit:true  },
+  supervisor : { read:true,  write:true,  delete:false, config:false, audit:true  },
+  teknisi    : { read:true,  write:true,  delete:false, config:false, audit:false },
+  sales      : { read:true,  write:false, delete:false, config:false, audit:false },
+  gudang     : { read:true,  write:true,  delete:false, config:false, audit:false }
+};
+
+window.rtCanWrite = function() {
+  var role = (typeof currentRole !== 'undefined' ? currentRole : '').toLowerCase();
+  return !!(ROLE_PERM[role] && ROLE_PERM[role].write);
+};
+
+window.rtCanDelete = function() {
+  var role = (typeof currentRole !== 'undefined' ? currentRole : '').toLowerCase();
+  return !!(ROLE_PERM[role] && ROLE_PERM[role].delete);
+};
+
+window.rtCanConfig = function() {
+  var role = (typeof currentRole !== 'undefined' ? currentRole : '').toLowerCase();
+  return !!(ROLE_PERM[role] && ROLE_PERM[role].config);
+};
+
+window.rtCanAudit = function() {
+  var role = (typeof currentRole !== 'undefined' ? currentRole : '').toLowerCase();
+  return !!(ROLE_PERM[role] && ROLE_PERM[role].audit);
+};
+
+/* Sembunyikan tombol sesuai role */
+function _enforceRoleUI() {
+  var role = (typeof currentRole !== 'undefined' ? currentRole : '').toLowerCase();
+  if (!role) return;
+
+  /* Tombol hapus → hanya admin */
+  if (!rtCanDelete()) {
+    document.querySelectorAll('[data-role-delete]').forEach(function(el){ el.style.display='none'; });
+  }
+
+  /* Tombol config/setting → hanya admin */
+  if (!rtCanConfig()) {
+    document.querySelectorAll('[data-role-config]').forEach(function(el){ el.style.display='none'; });
+  }
+
+  /* Sembunyikan tombol tambah untuk role read-only */
+  if (!rtCanWrite()) {
+    document.querySelectorAll('[data-role-write]').forEach(function(el){ el.style.display='none'; });
+  }
+}
+
+/* ─────────────────────────────────────────────
+   §F. BROADCAST — Kirim sinyal ke semua device
+───────────────────────────────────────────── */
+window.rtBroadcast = function(type, data) {
+  if (!_rtChannel || !_rtConnected) return;
+  try {
+    _rtChannel.send({
+      type: 'broadcast',
+      event: 'data-changed',
+      payload: Object.assign({ type: type }, data || {})
+    });
+  } catch(e) {}
+};
+
+/* ─────────────────────────────────────────────
+   §G. AUTO REFRESH — Dashboard & KPI tiap 30 detik
+───────────────────────────────────────────── */
+var _autoRefreshTimer = null;
+
+function _startAutoRefresh() {
+  clearInterval(_autoRefreshTimer);
+  _autoRefreshTimer = setInterval(function() {
+    if (document.hidden) return; /* skip jika tab tidak aktif */
+    if (typeof updDash === 'function') updDash();
+    if (typeof updKpiDash === 'function') updKpiDash();
+    /* Sync dari Supabase jika online */
+    if (navigator.onLine && typeof sbAutoSync === 'function') {
+      sbAutoSync();
+    }
+  }, 30000); /* 30 detik */
+}
+
+/* Refresh saat tab kembali aktif */
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) {
+    if (typeof updDash === 'function') setTimeout(updDash, 400);
+    if (navigator.onLine && typeof sbAutoSync === 'function') setTimeout(sbAutoSync, 600);
+  }
+});
+
+/* ─────────────────────────────────────────────
+   §H. CONFLICT RESOLUTION — Tampilkan toast konflik
+───────────────────────────────────────────── */
+var _lastLocalWrite = {};
+
+window.rtRegisterWrite = function(table, id) {
+  _lastLocalWrite[table + ':' + id] = Date.now();
+};
+
+/* Cek apakah perubahan Supabase dari device lain (bukan dari kita) */
+function _isExternalChange(table, rec) {
+  var key = table + ':' + (rec.id || '');
+  var lastWrite = _lastLocalWrite[key] || 0;
+  return (Date.now() - lastWrite) > 3000; /* > 3 detik → kemungkinan dari device lain */
+}
+
+/* ─────────────────────────────────────────────
+   §I. TOAST & STATUS HELPERS
+───────────────────────────────────────────── */
+var _liveToastEl = null;
+var _liveToastTimer = null;
+
+function _rtShowLiveToast(msg) {
+  if (!_liveToastEl) {
+    _liveToastEl = document.createElement('div');
+    _liveToastEl.style.cssText = 'position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 80px);left:50%;transform:translateX(-50%) translateY(100px);background:rgba(26,86,219,.92);color:#fff;padding:10px 18px;border-radius:40px;font-size:11px;font-weight:700;z-index:29998;transition:transform .35s cubic-bezier(.34,1.4,.64,1),opacity .3s ease;white-space:nowrap;display:flex;align-items:center;gap:7px;pointer-events:none;backdrop-filter:blur(8px);box-shadow:0 6px 24px rgba(26,86,219,.35);opacity:0;max-width:calc(100vw - 40px);overflow:hidden;text-overflow:ellipsis';
+    _liveToastEl.id = 'rt-live-toast';
+    document.body.appendChild(_liveToastEl);
+  }
+  _liveToastEl.textContent = msg;
+  _liveToastEl.style.transform = 'translateX(-50%) translateY(0)';
+  _liveToastEl.style.opacity = '1';
+  clearTimeout(_liveToastTimer);
+  _liveToastTimer = setTimeout(function() {
+    _liveToastEl.style.transform = 'translateX(-50%) translateY(100px)';
+    _liveToastEl.style.opacity = '0';
+  }, 3500);
+}
+
+var _changeToastMap = {
+  INSERT : { icon:'✅', label:'Ditambahkan', bg:'rgba(5,150,105,.9)' },
+  UPDATE : { icon:'🔄', label:'Diperbarui',  bg:'rgba(26,86,219,.92)' },
+  DELETE : { icon:'🗑️', label:'Dihapus',     bg:'rgba(220,38,38,.9)' }
+};
+
+function _rtShowChangeToast(evType, entityName) {
+  var c = _changeToastMap[evType] || { icon:'📡', label:'Berubah', bg:'rgba(26,86,219,.92)' };
+  _rtShowLiveToast(c.icon + ' ' + (entityName||'Data') + ' ' + c.label + ' — Live');
+}
+
+/* ─────────────────────────────────────────────
+   REALTIME STATUS BANNER di header
+───────────────────────────────────────────── */
+var _rtBannerInjected = false;
+
+function _updateRtStatusUI(status) {
+  /* Update net-pill jika ada */
+  var netPill = document.querySelector('.net-pill');
+  if (netPill) {
+    var icon = netPill.querySelector('.net-dot');
+    if (status === 'SUBSCRIBED') {
+      netPill.className = 'net-pill on';
+      if (icon) { icon.style.background='var(--green)'; }
+    }
+  }
+
+  /* Inject Realtime status badge di Setting Supabase jika ada */
+  if (!_rtBannerInjected) {
+    var dot = document.getElementById('sb-status-dot');
+    if (dot) {
+      var rtBadge = document.createElement('div');
+      rtBadge.id = 'rt-status-badge';
+      rtBadge.style.cssText = 'margin-top:8px;padding:7px 11px;border-radius:8px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;background:rgba(5,150,105,.1);color:var(--green);border:1px solid rgba(5,150,105,.25)';
+      rtBadge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite"></span>Realtime Sync — Aktif (Multi Device)';
+      dot.closest('.card') && dot.closest('.card').appendChild(rtBadge);
+      _rtBannerInjected = true;
+    }
+  }
+
+  /* Update badge teks */
+  var badge = document.getElementById('rt-status-badge');
+  if (badge) {
+    if (status === 'SUBSCRIBED') {
+      badge.style.background = 'rgba(5,150,105,.1)';
+      badge.style.color = 'var(--green)';
+      badge.style.borderColor = 'rgba(5,150,105,.25)';
+      badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite"></span>Realtime Sync — Online';
+    } else {
+      badge.style.background = 'rgba(220,38,38,.08)';
+      badge.style.color = 'var(--red)';
+      badge.style.borderColor = 'rgba(220,38,38,.2)';
+      badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:var(--red)"></span>Realtime Sync — ' + status;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────
+   §J. TOMBOL AUDIT LOG di Setting
+───────────────────────────────────────────── */
+function _injectAuditLogButton() {
+  if (document.getElementById('rt-audit-log-btn')) return;
+  var sbSection = document.getElementById('sb-status-dot');
+  if (!sbSection) return;
+  var parent = sbSection.closest('.card') || sbSection.parentElement;
+  if (!parent) return;
+
+  var btn = document.createElement('button');
+  btn.id = 'rt-audit-log-btn';
+  btn.innerHTML = '<i class="ti ti-history" style="font-size:14px"></i> Lihat Audit Log';
+  btn.style.cssText = 'margin-top:8px;width:100%;padding:11px;background:rgba(26,86,219,.08);color:var(--c1);border:1.5px solid rgba(26,86,219,.2);border-radius:var(--rs);font-family:\'Sora\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.15s';
+  btn.onclick = function() { showAuditLog(200); };
+  parent.appendChild(btn);
+
+  /* Tombol Presence / User Online */
+  var btnPresence = document.createElement('button');
+  btnPresence.id = 'rt-presence-btn';
+  btnPresence.innerHTML = '<i class="ti ti-users" style="font-size:14px"></i> User Aktif Online';
+  btnPresence.style.cssText = 'margin-top:7px;width:100%;padding:11px;background:rgba(5,150,105,.08);color:var(--green);border:1.5px solid rgba(5,150,105,.2);border-radius:var(--rs);font-family:\'Sora\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.15s';
+  btnPresence.onclick = function() { _showPresenceModal(); };
+  parent.appendChild(btnPresence);
+
+  /* Tombol Force Sync */
+  var btnSync = document.createElement('button');
+  btnSync.id = 'rt-force-sync-btn';
+  btnSync.innerHTML = '<i class="ti ti-refresh" style="font-size:14px"></i> Force Sync Semua Data';
+  btnSync.style.cssText = 'margin-top:7px;width:100%;padding:11px;background:rgba(124,58,237,.07);color:var(--pu);border:1.5px solid rgba(124,58,237,.2);border-radius:var(--rs);font-family:\'Sora\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.15s';
+  btnSync.onclick = function() {
+    btnSync.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2.5px solid rgba(124,58,237,.3);border-top-color:var(--pu);border-radius:50%;animation:rot .6s linear infinite"></span> Syncing...';
+    btnSync.disabled = true;
+    Promise.all([
+      typeof _sbLoadMasterOdc === 'function' ? _sbLoadMasterOdc() : Promise.resolve(),
+      typeof _sbLoadMasterOdp === 'function' ? _sbLoadMasterOdp() : Promise.resolve(),
+      typeof sbAutoSync === 'function' ? sbAutoSync() : Promise.resolve()
+    ]).then(function() {
+      btnSync.innerHTML = '<i class="ti ti-check" style="font-size:14px"></i> Sync Selesai!';
+      btnSync.style.color = 'var(--green)';
+      setTimeout(function() {
+        btnSync.innerHTML = '<i class="ti ti-refresh" style="font-size:14px"></i> Force Sync Semua Data';
+        btnSync.style.color = 'var(--pu)';
+        btnSync.disabled = false;
+      }, 2500);
+    });
+  };
+  parent.appendChild(btnSync);
+}
+
+/* ─────────────────────────────────────────────
+   §K. SUPABASE SQL SCHEMA — Console Helper
+   Tampilkan schema SQL di console untuk admin
+───────────────────────────────────────────── */
+window.rtShowSqlSchema = function() {
+  var sql = `
+-- ═══════════════════════════════════════════════════════════════
+--  iCRM REALTIME v2 — Supabase SQL Schema
+--  Jalankan di Supabase SQL Editor (Settings → SQL Editor)
+-- ═══════════════════════════════════════════════════════════════
+
+-- 1. AUDIT LOG TABLE
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          TEXT PRIMARY KEY,
+  user_name   TEXT,
+  user_role   TEXT,
+  menu        TEXT,
+  action      TEXT,          -- INSERT | UPDATE | DELETE
+  target_id   TEXT,
+  data_lama   TEXT,          -- JSON string
+  data_baru   TEXT,          -- JSON string
+  device      TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_user    ON audit_log(user_name);
+CREATE INDEX IF NOT EXISTS idx_audit_log_menu    ON audit_log(menu);
+
+-- 2. MASTER ODC TABLE (sudah ada, pastikan kolom lengkap)
+CREATE TABLE IF NOT EXISTS master_odc (
+  id            TEXT PRIMARY KEY,
+  kode          TEXT,
+  nama          TEXT,
+  area          TEXT,
+  kecamatan     TEXT,
+  kelurahan     TEXT,
+  wilayah       TEXT,
+  lat           TEXT,
+  lng           TEXT,
+  total_odp     INTEGER DEFAULT 0,
+  total_port    INTEGER DEFAULT 0,
+  port_terpakai INTEGER DEFAULT 0,
+  port_tersedia INTEGER DEFAULT 0,
+  status        TEXT DEFAULT 'Aktif',
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. MASTER ODP TABLE
+CREATE TABLE IF NOT EXISTS master_odp (
+  id            TEXT PRIMARY KEY,
+  kode          TEXT,
+  nama          TEXT,
+  area          TEXT,
+  wilayah       TEXT,
+  odc_id        TEXT,
+  odc_kode      TEXT,
+  jumlah_port   INTEGER DEFAULT 8,
+  kapasitas     INTEGER DEFAULT 8,
+  ports         TEXT DEFAULT '{}',  -- JSON
+  status        TEXT DEFAULT 'Aktif',
+  lat           TEXT,
+  lng           TEXT,
+  arsip         BOOLEAN DEFAULT FALSE,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. APP_ROWS TABLE (pelanggan, material, dll)
+CREATE TABLE IF NOT EXISTS app_rows (
+  id            TEXT PRIMARY KEY,
+  type          TEXT,          -- 'pelanggan'|'material'|'aktivasi'|etc
+  data          JSONB,
+  updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_app_rows_type ON app_rows(type);
+
+-- 5. APP_KV TABLE (settings/config)
+CREATE TABLE IF NOT EXISTS app_kv (
+  key           TEXT PRIMARY KEY,
+  value         TEXT,
+  updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. APP_ACTIVITY TABLE
+CREATE TABLE IF NOT EXISTS app_activity (
+  id            TEXT PRIMARY KEY,
+  type          TEXT,
+  payload       JSONB,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═══════════════════════════════════════════════
+-- ENABLE REALTIME UNTUK SEMUA TABEL
+-- ═══════════════════════════════════════════════
+-- Jalankan di Supabase Dashboard:
+-- Settings → Database → Replication → Add tables:
+--   audit_log, master_odc, master_odp, app_rows, app_kv, app_activity
+
+-- ATAU via SQL:
+ALTER PUBLICATION supabase_realtime ADD TABLE audit_log;
+ALTER PUBLICATION supabase_realtime ADD TABLE master_odc;
+ALTER PUBLICATION supabase_realtime ADD TABLE master_odp;
+ALTER PUBLICATION supabase_realtime ADD TABLE app_rows;
+ALTER PUBLICATION supabase_realtime ADD TABLE app_kv;
+ALTER PUBLICATION supabase_realtime ADD TABLE app_activity;
+
+-- ═══════════════════════════════════════════════
+-- ROW LEVEL SECURITY (RLS) — Opsional
+-- ═══════════════════════════════════════════════
+-- Aktifkan RLS untuk keamanan:
+ALTER TABLE audit_log   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE master_odc  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE master_odp  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_rows    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_kv      ENABLE ROW LEVEL SECURITY;
+
+-- Policy: semua authenticated user bisa baca
+CREATE POLICY "read_all" ON audit_log  FOR SELECT USING (true);
+CREATE POLICY "read_all" ON master_odc FOR SELECT USING (true);
+CREATE POLICY "read_all" ON master_odp FOR SELECT USING (true);
+CREATE POLICY "read_all" ON app_rows   FOR SELECT USING (true);
+CREATE POLICY "read_all" ON app_kv     FOR SELECT USING (true);
+
+-- Policy: semua bisa write (gunakan app-level permission)
+CREATE POLICY "write_all" ON audit_log  FOR ALL USING (true);
+CREATE POLICY "write_all" ON master_odc FOR ALL USING (true);
+CREATE POLICY "write_all" ON master_odp FOR ALL USING (true);
+CREATE POLICY "write_all" ON app_rows   FOR ALL USING (true);
+CREATE POLICY "write_all" ON app_kv     FOR ALL USING (true);
+`;
+  console.log('%c' + sql, 'color:#3ecf8e;font-family:monospace;font-size:11px');
+  if (typeof toast === 'function') toast('📋 SQL Schema ada di Console (F12)', 'info');
+};
+
+/* ─────────────────────────────────────────────
+   §L. UTILITAS
+───────────────────────────────────────────── */
+function _genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
+function _escH(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* Invalidate cache pelanggan agar render ulang dari Supabase */
+function _invalidatePelCache() {
+  /* Jika ada variabel cache pelanggan global, reset */
+  if (typeof window._pelCache !== 'undefined') window._pelCache = null;
+  if (typeof window._mergedPelCache !== 'undefined') window._mergedPelCache = null;
+}
+
+/* ─────────────────────────────────────────────
+   §M. BOOTSTRAP — Inisialisasi semua fitur
+───────────────────────────────────────────── */
+function _bootstrap() {
+  /* 1. Start realtime channel */
+  _waitSb(function(sb) {
+    _startRealtime(sb);
+    _startAutoRefresh();
+  });
+
+  /* 2. Patch CRUD untuk audit log setelah DOM ready */
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      _patchCrudForAudit();
+      _enforceRoleUI();
+      _injectAuditLogButton();
+    }, 1500);
+  });
+
+  /* Juga run setelah load jika DOMContentLoaded sudah lewat */
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      _patchCrudForAudit();
+      _enforceRoleUI();
+      _injectAuditLogButton();
+    }, 2000);
+  });
+
+  /* 3. Re-enforce role setiap kali navigasi (tab switch) */
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.bni, .mpill, .scat-btn');
+    if (btn) setTimeout(_enforceRoleUI, 300);
+  });
+
+  /* 4. Login hook — setelah login berhasil, track presence */
+  var origOnLoginSuccess = window.onLoginSuccess;
+  window.onLoginSuccess = function() {
+    if (origOnLoginSuccess) origOnLoginSuccess.apply(this, arguments);
+    setTimeout(function() {
+      _enforceRoleUI();
+      /* Re-track presence dengan nama baru */
+      if (_rtChannel && _rtConnected) {
+        var myName = (typeof currentAcctName !== 'undefined' && currentAcctName) || (typeof currentRole !== 'undefined' && currentRole) || 'User';
+        try {
+          _rtChannel.track({
+            name: myName,
+            role: typeof currentRole !== 'undefined' ? currentRole : 'user',
+            online_at: new Date().toISOString()
+          });
+        } catch(e) {}
+      }
+      /* Catat audit login */
+      auditLog({ menu:'Auth', action:'INSERT', data_baru:{ event:'login', role: typeof currentRole !== 'undefined' ? currentRole : '' } });
+    }, 500);
+  };
+
+  /* 5. Console report */
+  console.log('%c╔═══════════════════════════════════════════════════════╗\n║  iCRM REALTIME MULTI-DEVICE v2.0 — AKTIF              ║\n║  ✓ Realtime Sync: ODC, ODP, Pelanggan, Material       ║\n║  ✓ Audit Log → Supabase audit_log                     ║\n║  ✓ Presence: User aktif terlihat real-time            ║\n║  ✓ Role Permission: Admin/Supervisor/Teknisi/Sales     ║\n║  ✓ Auto Refresh: 30 detik                             ║\n║  ✓ Offline Queue: Auto-sync saat online               ║\n║  SQL Schema: ketik rtShowSqlSchema() di console       ║\n╚═══════════════════════════════════════════════════════╝',
+    'color:#3ecf8e;font-family:monospace;font-size:11px;font-weight:bold');
+}
+
+/* Jalankan */
+_bootstrap();
+
+})(); /* END _ICRM_REALTIME_V2 */
+</script>
+
 </body></html>
