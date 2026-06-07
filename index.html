@@ -1836,7 +1836,7 @@ p, span, div, label, td, th, li {
 
 
 <!-- LOGIN WALL -->
-<div id="login-wall" style="display: none;">
+<div id="login-wall" style="display: flex;">
 
   <!-- Background subtle radial glow -->
   <div style="position:fixed;inset:0;pointer-events:none;z-index:0;
@@ -2490,7 +2490,7 @@ p, span, div, label, td, th, li {
 </div>
 
 <!-- MAIN APP -->
-<div class="shell" id="app-shell" style="display: flex;">
+<div class="shell" id="app-shell" style="display: none;">
 
   <!-- SIDEBAR KIRI — Starlite Style -->
   <div class="sidebar" id="sidebar">
@@ -7641,6 +7641,8 @@ var _sbRealtimeChannel = null;
 var _sbRealtimeRetryTimer = null;
 
 function sbStartRealtime() {
+  /* BLOCK: jangan start realtime sebelum login */
+  if (!_isLoggedIn) return;
   var sb = _sbGetClient();
   if (!sb) return;
   if (_sbRealtimeChannel) return;
@@ -8155,13 +8157,18 @@ function init(){
   // Jika tidak ada koneksi, fallback ke localStorage/IDB cache.
   var sb = _sbGetClient();
   if (sb && isOn()) {
-    // Tampilkan loading indicator
-    var _lwall = document.getElementById('login-wall');
+    // Hanya tampilkan loading banner jika sudah melewati halaman login
+    var _loginWallVisible = (function(){
+      var lw = document.getElementById('login-wall');
+      return lw && lw.style.display !== 'none';
+    })();
+    if (!_loginWallVisible) {
     var _loadMsg = document.createElement('div');
     _loadMsg.id = 'sb-load-banner';
     _loadMsg.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(26,86,219,.9);color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;z-index:99999;display:flex;align-items:center;gap:8px';
     _loadMsg.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite"></span> Memuat data dari Database...';
     document.body.appendChild(_loadMsg);
+    }
     Promise.all([sbPullAllSettings(), sbLoadRows()])
       .then(function(results){
         var ok = results[0] || results[1];
@@ -19242,23 +19249,68 @@ function goDataMode(mode, el) {
   closeSidebar();
 }
 
-/* Auto-open input group on init */
+/* ═══════════════════════════════════════════════════════
+   STARTUP GATE — Login wajib tampil pertama
+   Flow resmi: Buka App → Login → Dashboard
+   Tidak ada form/route lama yang auto-load sebelum login.
+═══════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function(){
-  // Dashboard is now a direct link - just highlight header
+
+  /* 1. ENFORCE LOGIN FIRST */
+  var lw = document.getElementById('login-wall');
+  var sh = document.getElementById('app-shell');
+  if (lw) lw.style.display = 'flex';
+  if (sh) sh.style.display = 'none';
+
+  /* 2. CLEANUP legacy form/route lama */
+  var legacyIds = [
+    'customerLegacy','inputDataLegacy','oldCustomerForm',
+    'oldActivationForm','wizardPelangganLama','customerBootstrapOld',
+    'customerFormLegacy','customerWizardLegacy','autoOpenCustomer',
+    'autoOpenForm','form-pel-lama','pel-lama-wrap','activation-lama'
+  ];
+  legacyIds.forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.style.visibility = 'hidden'; }
+  });
+
+  /* Nonaktifkan fungsi legacy jika masih terdefinisi */
+  var legacyFns = [
+    'customerLegacy','inputDataLegacy','openOldCustomerForm',
+    'autoOpenCustomer','openCustomerWizardLegacy','customerBootstrapOld',
+    'wizardPelangganLama','openFormPelangganLama'
+  ];
+  legacyFns.forEach(function(fn){
+    if (typeof window[fn] === 'function') {
+      window[fn] = function(){
+        console.warn('[iCRM] Legacy function +fn+ diblokir. Gunakan Master Data > Pelanggan.');
+      };
+    }
+  });
+
+  /* 3. Sidebar highlight Dashboard */
   var dashHd = document.getElementById('sb-d');
   if(dashHd){ dashHd.classList.add('on'); }
-  // Also keep input group open
+
+  /* 4. Input-group sidebar (aktif setelah login) */
   var body = document.getElementById('input-group');
   var hd = document.getElementById('sb-f');
   if(body){ body.classList.add('open'); }
   if(hd){ hd.classList.add('open'); }
-  // Refresh dashboard data from localStorage on load
-  if(typeof updDash === 'function') setTimeout(updDash, 300);
-  // Setup form step guard (bubble peringatan urutan isian)
+
+  /* 5. Form guards */
   setTimeout(function(){
     if(typeof _setupFormStepGuard === 'function') _setupFormStepGuard();
     if(typeof _evalFormSteps === 'function') _evalFormSteps();
   }, 400);
+
+  /* 6. Focus username input */
+  setTimeout(function(){
+    var uInput = document.getElementById('lf-user');
+    if (uInput) uInput.focus();
+  }, 200);
+
+  console.log('%c[iCRM STARTUP] Login screen aktif. Tidak ada form lama yang dimuat.', 'color:#1a56db;font-weight:bold');
 });
 
 /* ── SUPABASE CONFIG UI FUNCTIONS ── */
@@ -24785,7 +24837,16 @@ function _waitSb(cb, maxTry) {
 var _rtChannel = null;
 var _rtConnected = false;
 
+/* ── LOGIN GUARD ──────────────────────────────────────
+   Realtime, Presence, dan semua notifikasi HANYA aktif
+   setelah user berhasil login. Flag ini di-set true oleh
+   _activatePostLogin() yang dipanggil dari onLoginSuccess.
+──────────────────────────────────────────────────────── */
+var _isLoggedIn = false;   // false = belum login, semua fitur realtime OFF
+
 function _startRealtime(sb) {
+  /* BLOCK: jangan jalankan sebelum login */
+  if (!_isLoggedIn) return;
   if (_rtChannel) {
     try { sb.removeChannel(_rtChannel); } catch(e) {}
     _rtChannel = null;
@@ -24840,10 +24901,13 @@ function _startRealtime(sb) {
     _updatePresenceUI(_rtChannel.presenceState());
   });
   _rtChannel.on('presence', { event: 'join' }, function(info) {
-    _rtShowLiveToast('🟢 ' + (info.newPresences[0] && info.newPresences[0].name || 'User') + ' bergabung');
+    /* TIDAK tampilkan toast/popup "bergabung"
+       Hanya update badge online count secara senyap */
+    _updatePresenceUI(_rtChannel.presenceState());
   });
   _rtChannel.on('presence', { event: 'leave' }, function(info) {
-    _rtShowLiveToast('🔴 ' + (info.leftPresences[0] && info.leftPresences[0].name || 'User') + ' keluar');
+    /* TIDAK tampilkan toast/popup "keluar" */
+    _updatePresenceUI(_rtChannel.presenceState());
   });
 
   _rtChannel.subscribe(function(status) {
@@ -24851,16 +24915,21 @@ function _startRealtime(sb) {
     _updateRtStatusUI(status);
 
     if (status === 'SUBSCRIBED') {
-      /* Track presence user saat ini */
-      var myName = (typeof currentAcctName !== 'undefined' && currentAcctName)
-        || (typeof currentRole !== 'undefined' && currentRole)
-        || 'Device-' + Math.floor(Math.random()*1000);
-      _rtChannel.track({
-        name: myName,
-        role: typeof currentRole !== 'undefined' ? currentRole : 'user',
-        online_at: new Date().toISOString(),
-        device: navigator.userAgent.slice(0,60)
-      });
+      /* Track presence HANYA jika sudah login dan punya nama user nyata */
+      if (_isLoggedIn) {
+        var myName = (typeof currentAcctName !== 'undefined' && currentAcctName)
+          || (typeof currentRole !== 'undefined' && currentRole)
+          || null;
+        if (myName) {
+          _rtChannel.track({
+            name: myName,
+            role: typeof currentRole !== 'undefined' ? currentRole : 'user',
+            online_at: new Date().toISOString(),
+            device: navigator.userAgent.slice(0,60)
+          });
+        }
+        /* Jika belum ada nama (belum login), TIDAK track — sehingga tidak muncul "Device-XXX bergabung" */
+      }
     }
 
     if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
@@ -24967,6 +25036,8 @@ function _handleKvChange(payload) {
 
 /* audit_log INSERT */
 function _handleAuditInsert(payload) {
+  /* BLOCK: tidak tampilkan toast sebelum login */
+  if (!_isLoggedIn) return;
   var rec = payload.new || {};
   /* Jangan tampilkan toast untuk aksi user sendiri */
   var myName = typeof currentAcctName !== 'undefined' ? currentAcctName : '';
@@ -24992,6 +25063,8 @@ function _handleBroadcast(msg) {
    §C. PRESENCE UI — Tampilkan user aktif di header
 ───────────────────────────────────────────── */
 function _updatePresenceUI(state) {
+  /* BLOCK: tidak inject pill atau tampilkan info sebelum login */
+  if (!_isLoggedIn) return;
   var users = [];
   Object.keys(state || {}).forEach(function(k) {
     var arr = state[k];
@@ -25369,6 +25442,7 @@ window.rtBroadcast = function(type, data) {
 var _autoRefreshTimer = null;
 
 function _startAutoRefresh() {
+  if (!_isLoggedIn) return;
   clearInterval(_autoRefreshTimer);
   _autoRefreshTimer = setInterval(function() {
     if (document.hidden) return; /* skip jika tab tidak aktif */
@@ -25412,6 +25486,8 @@ var _liveToastEl = null;
 var _liveToastTimer = null;
 
 function _rtShowLiveToast(msg) {
+  /* BLOCK: tidak tampilkan toast apapun sebelum login */
+  if (!_isLoggedIn) return;
   if (!_liveToastEl) {
     _liveToastEl = document.createElement('div');
     _liveToastEl.style.cssText = 'position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 80px);left:50%;transform:translateX(-50%) translateY(100px);background:rgba(26,86,219,.92);color:#fff;padding:10px 18px;border-radius:40px;font-size:11px;font-weight:700;z-index:29998;transition:transform .35s cubic-bezier(.34,1.4,.64,1),opacity .3s ease;white-space:nowrap;display:flex;align-items:center;gap:7px;pointer-events:none;backdrop-filter:blur(8px);box-shadow:0 6px 24px rgba(26,86,219,.35);opacity:0;max-width:calc(100vw - 40px);overflow:hidden;text-overflow:ellipsis';
@@ -25435,6 +25511,7 @@ var _changeToastMap = {
 };
 
 function _rtShowChangeToast(evType, entityName) {
+  if (!_isLoggedIn) return;
   var c = _changeToastMap[evType] || { icon:'📡', label:'Berubah', bg:'rgba(26,86,219,.92)' };
   _rtShowLiveToast(c.icon + ' ' + (entityName||'Data') + ' ' + c.label + ' — Live');
 }
@@ -25691,12 +25768,47 @@ function _invalidatePelCache() {
 /* ─────────────────────────────────────────────
    §M. BOOTSTRAP — Inisialisasi semua fitur
 ───────────────────────────────────────────── */
-function _bootstrap() {
-  /* 1. Start realtime channel */
+
+/* Fungsi ini dipanggil SETELAH login berhasil untuk mengaktifkan semua fitur */
+function _activatePostLogin() {
+  _isLoggedIn = true;
+
+  /* Catat audit login dengan format standar iCRM */
+  try {
+    var now = new Date();
+    var tgl = ('0'+now.getDate()).slice(-2)+'/'+('0'+(now.getMonth()+1)).slice(-2)+'/'+now.getFullYear();
+    var jam = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+    var uaShort = /Android/i.test(navigator.userAgent) ? 'Android'
+                : /iPhone|iPad/i.test(navigator.userAgent) ? 'iOS'
+                : /Windows/i.test(navigator.userAgent) ? 'Windows' : 'Browser';
+    auditLog({
+      menu:'Auth', action:'INSERT',
+      data_baru:{
+        tanggal: tgl,
+        jam: jam,
+        user: (typeof currentAcctName !== 'undefined' && currentAcctName) || '',
+        role: (typeof currentRole !== 'undefined' && currentRole) || '',
+        device: uaShort,
+        aktivitas: 'Login Berhasil'
+      }
+    });
+  } catch(e) {}
+
+  /* Start realtime setelah login */
   _waitSb(function(sb) {
     _startRealtime(sb);
     _startAutoRefresh();
   });
+
+  /* Enforce role UI */
+  setTimeout(function() {
+    _enforceRoleUI();
+    _injectAuditLogButton();
+  }, 600);
+}
+
+function _bootstrap() {
+  /* TIDAK memulai realtime di sini — tunggu login dulu */
 
   /* 2. Patch CRUD untuk audit log setelah DOM ready */
   document.addEventListener('DOMContentLoaded', function() {
@@ -25722,15 +25834,18 @@ function _bootstrap() {
     if (btn) setTimeout(_enforceRoleUI, 300);
   });
 
-  /* 4. Login hook — setelah login berhasil, track presence */
+  /* 4. Login hook — aktifkan realtime & presence SETELAH login berhasil */
   var origOnLoginSuccess = window.onLoginSuccess;
   window.onLoginSuccess = function() {
     if (origOnLoginSuccess) origOnLoginSuccess.apply(this, arguments);
     setTimeout(function() {
-      _enforceRoleUI();
-      /* Re-track presence dengan nama baru */
+      /* Aktifkan semua fitur post-login */
+      _activatePostLogin();
+
+      /* Re-track presence dengan nama user yang sudah login */
       if (_rtChannel && _rtConnected) {
-        var myName = (typeof currentAcctName !== 'undefined' && currentAcctName) || (typeof currentRole !== 'undefined' && currentRole) || 'User';
+        var myName = (typeof currentAcctName !== 'undefined' && currentAcctName)
+                  || (typeof currentRole !== 'undefined' && currentRole) || 'User';
         try {
           _rtChannel.track({
             name: myName,
@@ -25739,13 +25854,11 @@ function _bootstrap() {
           });
         } catch(e) {}
       }
-      /* Catat audit login */
-      auditLog({ menu:'Auth', action:'INSERT', data_baru:{ event:'login', role: typeof currentRole !== 'undefined' ? currentRole : '' } });
     }, 500);
   };
 
   /* 5. Console report */
-  console.log('%c╔═══════════════════════════════════════════════════════╗\n║  iCRM REALTIME MULTI-DEVICE v2.0 — AKTIF              ║\n║  ✓ Realtime Sync: ODC, ODP, Pelanggan, Material       ║\n║  ✓ Audit Log → Supabase audit_log                     ║\n║  ✓ Presence: User aktif terlihat real-time            ║\n║  ✓ Role Permission: Admin/Supervisor/Teknisi/Sales     ║\n║  ✓ Auto Refresh: 30 detik                             ║\n║  ✓ Offline Queue: Auto-sync saat online               ║\n║  SQL Schema: ketik rtShowSqlSchema() di console       ║\n╚═══════════════════════════════════════════════════════╝',
+  console.log('%c╔═══════════════════════════════════════════════════════╗\n║  iCRM REALTIME v2.0 — LOGIN-GATED MODE               ║\n║  ✓ Realtime aktif HANYA setelah login                 ║\n║  ✓ Tidak ada popup Device Bergabung                   ║\n║  ✓ Audit Log → Supabase audit_log                     ║\n║  ✓ Presence: User aktif terlihat real-time            ║\n║  ✓ Role Permission: Admin/Supervisor/Teknisi/Sales     ║\n║  SQL Schema: ketik rtShowSqlSchema() di console       ║\n╚═══════════════════════════════════════════════════════╝',
     'color:#3ecf8e;font-family:monospace;font-size:11px;font-weight:bold');
 }
 
