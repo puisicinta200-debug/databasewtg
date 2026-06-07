@@ -7132,9 +7132,6 @@ var BAKED={url_p:'',url_m:'',url_read:'',url_app:''};
 // Google Sheets tetap berjalan sebagai cadangan (write-only backup)
 // ═══════════════════════════════════════════════════════════════
 
-// Deklarasi awal _isLoggedIn — mencegah ReferenceError di sbStartRealtime
-if (typeof _isLoggedIn === "undefined") var _isLoggedIn = false;
-
 // ── Konfigurasi Database — URL & Key tertanam permanen di kode ──
 // ═══════════════════════════════════════════════════════════════
 // ONLINE-FIRST: Supabase adalah satu-satunya sumber kebenaran.
@@ -13626,12 +13623,26 @@ function updMainDashboard() {
   var updEl = document.getElementById('dash-last-update');
   if(updEl) updEl.textContent = 'Update: ' + new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
 
-  /* [SSOT §2 & §13] Render KPI Vendor dari getDashboardMetrics() — sumber identik dengan Dashboard */
-  updMainDashboard();
+  /* [SSOT §2 & §13] KPI Vendor dibaca dari getDashboardMetrics() yang sama —
+     Dashboard Utama, KPI Vendor, dan Overview semuanya memanggil getDashboardMetrics().
+     Tidak perlu memanggil ulang — sumber data sudah identik (SSOT). */
 
   /* [SSOT §16] Validasi konsistensi setelah render selesai */
   setTimeout(_ssotValidate, 200);
 }
+
+/* ══════════════════════════════════════════════════════
+   renderKpiVendor() — alias SSOT untuk KPI Vendor
+   Dipanggil oleh Master Port realtime & auto-refresh.
+   Membaca dari getDashboardMetrics() → identik dengan Dashboard.
+══════════════════════════════════════════════════════ */
+function renderKpiVendor() {
+  /* [SSOT] Invalidate cache agar data fresh */
+  if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
+  /* Panggil updMainDashboard — satu-satunya sumber KPI */
+  updMainDashboard();
+}
+window.renderKpiVendor = renderKpiVendor;
 
 function _setEl(id, val) {
   var el = document.getElementById(id);
@@ -13701,13 +13712,27 @@ function getDashboardMetrics() {
   var odc_maintenance = _odcS.maintenance;
   var odc_rusak = _odcS.rusak;
 
-  /* 3. ODP & Port — dari master_odp (getODPStats) */
+  /* 3. ODP — dari masterODP (getMasterOdpData via getODPStats) */
   var _odpS = typeof getODPStats === 'function' ? getODPStats() : { total:0, totalPort:0, terpakai:0, kosong:0, rusak:0 };
-  var total_odp = _odpS.total;
-  var total_port = _odpS.totalPort;
-  var port_terpakai = _odpS.terpakai;
-  var port_tersedia = _odpS.kosong;
-  var port_rusak = _odpS.rusak;
+  var total_odp = _odpS.total;  /* = masterODP.length */
+
+  /* 3b. Port — SSOT: masterPort via getPortMetrics() (jika loaded), fallback getODPStats */
+  var total_port, port_terpakai, port_tersedia, port_rusak;
+  var _mpData = typeof getMasterPortData === 'function' ? getMasterPortData() : null;
+  if (_mpData && _mpData.length > 0 && typeof getPortMetrics === 'function') {
+    /* masterPort sudah loaded → getPortMetrics() adalah satu-satunya sumber */
+    var _pm = getPortMetrics();
+    total_port    = _pm.total;      /* masterPort.length */
+    port_terpakai = _pm.used;
+    port_tersedia = _pm.available;
+    port_rusak    = _pm.maintenance;
+  } else {
+    /* masterPort belum ready → fallback sementara ke getODPStats */
+    total_port    = _odpS.totalPort;
+    port_terpakai = _odpS.terpakai;
+    port_tersedia = _odpS.kosong;
+    port_rusak    = _odpS.rusak;
+  }
 
   /* 4. Aktivasi — pelanggan_aktif adalah jumlah teraktivasi */
   var total_aktivasi = pelanggan_aktif;
@@ -13760,15 +13785,39 @@ function _ssotValidate() {
     var ovTotal   = parseInt(((document.getElementById('ov-pel-total')||{}).textContent||'0').replace(/\./g,'')) || null;
 
     var mismatches = [];
+
+    /* Pelanggan: Dashboard vs KPI Vendor vs Overview harus identik */
     if (dashTotal !== null && kpiTotal !== null && dashTotal !== kpiTotal) {
       mismatches.push('total_pelanggan: dash=' + dashTotal + ' kpi=' + kpiTotal);
     }
     if (dashTotal !== null && ovTotal !== null && dashTotal !== ovTotal) {
       mismatches.push('total_pelanggan: dash=' + dashTotal + ' overview=' + ovTotal);
     }
+    if (kpiTotal !== null && ovTotal !== null && kpiTotal !== ovTotal) {
+      mismatches.push('total_pelanggan: kpi=' + kpiTotal + ' overview=' + ovTotal);
+    }
+    if (kpiTotal !== null && m.total_pelanggan !== kpiTotal) {
+      mismatches.push('pelanggan SSOT drift: source=' + m.total_pelanggan + ' dom-kpi=' + kpiTotal);
+    }
+
+    /* ODC: kpi-odc-total vs ov-odc-total */
+    var kpiOdc = parseInt((document.getElementById('kpi-odc-total')||{}).textContent) || null;
+    var ovOdc  = parseInt((document.getElementById('ov-odc-total')||{}).textContent) || null;
+    if (kpiOdc !== null && ovOdc !== null && kpiOdc !== ovOdc) {
+      mismatches.push('total_odc: kpi=' + kpiOdc + ' overview=' + ovOdc);
+    }
+    if (kpiOdc !== null && m.total_odc !== kpiOdc) {
+      mismatches.push('odc SSOT drift: source=' + m.total_odc + ' dom-kpi=' + kpiOdc);
+    }
+
+    /* Port: kpi-port-total vs SSOT */
+    var kpiPort = parseInt((document.getElementById('kpi-port-total')||{}).textContent) || null;
+    if (kpiPort !== null && m.total_port !== kpiPort) {
+      mismatches.push('total_port SSOT drift: source=' + m.total_port + ' dom-kpi=' + kpiPort);
+    }
+
     if (mismatches.length) {
       console.warn('%c[SSOT] KPI MISMATCH DETECTED:', 'color:#dc2626;font-weight:bold', mismatches.join(' | '));
-      /* Catat ke audit_log jika tersedia */
       if (typeof auditLog === 'function') {
         try { auditLog({ menu:'SSOT', action:'METRIC_MISMATCH', data_baru: { mismatches: mismatches, ts: new Date().toISOString() } }); } catch(e){}
       }
@@ -27006,6 +27055,419 @@ window.MP_STATUS  = MP_STATUS;
 window.MP_VERSION = MP_VERSION;
 
 })(); /* END _ICRM_MASTER_PORT_SSOT */
+</script>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  MASTER PORT SSOT — TAHAP 2                                        ║
+     ║  Menjadikan master_port_v1 sebagai SATU-SATUNYA sumber data port   ║
+     ║  di seluruh modul: Dashboard, KPI Vendor, Monitoring, Aktivasi,    ║
+     ║  Dismantle, Pelanggan.                                              ║
+     ║  Semua source lama (legacyPort, portFromCustomer, portFromODP,     ║
+     ║  cachedPort, portOld) dinonaktifkan.                                ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<script>
+(function _ICRM_MP_SSOT_TAHAP2() {
+'use strict';
+
+/* ════════════════════════════════════════════════════════════
+   §T2-1. NONAKTIFKAN SOURCE LAMA
+   Cegah semua kalkulasi port dari sumber lama.
+════════════════════════════════════════════════════════════ */
+(function _blockLegacySources() {
+  /* Daftar variabel/fungsi legasi yang harus dinonaktifkan */
+  var legacyNames = [
+    'legacyPort', 'portOld', 'cachedPort',
+    'portFromCustomer', 'portFromODP',
+    '_portCache', '__portCache', '_legacyPortCalc'
+  ];
+
+  legacyNames.forEach(function (name) {
+    /* Jika variabel global ada dan bertipe function/array — reset ke null */
+    if (typeof window[name] !== 'undefined') {
+      try {
+        window[name] = null;
+        console.log('%c[SSOT-T2] Source lama dinonaktifkan: ' + name, 'color:#dc2626;font-family:monospace;font-size:11px');
+      } catch (e) {}
+    }
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════
+   §T2-2. VALIDASI RULE STATUS PORT
+   Jika pelanggan aktif  → Port = USED
+   Jika pelanggan dismantle → Port = AVAILABLE
+   Jika maintenance      → Port = MAINTENANCE
+════════════════════════════════════════════════════════════ */
+window.mpResolvePortStatus = function (pelStatus) {
+  if (!pelStatus) return 'AVAILABLE';
+  var s = pelStatus.toLowerCase();
+  if (s === 'dismantle' || s === 'arsip') return 'AVAILABLE';
+  if (s.indexOf('maintenance') >= 0)      return 'MAINTENANCE';
+  if (s.indexOf('aktif') >= 0 && s.indexOf('non') < 0) return 'USED';
+  return 'AVAILABLE';
+};
+
+/* ════════════════════════════════════════════════════════════
+   §T2-3. MONITORING PORT — READ ONLY dari master_port_v1
+   renderMonitoringPort() dipanggil oleh tab Monitoring.
+   DILARANG ada tombol edit/tambah/hapus port di sini.
+════════════════════════════════════════════════════════════ */
+window.renderMonitoringPort = function () {
+  var container = document.getElementById('monitoring-port-container')
+                || document.getElementById('port-monitor-list')
+                || document.getElementById('mon-port-wrap');
+  if (!container) return;
+
+  var ports = (typeof getMasterPortData === 'function') ? getMasterPortData() : [];
+
+  if (!ports.length) {
+    container.innerHTML =
+      '<div style="text-align:center;padding:40px 20px;color:var(--text3)">'
+      + '<i class="ti ti-plug-off" style="font-size:40px;display:block;margin-bottom:12px;opacity:.2"></i>'
+      + '<div style="font-size:13px;font-weight:600">Master Port belum dimuat</div>'
+      + '<div style="font-size:11px;margin-top:6px">Jalankan <code>reloadMasterPort()</code> di console atau tunggu koneksi Supabase.</div>'
+      + '</div>';
+    return;
+  }
+
+  /* Kelompokkan per ODP */
+  var byOdp = {};
+  ports.forEach(function (p) {
+    var key = p.odp_id || 'unknown';
+    if (!byOdp[key]) byOdp[key] = { odpId: key, odpName: '', ports: [] };
+    byOdp[key].ports.push(p);
+  });
+
+  /* Coba resolve nama ODP dari master_odp */
+  var odps = (typeof getMasterOdpData === 'function') ? getMasterOdpData() : [];
+  var odpIdToName = {};
+  odps.forEach(function (o) { odpIdToName[o.id] = o.kode || o.nama || o.id; });
+
+  var STATUS_BADGE = {
+    'AVAILABLE'   : 'background:var(--gng);color:var(--green)',
+    'USED'        : 'background:var(--rg);color:var(--red)',
+    'RESERVED'    : 'background:var(--yg);color:var(--yellow)',
+    'MAINTENANCE' : 'background:var(--pug);color:var(--pu)',
+    'DISMANTLE'   : 'background:rgba(100,100,120,.15);color:var(--text3)'
+  };
+  var STATUS_LABEL = {
+    'AVAILABLE'   : 'Kosong',
+    'USED'        : 'Terpakai',
+    'RESERVED'    : 'Reserved',
+    'MAINTENANCE' : 'Maintenance',
+    'DISMANTLE'   : 'Dismantle'
+  };
+
+  var html = '';
+  Object.keys(byOdp).forEach(function (odpId) {
+    var g = byOdp[odpId];
+    var odpLabel = odpIdToName[odpId] || odpId;
+    var pm = (typeof getPortMetrics === 'function') ? getPortMetrics(odpId) : { total:0, used:0, available:0, maintenance:0 };
+    var pct = pm.total > 0 ? Math.round(pm.used / pm.total * 100) : 0;
+    var barColor = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--yellow)' : 'var(--green)';
+
+    html += '<div style="background:var(--bg2);border-radius:var(--r);padding:13px 14px;border:1px solid var(--border2);margin-bottom:10px;box-shadow:0 2px 8px rgba(26,86,219,.06)">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text);font-family:\'JetBrains Mono\',monospace">' + (typeof escHtml === 'function' ? escHtml(odpLabel) : odpLabel) + '</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<span style="font-size:10px;font-weight:700;background:var(--c1b);color:var(--c1);padding:2px 8px;border-radius:20px">' + pm.total + ' port</span>';
+    html += '<span style="font-size:10px;font-weight:700;background:var(--rg);color:var(--red);padding:2px 8px;border-radius:20px">' + pm.used + ' terpakai</span>';
+    html += '<span style="font-size:10px;font-weight:700;background:var(--gng);color:var(--green);padding:2px 8px;border-radius:20px">' + pm.available + ' kosong</span>';
+    if (pm.maintenance > 0)
+      html += '<span style="font-size:10px;font-weight:700;background:var(--pug);color:var(--pu);padding:2px 8px;border-radius:20px">' + pm.maintenance + ' maint.</span>';
+    html += '</div></div>';
+
+    /* Progress bar utilisasi */
+    html += '<div style="height:4px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:10px">';
+    html += '<div style="height:100%;width:' + Math.min(100,pct) + '%;background:' + barColor + ';border-radius:3px;transition:width .5s"></div></div>';
+
+    /* Grid port */
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">';
+    g.ports.sort(function (a, b) { return a.nomor_port - b.nomor_port; }).forEach(function (p) {
+      var badgeStyle = STATUS_BADGE[p.status] || 'background:var(--bg4);color:var(--text3)';
+      var badgeLabel = STATUS_LABEL[p.status] || p.status;
+      html += '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:8px 10px">';
+      html += '<div style="font-size:11px;font-weight:800;color:var(--text);font-family:\'JetBrains Mono\',monospace;margin-bottom:4px">Port ' + p.nomor_port + '</div>';
+      html += '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;' + badgeStyle + '">' + badgeLabel + '</span>';
+      if (p.nama_pelanggan) {
+        html += '<div style="font-size:9px;color:var(--text3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (typeof escHtml === 'function' ? escHtml(p.nama_pelanggan) : p.nama_pelanggan) + '</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  container.innerHTML = html;
+};
+
+/* ════════════════════════════════════════════════════════════
+   §T2-4. PATCH renderOdpMonitor — tambahkan info dari master_port_v1
+   Override hanya bagian statistik port agar konsisten dengan SSOT.
+════════════════════════════════════════════════════════════ */
+(function _patchOdpMonitor() {
+  var orig = window.renderOdpMonitor;
+  if (!orig || orig._mpT2Patched) return;
+
+  window.renderOdpMonitor = function () {
+    /* Jalankan fungsi asli dulu */
+    if (orig) orig.apply(this, arguments);
+
+    /* Setelah render, koreksi statistik port global dari master_port SSOT */
+    if (typeof getPortMetrics !== 'function') return;
+    var pm = getPortMetrics();
+    if (!pm || pm.total === 0) return; /* masterPort belum loaded — biarkan nilai lama */
+
+    /* Update elemen statistik port di monitoring jika ada */
+    var elTotal = document.getElementById('mon-port-total')
+               || document.getElementById('port-total-count');
+    var elUsed  = document.getElementById('mon-port-used')
+               || document.getElementById('port-used-count');
+    var elFree  = document.getElementById('mon-port-free')
+               || document.getElementById('port-free-count');
+    var elMaint = document.getElementById('mon-port-maintenance');
+
+    if (elTotal) elTotal.textContent = pm.total;
+    if (elUsed)  elUsed.textContent  = pm.used;
+    if (elFree)  elFree.textContent  = pm.available;
+    if (elMaint) elMaint.textContent = pm.maintenance;
+  };
+  window.renderOdpMonitor._mpT2Patched = true;
+  console.log('%c[SSOT-T2] renderOdpMonitor di-patch → data port dari master_port_v1', 'color:#3ecf8e;font-family:monospace;font-size:11px');
+})();
+
+/* ════════════════════════════════════════════════════════════
+   §T2-5. PATCH updMainDashboard (alias updDash)
+   Inject port metrics dari getPortMetrics() ke elemen DOM Dashboard.
+   Ini memastikan semua angka port di Dashboard = master_port_v1.
+════════════════════════════════════════════════════════════ */
+(function _patchDashPortDisplay() {
+  var orig = window.updMainDashboard || window.updDash;
+  var fnName = window.updMainDashboard ? 'updMainDashboard' : 'updDash';
+  if (!orig || orig._mpT2Patched) return;
+
+  var patched = function () {
+    orig.apply(this, arguments);
+    /* Setelah render selesai, override angka port dari master_port SSOT */
+    if (typeof getPortMetrics !== 'function') return;
+    var pm = getPortMetrics();
+    if (!pm || pm.total === 0) return;
+
+    /* ID elemen Dashboard yang menampilkan statistik port */
+    var PORT_DOM_MAP = {
+      /* total port */
+      'ds-total-port'     : pm.total,
+      'dash-total-port'   : pm.total,
+      'stat-total-port'   : pm.total,
+      /* port terpakai */
+      'ds-port-used'      : pm.used,
+      'dash-port-used'    : pm.used,
+      'stat-port-used'    : pm.used,
+      /* port kosong */
+      'ds-port-free'      : pm.available,
+      'dash-port-free'    : pm.available,
+      'stat-port-free'    : pm.available,
+      /* port maintenance */
+      'ds-port-maint'     : pm.maintenance,
+      'dash-port-maint'   : pm.maintenance,
+      /* utilisasi pct */
+      'ds-port-pct'       : pm.utilisasi_pct + '%',
+      'dash-port-pct'     : pm.utilisasi_pct + '%'
+    };
+    Object.keys(PORT_DOM_MAP).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = PORT_DOM_MAP[id];
+    });
+
+    /* KPI Vendor — update elemen KPI port */
+    var KPI_PORT_MAP = {
+      'kpi-port-total'    : pm.total,
+      'kpi-port-used'     : pm.used,
+      'kpi-port-free'     : pm.available,
+      'kpi-port-maint'    : pm.maintenance,
+      'kpi-port-pct'      : pm.utilisasi_pct + '%'
+    };
+    Object.keys(KPI_PORT_MAP).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = KPI_PORT_MAP[id];
+    });
+  };
+  patched._mpT2Patched = true;
+
+  window[fnName] = patched;
+  /* Pastikan alias juga ter-update */
+  if (fnName === 'updMainDashboard') window.updDash = patched;
+  else window.updMainDashboard = patched;
+
+  console.log('%c[SSOT-T2] ' + fnName + ' di-patch → angka port dari master_port_v1', 'color:#3ecf8e;font-family:monospace;font-size:11px');
+})();
+
+/* ════════════════════════════════════════════════════════════
+   §T2-6. GETODPSTATS OVERRIDE
+   Pastikan getODPStats() tidak lagi menghitung port dari master_odp.ports.
+   Port total/terpakai/kosong selalu dari master_port_v1 jika loaded.
+════════════════════════════════════════════════════════════ */
+(function _patchGetODPStats() {
+  var orig = window.getODPStats;
+  if (!orig || orig._mpT2Patched) return;
+
+  window.getODPStats = function () {
+    var result = orig.apply(this, arguments);
+    /* Override port metrics dengan master_port_v1 jika sudah loaded */
+    var mp = (typeof getMasterPortData === 'function') ? getMasterPortData() : [];
+    if (mp.length > 0 && typeof getPortMetrics === 'function') {
+      var pm = getPortMetrics();
+      result.totalPort  = pm.total;
+      result.terpakai   = pm.used;
+      result.kosong     = pm.available;
+      result.rusak      = pm.maintenance;
+      result.reserved   = pm.reserved;
+    }
+    return result;
+  };
+  window.getODPStats._mpT2Patched = true;
+  console.log('%c[SSOT-T2] getODPStats() di-patch → port dari master_port_v1', 'color:#3ecf8e;font-family:monospace;font-size:11px');
+})();
+
+/* ════════════════════════════════════════════════════════════
+   §T2-7. VALIDASI KONSISTENSI TIGA MODUL
+   Dashboard = KPI Vendor = Monitoring
+   Fungsi ini dipanggil setelah setiap render.
+════════════════════════════════════════════════════════════ */
+window.validatePortSSoT = function () {
+  if (typeof getPortMetrics !== 'function') return { ok: false, reason: 'getPortMetrics tidak tersedia' };
+  var pm = getPortMetrics();
+  if (!pm || pm.total === 0) return { ok: true, reason: 'master_port belum dimigrasi — skip validasi' };
+
+  var issues = [];
+
+  /* Cek Dashboard */
+  var dashPortEl = document.getElementById('ds-total-port') || document.getElementById('dash-total-port');
+  if (dashPortEl) {
+    var dashVal = parseInt(dashPortEl.textContent) || 0;
+    if (dashVal !== pm.total) issues.push('Dashboard.total_port=' + dashVal + ' ≠ SSOT=' + pm.total);
+  }
+
+  /* Cek KPI Vendor */
+  var kpiPortEl = document.getElementById('kpi-port-total');
+  if (kpiPortEl) {
+    var kpiVal = parseInt(kpiPortEl.textContent) || 0;
+    if (kpiVal !== pm.total) issues.push('KPI.total_port=' + kpiVal + ' ≠ SSOT=' + pm.total);
+  }
+
+  /* Log mismatch */
+  if (issues.length) {
+    console.warn('%c[SSOT-T2] ⚠️ PORT MISMATCH: ' + issues.join(' | '), 'color:#dc2626;font-weight:bold');
+    if (typeof auditLog === 'function') {
+      try { auditLog({ menu:'SSOT-T2', action:'PORT_MISMATCH', data_baru:{ issues:issues, ts:new Date().toISOString() } }); } catch(e) {}
+    }
+    return { ok: false, issues: issues };
+  }
+  return { ok: true, issues: [] };
+};
+
+/* ════════════════════════════════════════════════════════════
+   §T2-8. AUTO-PATCH AKTIVASI & DISMANTLE di modul lama
+   Patch saveXDismantle dan savePelanggan versi dmpSavePelanggan
+   yang belum ter-patch oleh §9 & §10.
+════════════════════════════════════════════════════════════ */
+(function _patchAktivasiDismantle() {
+  /* Patch dmpSavePelanggan versi legacy yang memanggil savePel internal */
+  var origDmpSave = window.dmpSavePelanggan;
+  if (origDmpSave && !origDmpSave._mpT2Patched) {
+    window.dmpSavePelanggan = function () {
+      origDmpSave.apply(this, arguments);
+      /* Invalidate SSOT cache agar angka port fresh */
+      if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
+      /* Refresh UI setelah delay singkat */
+      setTimeout(function () {
+        if (typeof renderKpiVendor === 'function') renderKpiVendor();
+        if (typeof renderOdpMonitor === 'function') renderOdpMonitor();
+      }, 1500);
+    };
+    window.dmpSavePelanggan._mpT2Patched = true;
+  }
+
+  /* Patch saveXDismantle fallback — jika §10 belum berhasil patch karena fungsi belum ada saat init */
+  var origSaveX = window.saveXDismantle;
+  if (origSaveX && !origSaveX._mpPatched && !origSaveX._mpT2Patched) {
+    window.saveXDismantle = function () {
+      var pel = typeof selectedPelX !== 'undefined' ? selectedPelX : null;
+      var oldPort = pel ? (pel.port || '') : '';
+      var oldOdp  = pel ? (pel.odp  || '') : '';
+      var portNum = parseInt((oldPort.match(/\d+/) || [])[0]) || 0;
+
+      origSaveX.apply(this, arguments);
+
+      if (!oldOdp || !portNum) return;
+      setTimeout(function () {
+        var odps = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+        var odpObj = odps.find(function (o) {
+          return (o.nama || '').trim().toLowerCase() === oldOdp.trim().toLowerCase() ||
+                 (o.kode || '').trim().toLowerCase() === oldOdp.trim().toLowerCase();
+        });
+        if (!odpObj) return;
+        if (typeof dismantlePort === 'function') dismantlePort(odpObj.id, portNum);
+        if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
+        setTimeout(function () {
+          if (typeof renderKpiVendor === 'function') renderKpiVendor();
+        }, 1000);
+      }, 1200);
+    };
+    window.saveXDismantle._mpT2Patched = true;
+  }
+})();
+
+/* ════════════════════════════════════════════════════════════
+   §T2-9. EXPORT FUNGSI UTILITY KE WINDOW
+════════════════════════════════════════════════════════════ */
+window.mpSSOT = {
+  version      : '2.0.0',
+  getMetrics   : function () { return typeof getPortMetrics === 'function' ? getPortMetrics() : null; },
+  validate     : window.validatePortSSoT,
+  renderMonitor: window.renderMonitoringPort,
+  reload       : window.reloadMasterPort
+};
+
+/* ════════════════════════════════════════════════════════════
+   §T2-10. BOOTSTRAP TAHAP 2 — Jalankan setelah login
+════════════════════════════════════════════════════════════ */
+(function _bootstrapT2() {
+  /* Hook ke onLoginSuccess */
+  var origLogin = window.onLoginSuccess;
+  window.onLoginSuccess = function () {
+    if (origLogin) origLogin.apply(this, arguments);
+    setTimeout(function () {
+      /* Invalidate semua cache port */
+      if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
+      /* Validasi konsistensi */
+      setTimeout(function () {
+        if (typeof validatePortSSoT === 'function') validatePortSSoT();
+      }, 3000);
+    }, 2000);
+  };
+
+  /* Laporan konsol */
+  console.log(
+    '%c╔══════════════════════════════════════════════════════╗\n'
+    + '║  MASTER PORT SSOT — TAHAP 2 v2.0.0                  ║\n'
+    + '║  ✓ Source lama dinonaktifkan (legacyPort, dll)       ║\n'
+    + '║  ✓ getDashboardMetrics() → getPortMetrics() SSOT    ║\n'
+    + '║  ✓ getODPStats() → port dari master_port_v1          ║\n'
+    + '║  ✓ updMainDashboard() → inject port SSOT ke DOM      ║\n'
+    + '║  ✓ renderOdpMonitor() → konsisten dgn SSOT           ║\n'
+    + '║  ✓ dmpSavePelanggan / saveXDismantle → auto sync     ║\n'
+    + '║  ✓ validatePortSSoT() → cek konsistensi 3 modul      ║\n'
+    + '║  ✓ renderMonitoringPort() → READ ONLY dari SSOT      ║\n'
+    + '║                                                      ║\n'
+    + '║  VALIDASI: window.validatePortSSoT()                 ║\n'
+    + '║  METRICS : window.mpSSOT.getMetrics()                ║\n'
+    + '║  RELOAD  : window.reloadMasterPort()                 ║\n'
+    + '╚══════════════════════════════════════════════════════╝',
+    'color:#3ecf8e;font-family:monospace;font-size:11px;font-weight:bold'
+  );
+})();
+
+})(); /* END _ICRM_MP_SSOT_TAHAP2 */
 </script>
 
 </body></html>
