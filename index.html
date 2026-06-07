@@ -26193,4 +26193,764 @@ _bootstrap();
 })(); /* END _ICRM_REALTIME_V2 */
 </script>
 
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  MASTER PORT SSOT — ICRM_DataEntry                         ║
+     ║  Single Source of Truth untuk seluruh data Port ISP        ║
+     ║  Versi: 1.0.0 · Injected Patch                             ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<script>
+(function _ICRM_MASTER_PORT_SSOT() {
+'use strict';
+
+/* ══════════════════════════════════════════════
+   KONSTANTA
+══════════════════════════════════════════════ */
+var MP_TABLE   = 'master_port';
+var MP_VERSION = '1.0.0';
+
+/* Status resmi — hanya ini yang boleh dipakai */
+var MP_STATUS = {
+  AVAILABLE   : 'AVAILABLE',
+  USED        : 'USED',
+  RESERVED    : 'RESERVED',
+  MAINTENANCE : 'MAINTENANCE',
+  DISMANTLE   : 'DISMANTLE'
+};
+
+/* Mapping status lama (master_odp.ports) → status baru */
+var MP_STATUS_MAP = {
+  'Kosong'   : 'AVAILABLE',
+  'Terpakai' : 'USED',
+  'Rusak'    : 'MAINTENANCE'
+};
+
+/* Cache in-memory (Supabase = sumber primer, ini hanya cache cepat) */
+var _mpCache   = null;   /* Array<port> */
+var _mpLoaded  = false;
+var _mpChannel = null;
+
+/* ══════════════════════════════════════════════
+   §1. HELPER — Supabase client
+══════════════════════════════════════════════ */
+function _sb() {
+  return typeof _sbGetClient === 'function' ? _sbGetClient() : null;
+}
+
+function _waitSb(cb, max) {
+  max = max || 40;
+  var n = 0, t = setInterval(function () {
+    n++;
+    var sb = _sb();
+    if (sb) { clearInterval(t); cb(sb); }
+    else if (n >= max) { clearInterval(t); _mpWarn('Supabase tidak tersedia setelah ' + max + ' coba'); }
+  }, 500);
+}
+
+function _mpLog(msg)  { console.log('%c[MasterPort] ' + msg, 'color:#3ecf8e;font-family:monospace;font-size:11px'); }
+function _mpWarn(msg) { console.warn('[MasterPort] ' + msg); }
+function _mpErr(msg)  { console.error('[MasterPort] ' + msg); }
+
+/* ══════════════════════════════════════════════
+   §2. LOAD — Baca semua port dari Supabase
+══════════════════════════════════════════════ */
+async function _mpLoadAll(sb) {
+  try {
+    var res = await sb
+      .from(MP_TABLE)
+      .select('*')
+      .order('odp_id')
+      .order('nomor_port');
+    if (res.error) throw res.error;
+    _mpCache  = res.data || [];
+    _mpLoaded = true;
+    _mpLog('Loaded ' + _mpCache.length + ' port dari Supabase');
+    _mpInvalidateAll();
+    return _mpCache;
+  } catch (e) {
+    _mpErr('Load gagal: ' + e.message);
+    return _mpCache || [];
+  }
+}
+
+/* Public: ambil cache */
+window.getMasterPortData = function () { return _mpCache || []; };
+
+/* Public: force reload dari Supabase */
+window.reloadMasterPort = function () {
+  _waitSb(function (sb) { _mpLoadAll(sb); });
+};
+
+/* ══════════════════════════════════════════════
+   §3. getPortMetrics() — SERVICE GLOBAL SSOT
+   Dipakai oleh: Dashboard, KPI, Monitoring, Aktivasi
+══════════════════════════════════════════════ */
+function getPortMetrics(odpId) {
+  var src = _mpCache || [];
+  if (odpId) src = src.filter(function (p) { return p.odp_id === odpId; });
+
+  var total       = src.length;
+  var available   = 0, used = 0, reserved = 0, maintenance = 0, dismantle = 0;
+  src.forEach(function (p) {
+    switch (p.status) {
+      case MP_STATUS.AVAILABLE:   available++;   break;
+      case MP_STATUS.USED:        used++;        break;
+      case MP_STATUS.RESERVED:    reserved++;    break;
+      case MP_STATUS.MAINTENANCE: maintenance++; break;
+      case MP_STATUS.DISMANTLE:   dismantle++;   break;
+    }
+  });
+
+  return {
+    total:       total,
+    available:   available,
+    used:        used,
+    reserved:    reserved,
+    maintenance: maintenance,
+    dismantle:   dismantle,
+    utilisasi_pct: total > 0 ? Math.round(used / total * 100) : 0
+  };
+}
+window.getPortMetrics = getPortMetrics;
+
+/* ══════════════════════════════════════════════
+   §4. CRUD PORT
+══════════════════════════════════════════════ */
+
+/* Validasi status */
+function _mpValidStatus(s) {
+  return Object.values ? Object.values(MP_STATUS).indexOf(s) >= 0
+       : [MP_STATUS.AVAILABLE, MP_STATUS.USED, MP_STATUS.RESERVED,
+          MP_STATUS.MAINTENANCE, MP_STATUS.DISMANTLE].indexOf(s) >= 0;
+}
+
+/* Generate ID port deterministik dari odp_id + nomor agar idempoten pada migrasi */
+function _mpGenId(odpId, nomorPort) {
+  return 'mp_' + (odpId || '').replace(/[^a-z0-9]/gi, '').slice(0, 16) + '_' + nomorPort;
+}
+
+/* Buat port baru */
+async function _mpCreate(sb, odpId, nomorPort, status) {
+  if (!odpId)     { _mpErr('odp_id wajib'); return null; }
+  if (!nomorPort) { _mpErr('nomor_port wajib'); return null; }
+  if (!_mpValidStatus(status)) status = MP_STATUS.AVAILABLE;
+
+  var row = {
+    id:            _mpGenId(odpId, nomorPort),
+    odp_id:        odpId,
+    nomor_port:    parseInt(nomorPort),
+    status:        status,
+    pelanggan_id:  null,
+    cid:           null,
+    nama_pelanggan: null
+  };
+  try {
+    var res = await sb.from(MP_TABLE).upsert(row, { onConflict: 'id' }).select().single();
+    if (res.error) throw res.error;
+    if (_mpCache) {
+      var idx = _mpCache.findIndex(function (p) { return p.id === res.data.id; });
+      if (idx >= 0) _mpCache[idx] = res.data; else _mpCache.push(res.data);
+    }
+    _mpAudit('INSERT', res.data.id, odpId, null, { status: status, nomor_port: nomorPort });
+    _mpInvalidateAll();
+    return res.data;
+  } catch (e) {
+    _mpErr('createPort error: ' + e.message);
+    return null;
+  }
+}
+
+/* Update status port */
+async function _mpUpdateStatus(sb, portId, newStatus, pelId, cid, nama) {
+  if (!_mpValidStatus(newStatus)) {
+    _mpErr('Status tidak valid: ' + newStatus); return false;
+  }
+  var patch = {
+    status:        newStatus,
+    pelanggan_id:  pelId || null,
+    cid:           cid   || null,
+    nama_pelanggan: nama || null
+  };
+  try {
+    var res = await sb.from(MP_TABLE).update(patch).eq('id', portId);
+    if (res.error) throw res.error;
+    if (_mpCache) {
+      var idx = _mpCache.findIndex(function (p) { return p.id === portId; });
+      if (idx >= 0) Object.assign(_mpCache[idx], patch);
+    }
+    _mpAudit('UPDATE', portId, null, pelId, patch);
+    _mpInvalidateAll();
+    return true;
+  } catch (e) {
+    _mpErr('updateStatus error: ' + e.message);
+    return false;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   §5. AKTIVASI — AVAILABLE → USED
+══════════════════════════════════════════════ */
+window.aktivasiPort = async function (odpId, nomorPort, pelId, cid, nama) {
+  var sb = _sb();
+  if (!sb) { _mpErr('Supabase belum ready'); return false; }
+
+  /* Cari port di cache */
+  var port = (_mpCache || []).find(function (p) {
+    return p.odp_id === odpId && p.nomor_port === parseInt(nomorPort);
+  });
+
+  /* Buat port jika belum ada */
+  if (!port) {
+    port = await _mpCreate(sb, odpId, nomorPort, MP_STATUS.AVAILABLE);
+    if (!port) return false;
+  }
+
+  /* Blok jika bukan AVAILABLE */
+  if (port.status !== MP_STATUS.AVAILABLE) {
+    var msg = '🚫 Port ' + nomorPort + ' sudah berstatus ' + port.status;
+    if (port.nama_pelanggan) msg += ' (' + port.nama_pelanggan + ')';
+    if (typeof toast === 'function') toast(msg, 'err');
+    _mpWarn(msg);
+    return false;
+  }
+
+  var ok = await _mpUpdateStatus(sb, port.id, MP_STATUS.USED, pelId, cid, nama);
+  if (ok) {
+    _mpAudit('AKTIVASI', port.id, odpId, pelId, { nomor_port: nomorPort, cid: cid });
+    _mpUpdateOdpStatus(sb, odpId);
+    _mpLog('Aktivasi port ' + nomorPort + ' ODP ' + odpId + ' → USED');
+  }
+  return ok;
+};
+
+/* ══════════════════════════════════════════════
+   §6. DISMANTLE — USED → AVAILABLE + kosongkan pelanggan_id
+══════════════════════════════════════════════ */
+window.dismantlePort = async function (odpId, nomorPort) {
+  var sb = _sb();
+  if (!sb) return false;
+
+  var port = (_mpCache || []).find(function (p) {
+    return p.odp_id === odpId && p.nomor_port === parseInt(nomorPort);
+  });
+
+  if (!port) {
+    _mpWarn('Port tidak ditemukan untuk dismantle ODP=' + odpId + ' port=' + nomorPort);
+    return false;
+  }
+
+  var ok = await _mpUpdateStatus(sb, port.id, MP_STATUS.AVAILABLE, null, null, null);
+  if (ok) {
+    _mpAudit('DISMANTLE', port.id, odpId, null, { nomor_port: nomorPort });
+    _mpUpdateOdpStatus(sb, odpId);
+    _mpLog('Dismantle port ' + nomorPort + ' ODP ' + odpId + ' → AVAILABLE');
+  }
+  return ok;
+};
+
+/* ══════════════════════════════════════════════
+   §7. STATUS ODP OTOMATIS dari master_port
+══════════════════════════════════════════════ */
+async function _mpUpdateOdpStatus(sb, odpId) {
+  var m = getPortMetrics(odpId);
+  var st = 'Aktif'; /* default */
+  if (m.total > 0) {
+    if (m.available === 0 && m.reserved === 0) st = 'Penuh';
+    else if (m.used > 0) st = 'Aktif'; /* Partial — tetap Aktif di Master ODP */
+    else st = 'Aktif';
+  }
+  try {
+    await sb.from('master_odp')
+      .update({ status: st, updated_at: new Date().toISOString() })
+      .eq('id', odpId);
+  } catch (e) { /* non-fatal */ }
+}
+
+/* ══════════════════════════════════════════════
+   §8. QUERY HELPERS — untuk form pelanggan
+══════════════════════════════════════════════ */
+
+/* Ambil port AVAILABLE per ODP — untuk dropdown form pelanggan */
+window.getAvailablePortsForOdp = function (odpId) {
+  return (_mpCache || [])
+    .filter(function (p) { return p.odp_id === odpId && p.status === MP_STATUS.AVAILABLE; })
+    .sort(function (a, b) { return a.nomor_port - b.nomor_port; });
+};
+
+/* Validasi sebelum simpan pelanggan — cek apakah port tersedia */
+window.validatePortBeforeSave = function (odpId, nomorPort) {
+  if (!odpId)     return { valid: false, reason: 'ODP wajib dipilih' };
+  if (!nomorPort) return { valid: false, reason: 'Nomor port wajib diisi' };
+
+  /* Jika master_port belum diisi / belum migrasi — biarkan validasi lama yang handle */
+  if (!_mpLoaded || !_mpCache || _mpCache.length === 0) return { valid: true, reason: '' };
+
+  var port = (_mpCache || []).find(function (p) {
+    return p.odp_id === odpId && p.nomor_port === parseInt(nomorPort);
+  });
+
+  if (!port) return { valid: true, reason: '' }; /* Port belum terdaftar = bisa dipakai */
+
+  if (port.status === MP_STATUS.AVAILABLE) return { valid: true, reason: '' };
+  if (port.status === MP_STATUS.USED)
+    return { valid: false, reason: 'Port sudah USED oleh: ' + (port.nama_pelanggan || port.cid || 'pelanggan lain') };
+  if (port.status === MP_STATUS.RESERVED)
+    return { valid: false, reason: 'Port sedang RESERVED' };
+  if (port.status === MP_STATUS.MAINTENANCE)
+    return { valid: false, reason: 'Port sedang MAINTENANCE' };
+  return { valid: false, reason: 'Port tidak tersedia (status: ' + port.status + ')' };
+};
+
+/* ══════════════════════════════════════════════
+   §9. PATCH savePel — sync ke master_port
+   Dipanggil setelah simpan pelanggan berhasil
+══════════════════════════════════════════════ */
+function _mpHookSavePel() {
+  var origSavePel = window.savePel;
+  if (!origSavePel || origSavePel._mpPatched) return;
+
+  window.savePel = function () {
+    /* Tangkap nilai form sebelum reset */
+    var odpName  = (document.getElementById('p-odp')  || {}).value || '';
+    var portStr  = (document.getElementById('p-port') || {}).value || '';
+    var cidVal   = (document.getElementById('p-cid')  || {}).value || '';
+    var namaVal  = (document.getElementById('p-nama') || {}).value || '';
+    var portNum  = parseInt((portStr.match(/\d+/) || [])[0]) || 0;
+
+    /* Jalankan savePel original */
+    origSavePel.apply(this, arguments);
+
+    /* Setelah simpan berhasil — sync port ke master_port */
+    if (!odpName || !portNum || !cidVal) return;
+    setTimeout(function () {
+      var odps = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+      var odpObj = odps.find(function (o) {
+        return (o.nama || '').trim().toLowerCase() === odpName.trim().toLowerCase() ||
+               (o.kode || '').trim().toLowerCase() === odpName.trim().toLowerCase();
+      });
+      if (!odpObj) { _mpWarn('ODP tidak ditemukan di master_odp: ' + odpName); return; }
+      window.aktivasiPort(odpObj.id, portNum, cidVal, cidVal, namaVal);
+    }, 1200);
+  };
+  window.savePel._mpPatched = true;
+  _mpLog('savePel() di-patch → sync ke master_port');
+}
+
+/* ══════════════════════════════════════════════
+   §10. PATCH saveXDismantle — sync ke master_port
+══════════════════════════════════════════════ */
+function _mpHookDismantle() {
+  var origSaveX = window.saveXDismantle;
+  if (!origSaveX || origSaveX._mpPatched) return;
+
+  window.saveXDismantle = function () {
+    /* Ambil info pelanggan yang akan di-dismantle sebelum reset */
+    var pel = typeof selectedPelX !== 'undefined' ? selectedPelX : null;
+    var oldPort = pel ? (pel.port || '') : '';
+    var oldOdp  = pel ? (pel.odp  || '') : '';
+    var portNum = parseInt((oldPort.match(/\d+/) || [])[0]) || 0;
+
+    /* Jalankan fungsi asli */
+    origSaveX.apply(this, arguments);
+
+    /* Sync: kembalikan port ke AVAILABLE di master_port */
+    if (!oldOdp || !portNum) return;
+    setTimeout(function () {
+      var odps = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+      var odpObj = odps.find(function (o) {
+        return (o.nama || '').trim().toLowerCase() === oldOdp.trim().toLowerCase() ||
+               (o.kode || '').trim().toLowerCase() === oldOdp.trim().toLowerCase();
+      });
+      if (!odpObj) { _mpWarn('ODP tidak ditemukan untuk dismantle: ' + oldOdp); return; }
+      window.dismantlePort(odpObj.id, portNum);
+    }, 1200);
+  };
+  window.saveXDismantle._mpPatched = true;
+  _mpLog('saveXDismantle() di-patch → sync ke master_port');
+}
+
+/* ══════════════════════════════════════════════
+   §11. PATCH savePindahOdp — sync port lama & baru
+══════════════════════════════════════════════ */
+function _mpHookPindahOdp() {
+  var origPindah = window.savePindahOdp;
+  if (!origPindah || origPindah._mpPatched) return;
+
+  window.savePindahOdp = function () {
+    /* Ambil data sebelum pindah */
+    var idx = typeof _pindahOdpIdx !== 'undefined' ? _pindahOdpIdx : -1;
+    var d   = (idx >= 0 && typeof db !== 'undefined') ? db.p[idx] : null;
+    var portLamaStr  = d ? (d.port || '') : '';
+    var odpLamaNama  = d ? (d.odp  || '') : '';
+    var portLamaNum  = parseInt((portLamaStr.match(/\d+/) || [])[0]) || 0;
+    var cidVal       = d ? (d.cid  || '') : '';
+    var namaVal      = d ? (d.nama || '') : '';
+
+    var odpBaruEl   = document.getElementById('pindah-odp-baru');
+    var portBaruEl  = document.getElementById('pindah-port-baru');
+    var odpBaruNama = odpBaruEl ? odpBaruEl.value.trim() : '';
+    var portBaruNum = parseInt((portBaruEl ? portBaruEl.value : '') || '') || 0;
+
+    /* Jalankan fungsi asli */
+    origPindah.apply(this, arguments);
+
+    /* Sync master_port: lepas port lama + kunci port baru */
+    setTimeout(function () {
+      var odps = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+
+      /* Kosongkan port lama */
+      if (odpLamaNama && portLamaNum) {
+        var odpLama = odps.find(function (o) {
+          return (o.nama || '').trim().toLowerCase() === odpLamaNama.trim().toLowerCase();
+        });
+        if (odpLama) window.dismantlePort(odpLama.id, portLamaNum);
+      }
+
+      /* Aktifkan port baru */
+      if (odpBaruNama && portBaruNum && cidVal) {
+        var odpBaru = odps.find(function (o) {
+          return (o.nama || '').trim().toLowerCase() === odpBaruNama.trim().toLowerCase();
+        });
+        if (odpBaru) window.aktivasiPort(odpBaru.id, portBaruNum, cidVal, cidVal, namaVal);
+      }
+    }, 1500);
+  };
+  window.savePindahOdp._mpPatched = true;
+  _mpLog('savePindahOdp() di-patch → sync ke master_port');
+}
+
+/* ══════════════════════════════════════════════
+   §12. PATCH getDashboardMetrics — pakai getPortMetrics()
+══════════════════════════════════════════════ */
+function _mpPatchDashboardMetrics() {
+  var orig = window.getDashboardMetrics;
+  if (!orig || orig._mpPatched) return;
+
+  window.getDashboardMetrics = function () {
+    var m = orig.apply(this, arguments);
+    /* Override port metrics dengan data dari master_port jika sudah loaded */
+    if (_mpLoaded && _mpCache && _mpCache.length > 0) {
+      var pm = getPortMetrics();
+      m.total_port    = pm.total;
+      m.port_terpakai = pm.used;
+      m.port_tersedia = pm.available;
+      m.port_rusak    = pm.maintenance;
+    }
+    return m;
+  };
+  window.getDashboardMetrics._mpPatched = true;
+  _mpLog('getDashboardMetrics() di-patch → pakai getPortMetrics()');
+}
+
+/* ══════════════════════════════════════════════
+   §13. PATCH refreshPortSelectOptions — validasi dari master_port
+══════════════════════════════════════════════ */
+function _mpPatchPortSelect() {
+  var origRefresh = window.refreshPortSelectOptions;
+  if (!origRefresh || origRefresh._mpPatched) return;
+
+  window.refreshPortSelectOptions = function (odpName, usedPortNums, rusakPortNums) {
+    /* Panggil fungsi asli dulu */
+    origRefresh.apply(this, arguments);
+
+    /* Tambah layer validasi dari master_port jika sudah loaded */
+    if (!_mpLoaded || !_mpCache || _mpCache.length === 0) return;
+
+    var odpN = (odpName || (
+      (document.getElementById('p-odp') || {}).value || ''
+    )).trim().toLowerCase();
+
+    /* Cari ODP object */
+    var odps = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+    var odpObj = odps.find(function (o) {
+      return (o.nama || '').trim().toLowerCase() === odpN ||
+             (o.kode || '').trim().toLowerCase() === odpN;
+    });
+    if (!odpObj) return;
+
+    /* Ambil status port dari master_port */
+    var portStatusMap = {};
+    (_mpCache || []).forEach(function (p) {
+      if (p.odp_id === odpObj.id) portStatusMap[p.nomor_port] = p;
+    });
+
+    var sel = document.getElementById('p-port');
+    if (!sel) return;
+
+    Array.from(sel.options).forEach(function (opt) {
+      if (!opt.value) return;
+      var m = opt.value.match(/\d+/);
+      if (!m) return;
+      var pNum = parseInt(m[0]);
+      var portData = portStatusMap[pNum];
+      if (!portData) return;
+
+      if (portData.status === MP_STATUS.USED) {
+        var label = portData.nama_pelanggan || portData.cid || 'Terpakai';
+        opt.text    = 'Port ' + pNum + ' — TERISI (' + label + ')';
+        opt.style.color = 'var(--red)';
+        opt.disabled = false; /* Biarkan user pilih — akan dicegat di validasi */
+      } else if (portData.status === MP_STATUS.RESERVED) {
+        opt.text    = 'Port ' + pNum + ' — RESERVED';
+        opt.style.color = 'var(--yellow)';
+        opt.disabled = true;
+      } else if (portData.status === MP_STATUS.MAINTENANCE) {
+        opt.text    = 'Port ' + pNum + ' — MAINTENANCE 🔴';
+        opt.style.color = 'var(--pu)';
+        opt.disabled = true;
+      } else if (portData.status === MP_STATUS.DISMANTLE) {
+        opt.text    = 'Port ' + pNum + ' — DISMANTLE';
+        opt.style.color = 'var(--text3)';
+        opt.disabled = true;
+      }
+    });
+  };
+  window.refreshPortSelectOptions._mpPatched = true;
+  _mpLog('refreshPortSelectOptions() di-patch → layer validasi master_port');
+}
+
+/* ══════════════════════════════════════════════
+   §14. AUDIT LOG PORT
+══════════════════════════════════════════════ */
+function _mpAudit(aksi, portId, odpId, pelId, extra) {
+  if (typeof auditLog !== 'function') return;
+  try {
+    auditLog({
+      menu:     'Master Port',
+      action:   aksi,
+      data_baru: Object.assign({
+        port_id:      portId  || '',
+        odp_id:       odpId   || '',
+        pelanggan_id: pelId   || '',
+        ts: new Date().toISOString()
+      }, extra || {})
+    });
+  } catch (e) { /* non-fatal */ }
+}
+
+/* ══════════════════════════════════════════════
+   §15. VALIDASI INTEGRITAS
+══════════════════════════════════════════════ */
+window.validatePortIntegrity = function () {
+  var ports  = _mpCache || [];
+  var issues = [];
+
+  ports.forEach(function (p) {
+    if (!p.odp_id)
+      issues.push({ type: 'PORT_TANPA_ODP', port_id: p.id });
+    if (p.status === MP_STATUS.USED && !p.pelanggan_id && !p.cid)
+      issues.push({ type: 'USED_TANPA_PELANGGAN', port_id: p.id, odp_id: p.odp_id, nomor_port: p.nomor_port });
+    if (p.status === MP_STATUS.AVAILABLE && (p.pelanggan_id || p.cid))
+      issues.push({ type: 'AVAILABLE_ADA_PELANGGAN', port_id: p.id, cid: p.cid });
+  });
+
+  if (issues.length) {
+    console.warn('[MasterPort] ⚠️ Integrity issues:', issues.length);
+    issues.forEach(function (i) { console.warn(' ·', i.type, i); });
+  } else {
+    _mpLog('✅ Integrity OK — tidak ada data invalid');
+  }
+  return issues;
+};
+
+/* ══════════════════════════════════════════════
+   §16. MIGRASI DATA — master_odp.ports → master_port
+   Panggil sekali: window.mpMigrasi()
+══════════════════════════════════════════════ */
+window.mpMigrasi = async function () {
+  if (typeof currentRole !== 'undefined' && currentRole !== 'admin') {
+    alert('Hanya Admin yang bisa menjalankan migrasi');
+    return;
+  }
+  var sb = _sb();
+  if (!sb) { alert('Supabase belum terhubung'); return; }
+
+  var odps = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+  if (!odps.length) { alert('Master ODP kosong — tidak ada yang bisa dimigrasi'); return; }
+
+  _mpLog('Memulai migrasi ' + odps.length + ' ODP ke master_port...');
+  if (typeof toast === 'function') toast('⏳ Migrasi Master Port dimulai...', 'info');
+
+  var batchInsert = [];
+
+  odps.forEach(function (odp) {
+    var ports  = odp.ports || {};
+    var jumlah = odp.jumlahPort || odp.kapasitas || 8;
+
+    for (var i = 1; i <= jumlah; i++) {
+      var oldSt  = ports[i] || 'Kosong';
+      var newSt  = MP_STATUS_MAP[oldSt] || MP_STATUS.AVAILABLE;
+      batchInsert.push({
+        id:             _mpGenId(odp.id, i),
+        odp_id:         odp.id,
+        nomor_port:     i,
+        status:         newSt,
+        pelanggan_id:   null,
+        cid:            null,
+        nama_pelanggan: null
+      });
+    }
+  });
+
+  /* Insert 100 per batch — idempoten (upsert) */
+  var ok = 0, fail = 0;
+  for (var i = 0; i < batchInsert.length; i += 100) {
+    var batch = batchInsert.slice(i, i + 100);
+    try {
+      var res = await sb.from(MP_TABLE).upsert(batch, { onConflict: 'id', ignoreDuplicates: false });
+      if (res.error) throw res.error;
+      ok += batch.length;
+    } catch (e) {
+      _mpErr('Batch migrasi gagal: ' + e.message);
+      fail += batch.length;
+    }
+  }
+
+  /* Sync CID pelanggan aktif ke port USED */
+  await _mpSyncPelanggan(sb);
+
+  /* Reload cache */
+  await _mpLoadAll(sb);
+
+  var msg = '✅ Migrasi selesai: ' + ok + ' port (' + fail + ' gagal)';
+  _mpLog(msg);
+  if (typeof toast === 'function') toast(msg, ok > 0 ? 'ok' : 'err');
+};
+
+/* Sync pelanggan aktif → tandai port sebagai USED + isi cid/nama */
+async function _mpSyncPelanggan(sb) {
+  var allP = typeof getMergedPel === 'function' ? getMergedPel() : [];
+  var aktif = allP.filter(function (d) {
+    var s = (d.status || '').toLowerCase();
+    return s !== 'dismantle' && s !== 'nonaktif' && s !== 'non aktif';
+  });
+
+  var odps = typeof getMasterOdpData === 'function' ? getMasterOdpData() : [];
+  var odpNameToId = {};
+  odps.forEach(function (o) {
+    if (o.nama) odpNameToId[o.nama.trim().toLowerCase()] = o.id;
+    if (o.kode) odpNameToId[o.kode.trim().toLowerCase()] = o.id;
+  });
+
+  var updated = 0;
+  for (var i = 0; i < aktif.length; i++) {
+    var pel     = aktif[i];
+    var odpKey  = (pel.odp || '').trim().toLowerCase();
+    var odpId   = odpNameToId[odpKey];
+    if (!odpId) continue;
+
+    var portM   = (pel.port || '').match(/\d+/);
+    if (!portM) continue;
+    var portNum = parseInt(portM[0]);
+
+    var portId = _mpGenId(odpId, portNum);
+    try {
+      await sb.from(MP_TABLE).update({
+        status:        MP_STATUS.USED,
+        cid:           pel.cid  || null,
+        pelanggan_id:  pel.cid  || null,
+        nama_pelanggan: pel.nama || null
+      }).eq('id', portId);
+      updated++;
+    } catch (e) { /* skip error individual */ }
+  }
+  _mpLog('Sync pelanggan → ' + updated + ' port ditandai USED');
+}
+
+/* ══════════════════════════════════════════════
+   §17. REALTIME — Subscribe master_port
+══════════════════════════════════════════════ */
+function _mpStartRealtime(sb) {
+  if (_mpChannel) {
+    try { sb.removeChannel(_mpChannel); } catch (e) {}
+  }
+
+  _mpChannel = sb.channel('icrm-master-port-rt-v1')
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: MP_TABLE
+    }, function (payload) {
+      var evt = payload.eventType;
+      var row = payload.new || payload.old;
+      if (!row) return;
+
+      if (!_mpCache) _mpCache = [];
+
+      if (evt === 'INSERT') {
+        var ex = _mpCache.findIndex(function (p) { return p.id === row.id; });
+        if (ex < 0) _mpCache.push(row); else _mpCache[ex] = row;
+      } else if (evt === 'UPDATE') {
+        var idx = _mpCache.findIndex(function (p) { return p.id === row.id; });
+        if (idx >= 0) _mpCache[idx] = row; else _mpCache.push(row);
+      } else if (evt === 'DELETE') {
+        _mpCache = _mpCache.filter(function (p) { return p.id !== (row.id || (payload.old || {}).id); });
+      }
+
+      _mpInvalidateAll();
+      _mpRefreshUI();
+      _mpLog('Realtime: ' + evt + ' port=' + row.id);
+    })
+    .subscribe(function (status) {
+      _mpLog('Realtime status: ' + status);
+    });
+}
+
+function _mpInvalidateAll() {
+  if (typeof _ssotInvalidate === 'function') _ssotInvalidate();
+}
+
+function _mpRefreshUI() {
+  try { if (typeof renderDashboard === 'function') renderDashboard(); } catch (e) {}
+  try { if (typeof renderKpiVendor === 'function') renderKpiVendor(); } catch (e) {}
+  try { if (typeof renderOdpMonitor === 'function') renderOdpMonitor(); } catch (e) {}
+}
+
+/* ══════════════════════════════════════════════
+   §18. BOOTSTRAP — Init setelah login
+══════════════════════════════════════════════ */
+function _mpInit(sb) {
+  _mpLoadAll(sb).then(function () {
+    _mpStartRealtime(sb);
+    _mpPatchDashboardMetrics();
+    _mpPatchPortSelect();
+    _mpHookSavePel();
+    _mpHookDismantle();
+    _mpHookPindahOdp();
+
+    _mpLog('✅ SSOT aktif v' + MP_VERSION + ' — ' + (_mpCache ? _mpCache.length : 0) + ' port loaded');
+  });
+}
+
+/* Hook ke onLoginSuccess (sama seperti modul realtime existing) */
+var _mpOrigLogin = window.onLoginSuccess;
+window.onLoginSuccess = function () {
+  if (_mpOrigLogin) _mpOrigLogin.apply(this, arguments);
+  setTimeout(function () {
+    _waitSb(function (sb) { _mpInit(sb); });
+  }, 1000);
+};
+
+/* ══════════════════════════════════════════════
+   §19. CONSOLE REPORT & WINDOW EXPORTS
+══════════════════════════════════════════════ */
+console.log(
+  '%c╔══════════════════════════════════════════════════════╗\n' +
+  '║  MASTER PORT SSOT v' + MP_VERSION + ' — ICRM_DataEntry            ║\n' +
+  '║  ✓ getPortMetrics()         → statistik port global  ║\n' +
+  '║  ✓ getMasterPortData()      → cache semua port       ║\n' +
+  '║  ✓ aktivasiPort()           → AVAILABLE → USED       ║\n' +
+  '║  ✓ dismantlePort()          → USED → AVAILABLE       ║\n' +
+  '║  ✓ getAvailablePortsForOdp()→ port tersedia per ODP  ║\n' +
+  '║  ✓ validatePortIntegrity()  → cek data invalid       ║\n' +
+  '║  ✓ mpMigrasi()              → migrasi dari master_odp║\n' +
+  '║  ✓ reloadMasterPort()       → refresh dari Supabase  ║\n' +
+  '╚══════════════════════════════════════════════════════╝',
+  'color:#3ecf8e;font-family:monospace;font-size:11px;font-weight:bold'
+);
+
+/* Export konstanta untuk debugging */
+window.MP_STATUS  = MP_STATUS;
+window.MP_VERSION = MP_VERSION;
+
+})(); /* END _ICRM_MASTER_PORT_SSOT */
+</script>
+
 </body></html>
