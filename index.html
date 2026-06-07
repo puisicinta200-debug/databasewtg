@@ -26085,28 +26085,40 @@ DO $$ BEGIN
 END $$;
 
 -- ═══════════════════════════════════════════════
--- ROW LEVEL SECURITY (RLS) — Opsional
 -- ═══════════════════════════════════════════════
--- Aktifkan RLS untuk keamanan:
-ALTER TABLE audit_log   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE master_odc  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE master_odp  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE app_rows    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE app_kv      ENABLE ROW LEVEL SECURITY;
+-- ROW LEVEL SECURITY (RLS)
+-- ═══════════════════════════════════════════════
+-- Aktifkan RLS:
+ALTER TABLE audit_log    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE master_odc   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE master_odp   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_rows     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_kv       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_activity ENABLE ROW LEVEL SECURITY;
+ALTER TABLE master_port  ENABLE ROW LEVEL SECURITY;
 
--- Policy: semua authenticated user bisa baca
-CREATE POLICY "read_all" ON audit_log  FOR SELECT USING (true);
-CREATE POLICY "read_all" ON master_odc FOR SELECT USING (true);
-CREATE POLICY "read_all" ON master_odp FOR SELECT USING (true);
-CREATE POLICY "read_all" ON app_rows   FOR SELECT USING (true);
-CREATE POLICY "read_all" ON app_kv     FOR SELECT USING (true);
+-- Hapus policy lama jika ada (idempotent):
+DROP POLICY IF EXISTS "read_all"  ON audit_log;
+DROP POLICY IF EXISTS "read_all"  ON master_odc;
+DROP POLICY IF EXISTS "read_all"  ON master_odp;
+DROP POLICY IF EXISTS "read_all"  ON app_rows;
+DROP POLICY IF EXISTS "read_all"  ON app_kv;
+DROP POLICY IF EXISTS "write_all" ON audit_log;
+DROP POLICY IF EXISTS "write_all" ON master_odc;
+DROP POLICY IF EXISTS "write_all" ON master_odp;
+DROP POLICY IF EXISTS "write_all" ON app_rows;
+DROP POLICY IF EXISTS "write_all" ON app_kv;
+DROP POLICY IF EXISTS "allow_all" ON app_activity;
+DROP POLICY IF EXISTS "allow_all" ON master_port;
 
--- Policy: semua bisa write (gunakan app-level permission)
-CREATE POLICY "write_all" ON audit_log  FOR ALL USING (true);
-CREATE POLICY "write_all" ON master_odc FOR ALL USING (true);
-CREATE POLICY "write_all" ON master_odp FOR ALL USING (true);
-CREATE POLICY "write_all" ON app_rows   FOR ALL USING (true);
-CREATE POLICY "write_all" ON app_kv     FOR ALL USING (true);
+-- Policy: izinkan anon & authenticated (app pakai anon key, bukan auth Supabase)
+CREATE POLICY "allow_all" ON audit_log    FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all" ON master_odc   FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all" ON master_odp   FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all" ON app_rows     FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all" ON app_kv       FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all" ON app_activity FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all" ON master_port  FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 `;
   console.log('%c' + sql, 'color:#3ecf8e;font-family:monospace;font-size:11px');
   if (typeof toast === 'function') toast('📋 SQL Schema ada di Console (F12)', 'info');
