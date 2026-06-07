@@ -7144,8 +7144,7 @@ function enterApp(role){
   }catch(e){}
 
   function _showApp(){
-    /* ── SPA MODE: Semua berjalan dalam 1 file, tidak ada redirect ke file lain ──
-       Login sukses → tampilkan app-shell langsung, tanpa buka halaman baru. */
+    /* ── SPA MODE: tidak ada redirect ke file lain ── */
     _hideLoadingOverlay();
     var lw = document.getElementById('login-wall');
     if(lw) lw.style.display = 'none';
@@ -30365,22 +30364,30 @@ window.utExport = async function(jenis, fmt) {
     var filterOdp    = (document.getElementById('exp-filter-odp')||{}).value || '';
 
     if (jenis === 'pelanggan') {
-      headers = ['CID','SN','Nama Pelanggan','No HP','Alamat','Coverage Area','Kecamatan','Kelurahan','ODC','ODP','Port','Paket','Sales','Teknisi','Status','Tanggal Aktivasi'];
+      headers = [
+        'No','CID','Nama Pelanggan','No HP',
+        'Alamat Lengkap','RT','RW','Kelurahan','Kecamatan','Coverage Area',
+        'ODC','ODP','Port','Jenis ONT','Kabel Precon',
+        'Teknisi Pasang','Sales','Status','SN ONT','Tanggal Aktivasi'
+      ];
       var q = sb.from('app_rows').select('data').eq('type','p');
       if (tglAwal)  q = q.gte('ts', tglAwal+'T00:00:00Z');
       if (tglAkhir) q = q.lte('ts', tglAkhir+'T23:59:59Z');
       var {data} = await q.limit(5000);
+      var no = 0;
       (data||[]).forEach(function(r){
         var d = r.data||{};
         if (filterArea   && d.area   !== filterArea) return;
         if (filterStatus && (d.status||'').toLowerCase() !== filterStatus.toLowerCase()) return;
         if (filterOdc    && d.odc    !== filterOdc) return;
         if (filterOdp    && d.odp    !== filterOdp) return;
+        no++;
         rows.push([
-          d.cid||'', d.snont||'', d.nama||'', d.hp||'', d.alamat||'',
-          d.area||'', d.kec||'', d.kel||'', d.odc||'', d.odp||'',
-          d.port||'', d.paket||d.status||'', d.sales||'', d.teknisi||'',
-          d.status||'', d.tgl||''
+          no,
+          d.cid||'', d.nama||'', d.hp||d.no_hp||'',
+          d.alamat||'', d.rt||'', d.rw||'', d.kel||'', d.kec||'', d.area||'',
+          d.odc||'', d.odp||'', d.port||'', d.ont||'', d.precon||'',
+          d.teknisi||'', d.sales||'', d.status||'', d.snont||'', d.tgl||''
         ]);
       });
       filename = 'export_pelanggan_'+_today();
@@ -30490,12 +30497,12 @@ function _utInitImport() {
 window.utDownloadTemplate = function(jenis) {
   _ensureXlsx(function(){
     var headers = {
-      pelanggan: ['CID','SN','Nama Pelanggan','No HP','Alamat','Coverage Area','Kecamatan','Kelurahan','ODC','ODP','Port','Paket','Sales','Teknisi','Status','Tanggal Aktivasi'],
+      pelanggan: ['No','CID','Nama Pelanggan','No HP','Alamat Lengkap','RT','RW','Kelurahan','Kecamatan','Coverage Area','ODC','ODP','Port','Jenis ONT','Kabel Precon','Teknisi Pasang','Sales','Status','SN ONT','Tanggal Aktivasi'],
       odc: ['Kode ODC','Nama ODC','Coverage Area','Kecamatan','Kelurahan','Status'],
       odp: ['Kode ODP','Nama ODP','ODC Induk','Coverage Area','Total Port','Status']
     };
     var example = {
-      pelanggan: [['CID-001','SN123456','Budi Santoso','08123456789','Jl. Merdeka No.1','Area Utara','Kec. Pusat','Kel. Tengah','ODC-001','ODP-001-01','1','Paket 10Mbps','Sales A','Teknisi B','aktif','2025-01-15']],
+      pelanggan: [['1','CID-001','Budi Santoso','08123456789','Jl. Merdeka No.1','001','002','Kel. Tengah','Kec. Pusat','Area Utara','ODC-001','ODP-001-01','1','NOKIA','10m','Teknisi B','Sales A','Aktif','SN123456','2025-01-15']],
       odc: [['ODC-001','ODC Pusat Utara','Area Utara','Kec. Pusat','Kel. Tengah','aktif']],
       odp: [['ODP-001-01','ODP Blok A','ODC-001','Area Utara','8','aktif']]
     };
@@ -31379,72 +31386,48 @@ console.log('[WelcomeCard v1.0] Loaded ✓');
 
 <!-- ══════════════════════════════════════════════════════════════
      DASHBOARD GUARD v1.0
-     - destroyImportView(): bersihkan container import/export saat meninggalkan modul utilitas
-     - renderDashboard(): refresh seluruh konten pane-dash
-     - setTab hook: otomatis cleanup saat kembali ke 'dash'
+     destroyImportView / renderDashboard / setTab cleanup hook
 ══════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  /* ── destroyImportView: hapus state import, bersihkan UI container ── */
   window.destroyImportView = function() {
     try {
-      /* Reset upload input supaya file lama tidak tersisa */
-      ['imp-file-input','ut-file-csv','ut-file-json','ut-file-excel',
-       'exp-file-input','ut-export-file'].forEach(function(id){
+      ['imp-file-input','ut-file-csv','ut-file-json','ut-file-excel','exp-file-input','ut-export-file'].forEach(function(id){
         var el = document.getElementById(id);
         if(el && el.tagName === 'INPUT') el.value = '';
       });
-      /* Sembunyikan preview/tabel import */
-      ['imp-preview-wrap','imp-result-wrap','imp-progress-wrap',
-       'ut-import-preview','ut-export-preview','ut-import-result',
-       'ut-export-result','imp-table-wrap'].forEach(function(id){
+      ['imp-preview-wrap','imp-result-wrap','imp-progress-wrap','ut-import-preview','ut-export-preview','ut-import-result','ut-export-result','imp-table-wrap'].forEach(function(id){
         var el = document.getElementById(id);
         if(el){ el.innerHTML = ''; el.style.display = 'none'; }
       });
-      /* Reset status text */
       ['imp-status-text','exp-status-text','ut-import-status','ut-export-status'].forEach(function(id){
         var el = document.getElementById(id);
         if(el) el.textContent = '';
       });
-      /* Reset mode import global jika ada */
       if(typeof window.UT_IMPORT_MODE !== 'undefined') window.UT_IMPORT_MODE = 'baru';
-      if(typeof window.utUpdateImportMode === 'function') {
-        try{ window.utUpdateImportMode('baru'); }catch(e){}
-      }
-    } catch(e) {
-      /* silent — tidak block navigasi */
-    }
+      if(typeof window.utUpdateImportMode === 'function') { try{ window.utUpdateImportMode('baru'); }catch(e){} }
+    } catch(e) {}
   };
 
-  /* ── renderDashboard: refresh seluruh konten pane-dash ── */
   window.renderDashboard = function() {
     try { if(typeof updMainDashboard === 'function') updMainDashboard(); } catch(e){}
     try { if(typeof updDash          === 'function') updDash();          } catch(e){}
     try { if(typeof wcRefreshKPI     === 'function') wcRefreshKPI();     } catch(e){}
   };
 
-  /* ── Hook setTab: cleanup import/export saat meninggalkan utilitas,
-        dan render ulang dashboard saat masuk ke 'dash' ── */
-  var _dgOrigSetTab = window.setTab;
-  if(typeof _dgOrigSetTab === 'function'){
+  var _dgOrig = window.setTab;
+  if(typeof _dgOrig === 'function'){
     window.setTab = function(tab, btn, src){
       var prevTab = (typeof curTab !== 'undefined') ? curTab : '';
-      /* Jika meninggalkan pane utilitas import/export → destroy view */
-      if(prevTab === 'utilitas-import' || prevTab === 'utilitas-export'){
-        if(tab !== 'utilitas-import' && tab !== 'utilitas-export'){
-          window.destroyImportView();
-        }
+      if((prevTab === 'utilitas-import' || prevTab === 'utilitas-export') &&
+         (tab !== 'utilitas-import' && tab !== 'utilitas-export')){
+        window.destroyImportView();
       }
-      /* Panggil setTab asli */
-      _dgOrigSetTab.apply(this, arguments);
-      /* Jika masuk ke dashboard → render ulang */
-      if(tab === 'dash'){
-        setTimeout(window.renderDashboard, 100);
-      }
+      _dgOrig.apply(this, arguments);
+      if(tab === 'dash') setTimeout(window.renderDashboard, 100);
     };
   }
-
-  console.log('[DashboardGuard v1.0] destroyImportView + renderDashboard + setTab hook loaded ✓');
+  console.log('[DashboardGuard v1.0] Loaded ✓');
 })();
 </script>
 </body></html>
