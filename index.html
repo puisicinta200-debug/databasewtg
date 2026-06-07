@@ -2,12 +2,10 @@
 
 <html lang="id"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <!-- ╔══════════════════════════════════════════════════════════════╗
-     ║  ICRM_DataEntry — DEPRECATED / MODUL LAMA                   ║
-     ║  Halaman ini TIDAK BOLEH diakses langsung.                   ║
-     ║  Semua akses (termasuk post-login) di-redirect ke:           ║
-     ║  dashboard_main.html                                         ║
+     ║  ICRM_DataEntry — SPA UTAMA (Single Page Application)        ║
+     ║  Login → Dashboard → Monitoring → Operational → Data Master  ║
+     ║  Semua berjalan dalam 1 file, SSOT: Supabase                 ║
      ╚══════════════════════════════════════════════════════════════╝ -->
-<!-- redirect dihapus -->
 
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="mobile-web-app-capable" content="yes">
@@ -4362,10 +4360,10 @@ p, span, div, label, td, th, li {
           <div><div style="font-size:11px;font-weight:700;color:var(--text)">Material Keluar</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Catat pengeluaran</div></div>
         </button>
 
-        <!-- Import Excel -->
-        <button onclick="toast('Fitur Import Excel segera hadir','info')" style="display:flex;align-items:center;gap:9px;padding:13px 12px;background:var(--bg2);border:1.5px solid rgba(5,150,105,.2);border-radius:var(--r);cursor:pointer;font-family:'Sora',sans-serif;text-align:left;box-shadow:0 2px 8px rgba(5,150,105,.06);transition:var(--ease)" ontouchstart="this.style.opacity='.75'" ontouchend="this.style.opacity='1'">
-          <div style="width:36px;height:36px;border-radius:10px;background:var(--gng2);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(5,150,105,.15)"><i class="ti ti-file-spreadsheet" style="font-size:18px;color:var(--green)"></i></div>
-          <div><div style="font-size:11px;font-weight:700;color:var(--text)">Import Excel</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Upload data massal</div></div>
+        <!-- Aktivitas Terbaru — navigasi ke Audit Log -->
+        <button onclick="setTab('utilitas-audit',document.getElementById('sb-audit'),'sb')" style="display:flex;align-items:center;gap:9px;padding:13px 12px;background:var(--bg2);border:1.5px solid rgba(5,150,105,.2);border-radius:var(--r);cursor:pointer;font-family:'Sora',sans-serif;text-align:left;box-shadow:0 2px 8px rgba(5,150,105,.06);transition:var(--ease)" ontouchstart="this.style.opacity='.75'" ontouchend="this.style.opacity='1'">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--gng2);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(5,150,105,.15)"><i class="ti ti-history" style="font-size:18px;color:var(--green)"></i></div>
+          <div><div style="font-size:11px;font-weight:700;color:var(--text)">Aktivitas Terbaru</div><div style="font-size:10px;color:var(--text3);margin-top:2px">Lihat log aktivitas</div></div>
         </button>
 
       </div>
@@ -7146,21 +7144,17 @@ function enterApp(role){
   }catch(e){}
 
   function _showApp(){
-    /* ── DEPRECATED: ICRM_DataEntry tidak lagi menjadi halaman post-login ──
-       Setelah login berhasil, user langsung diarahkan ke Dashboard Utama.
-       app-shell lama (form pelanggan) TIDAK ditampilkan. */
+    /* ── SPA MODE: Semua berjalan dalam 1 file, tidak ada redirect ke file lain ──
+       Login sukses → tampilkan app-shell langsung, tanpa buka halaman baru. */
     _hideLoadingOverlay();
-    try {
-      var _dest = 'dashboard_main.html';
-      var _qs   = window.location.search || '';
-      window.location.replace(_dest + _qs);
-    } catch(e) {
-      window.location.href = 'dashboard_main.html';
-    }
-    /* --- kode lama dinonaktifkan ---
-    document.getElementById('app-shell').style.display='flex';
-    applyRoleUI();
-    --------------------------------- */
+    var lw = document.getElementById('login-wall');
+    if(lw) lw.style.display = 'none';
+    var as = document.getElementById('app-shell');
+    if(as) as.style.display = 'flex';
+    if(typeof applyRoleUI === 'function') applyRoleUI();
+    if(typeof setTab === 'function') setTab('dash');
+    if(typeof updMainDashboard === 'function') updMainDashboard();
+    if(typeof updDash === 'function') updDash();
   }
 
   function _doInit(){
@@ -31380,6 +31374,77 @@ setTimeout(function(){
 },6000);
 
 console.log('[WelcomeCard v1.0] Loaded ✓');
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DASHBOARD GUARD v1.0
+     - destroyImportView(): bersihkan container import/export saat meninggalkan modul utilitas
+     - renderDashboard(): refresh seluruh konten pane-dash
+     - setTab hook: otomatis cleanup saat kembali ke 'dash'
+══════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  /* ── destroyImportView: hapus state import, bersihkan UI container ── */
+  window.destroyImportView = function() {
+    try {
+      /* Reset upload input supaya file lama tidak tersisa */
+      ['imp-file-input','ut-file-csv','ut-file-json','ut-file-excel',
+       'exp-file-input','ut-export-file'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(el && el.tagName === 'INPUT') el.value = '';
+      });
+      /* Sembunyikan preview/tabel import */
+      ['imp-preview-wrap','imp-result-wrap','imp-progress-wrap',
+       'ut-import-preview','ut-export-preview','ut-import-result',
+       'ut-export-result','imp-table-wrap'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(el){ el.innerHTML = ''; el.style.display = 'none'; }
+      });
+      /* Reset status text */
+      ['imp-status-text','exp-status-text','ut-import-status','ut-export-status'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(el) el.textContent = '';
+      });
+      /* Reset mode import global jika ada */
+      if(typeof window.UT_IMPORT_MODE !== 'undefined') window.UT_IMPORT_MODE = 'baru';
+      if(typeof window.utUpdateImportMode === 'function') {
+        try{ window.utUpdateImportMode('baru'); }catch(e){}
+      }
+    } catch(e) {
+      /* silent — tidak block navigasi */
+    }
+  };
+
+  /* ── renderDashboard: refresh seluruh konten pane-dash ── */
+  window.renderDashboard = function() {
+    try { if(typeof updMainDashboard === 'function') updMainDashboard(); } catch(e){}
+    try { if(typeof updDash          === 'function') updDash();          } catch(e){}
+    try { if(typeof wcRefreshKPI     === 'function') wcRefreshKPI();     } catch(e){}
+  };
+
+  /* ── Hook setTab: cleanup import/export saat meninggalkan utilitas,
+        dan render ulang dashboard saat masuk ke 'dash' ── */
+  var _dgOrigSetTab = window.setTab;
+  if(typeof _dgOrigSetTab === 'function'){
+    window.setTab = function(tab, btn, src){
+      var prevTab = (typeof curTab !== 'undefined') ? curTab : '';
+      /* Jika meninggalkan pane utilitas import/export → destroy view */
+      if(prevTab === 'utilitas-import' || prevTab === 'utilitas-export'){
+        if(tab !== 'utilitas-import' && tab !== 'utilitas-export'){
+          window.destroyImportView();
+        }
+      }
+      /* Panggil setTab asli */
+      _dgOrigSetTab.apply(this, arguments);
+      /* Jika masuk ke dashboard → render ulang */
+      if(tab === 'dash'){
+        setTimeout(window.renderDashboard, 100);
+      }
+    };
+  }
+
+  console.log('[DashboardGuard v1.0] destroyImportView + renderDashboard + setTab hook loaded ✓');
 })();
 </script>
 </body></html>
