@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a56db">
-<title>ICRM</title>
+<title>ICRM vNext</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -942,69 +942,7 @@ tr:active td{background:var(--bg4)}
 .fee-act-btn.export{background:var(--yg);color:var(--yellow);border:1px solid rgba(217,119,6,.2)}
 .fee-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:10px;color:var(--text3);text-align:center}
 .fee-empty i{font-size:36px;opacity:.35}.fee-empty p{font-size:12px;font-weight:600;opacity:.6}
-.fee-loading{padding:8px 0}
-
-/* ═══════════════════════════════════════════
-   WELCOME OVERLAY
-   Temporary overlay shown after login success.
-   Auto-dismissed after 2.5s. z-index:998 (below
-   login wall 999, above app 100).
-═══════════════════════════════════════════ */
-#welcome-overlay{
-  position:fixed;inset:0;z-index:998;
-  background:linear-gradient(160deg,#1a3a8c 0%,#1a56db 55%,#1e40af 100%);
-  display:none;
-  flex-direction:column;align-items:center;justify-content:center;
-  padding:40px 28px;
-  pointer-events:none;
-  transition:opacity .5s ease;
-}
-#welcome-overlay.on{display:flex}
-#welcome-overlay.fade-out{opacity:0}
-.wov-logo{
-  width:80px;height:80px;border-radius:22px;
-  background:rgba(255,255,255,.15);
-  border:2px solid rgba(255,255,255,.3);
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:20px;
-  animation:fadeUp .4s ease both;
-}
-.wov-logo i{font-size:36px;color:#fff}
-.wov-app{
-  font-size:28px;font-weight:800;color:#fff;
-  letter-spacing:-.5px;margin-bottom:6px;
-  animation:fadeUp .4s .1s ease both;
-}
-.wov-tagline{
-  font-size:13px;color:rgba(255,255,255,.7);
-  letter-spacing:.3px;margin-bottom:32px;
-  animation:fadeUp .4s .15s ease both;
-}
-.wov-greet{
-  font-size:18px;font-weight:700;color:#fff;
-  text-align:center;line-height:1.5;
-  animation:fadeUp .4s .22s ease both;
-}
-.wov-role{
-  margin-top:10px;
-  padding:5px 16px;border-radius:20px;
-  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);
-  font-size:11px;font-weight:700;color:rgba(255,255,255,.9);
-  letter-spacing:.8px;text-transform:uppercase;
-  animation:fadeUp .4s .3s ease both;
-}
-.wov-bar-wrap{
-  margin-top:36px;width:160px;height:3px;
-  background:rgba(255,255,255,.2);border-radius:2px;
-  overflow:hidden;
-  animation:fadeUp .4s .35s ease both;
-}
-.wov-bar{
-  height:100%;width:0%;
-  background:#fff;border-radius:2px;
-  transition:width 2.2s linear;
-}
-</style>
+.fee-loading{padding:8px 0}</style>
 </head>
 <body>
 
@@ -1012,7 +950,7 @@ tr:active td{background:var(--bg4)}
 <div id="wall">
   <div class="wall-icon"><i class="ti ti-wifi-off"></i></div>
   <h2>Tidak Ada Internet</h2>
-  <p>ICRM memerlukan koneksi internet untuk terhubung ke Supabase.</p>
+  <p>ICRM vNext memerlukan koneksi internet untuk terhubung ke Supabase.</p>
   <button class="retry-btn" onclick="retryNet()"><i class="ti ti-refresh"></i> Coba Lagi</button>
 </div>
 
@@ -1024,7 +962,7 @@ tr:active td{background:var(--bg4)}
 <div id="login-wall">
   <div class="lw-bg"></div>
   <div class="lw-logo"><i class="ti ti-building-broadcast-tower"></i></div>
-  <div class="lw-title">ICRM</div>
+  <div class="lw-title">ICRM vNext</div>
   <div class="lw-sub">Masukkan username dan PIN untuk melanjutkan</div>
 
   <div class="lw-form">
@@ -1067,18 +1005,8 @@ tr:active td{background:var(--bg4)}
 </div>
 
 <!-- ══════════════════════════════════════════
-     WELCOME OVERLAY
-     Temporary — shown by _loginOK(), auto-dismissed.
-     No auth logic. No session logic. Pure display.
+     SIDEBAR OVERLAY — klik untuk tutup
 ══════════════════════════════════════════ -->
-<div id="welcome-overlay">
-  <div class="wov-logo"><i class="ti ti-building-broadcast-tower"></i></div>
-  <div class="wov-app">ICRM</div>
-  <div class="wov-tagline">ISP Management System</div>
-  <div class="wov-greet" id="wov-greet">Selamat datang</div>
-  <div class="wov-role" id="wov-role">USER</div>
-  <div class="wov-bar-wrap"><div class="wov-bar" id="wov-bar"></div></div>
-</div>
 <div id="sb-overlay" onclick="sbClose()" ontouchend="sbClose()"></div>
 
 <!-- ══════════════════════════════════════════
@@ -1088,7 +1016,7 @@ tr:active td{background:var(--bg4)}
   <div class="sb-brand">
     <div class="sb-brand-ico"><i class="ti ti-building-broadcast-tower"></i></div>
     <div>
-      <div class="sb-app-name">ICRM</div>
+      <div class="sb-app-name">ICRM vNext</div>
       <div class="sb-app-ver">Foundation Mode v2.1 · Phase 12</div>
     </div>
   </div>
@@ -1242,7 +1170,7 @@ tr:active td{background:var(--bg4)}
       </button>
       <div class="hd-info">
         <div class="hd-title" id="hd-title">Dashboard</div>
-        <div class="hd-sub" id="hd-sub">ICRM</div>
+        <div class="hd-sub" id="hd-sub">ICRM vNext</div>
       </div>
       <div class="net-pill on" id="net-pill">
         <div class="net-d"></div>
@@ -1261,7 +1189,7 @@ tr:active td{background:var(--bg4)}
       <div class="dash-greet">
         <div class="dash-greet-sub" id="dash-greet-time">Selamat datang</div>
         <h2 id="dash-greet-name">Dashboard</h2>
-        <p>ICRM · ISP Management System</p>
+        <p>ICRM vNext · ISP Management System</p>
       </div>
 
       <!-- 4 Stat cards — data from Supabase -->
@@ -2511,8 +2439,7 @@ tr:active td{background:var(--bg4)}
               <div><div style="font-size:13px;font-weight:700;color:var(--text)">Gudang</div><div style="font-size:11px;color:var(--text3)">tabel: gudang</div></div>
             </div>
             <div style="display:flex;gap:8px">
-              <button onclick="expExport('gudang','Gudang','xlsx')" style="flex:1;padding:7px;border-radius:8px;background:var(--gng2);color:var(--green);border:1px solid var(--green);font-size:11px;font-weight:600;cursor:pointer"><i class="ti ti-file-spreadsheet"></i> XLSX</button>
-              <button onclick="expExport('gudang','Gudang','csv')"  style="flex:1;padding:7px;border-radius:8px;background:var(--c1b);color:var(--c1);border:1px solid var(--c1);font-size:11px;font-weight:600;cursor:pointer"><i class="ti ti-file-text"></i> CSV</button>
+              <div style="flex:1;padding:7px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);font-size:11px;font-weight:600;color:var(--text3);text-align:center;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-clock-pause"></i> Belum Tersedia</div>
             </div>
           </div>
           <div class="exp-card" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:16px">
@@ -2521,8 +2448,7 @@ tr:active td{background:var(--bg4)}
               <div><div style="font-size:13px;font-weight:700;color:var(--text)">Maintenance</div><div style="font-size:11px;color:var(--text3)">tabel: maintenance_ticket</div></div>
             </div>
             <div style="display:flex;gap:8px">
-              <button onclick="expExport('maintenance_ticket','Maintenance','xlsx')" style="flex:1;padding:7px;border-radius:8px;background:var(--gng2);color:var(--green);border:1px solid var(--green);font-size:11px;font-weight:600;cursor:pointer"><i class="ti ti-file-spreadsheet"></i> XLSX</button>
-              <button onclick="expExport('maintenance_ticket','Maintenance','csv')"  style="flex:1;padding:7px;border-radius:8px;background:var(--c1b);color:var(--c1);border:1px solid var(--c1);font-size:11px;font-weight:600;cursor:pointer"><i class="ti ti-file-text"></i> CSV</button>
+              <div style="flex:1;padding:7px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);font-size:11px;font-weight:600;color:var(--text3);text-align:center;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-clock-pause"></i> Belum Tersedia</div>
             </div>
           </div>
           <div class="exp-card" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:16px">
@@ -2531,8 +2457,7 @@ tr:active td{background:var(--bg4)}
               <div><div style="font-size:13px;font-weight:700;color:var(--text)">Dismantle</div><div style="font-size:11px;color:var(--text3)">tabel: dismantle_ticket</div></div>
             </div>
             <div style="display:flex;gap:8px">
-              <button onclick="expExport('dismantle_ticket','Dismantle','xlsx')" style="flex:1;padding:7px;border-radius:8px;background:var(--gng2);color:var(--green);border:1px solid var(--green);font-size:11px;font-weight:600;cursor:pointer"><i class="ti ti-file-spreadsheet"></i> XLSX</button>
-              <button onclick="expExport('dismantle_ticket','Dismantle','csv')"  style="flex:1;padding:7px;border-radius:8px;background:var(--c1b);color:var(--c1);border:1px solid var(--c1);font-size:11px;font-weight:600;cursor:pointer"><i class="ti ti-file-text"></i> CSV</button>
+              <div style="flex:1;padding:7px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);font-size:11px;font-weight:600;color:var(--text3);text-align:center;display:flex;align-items:center;justify-content:center;gap:5px"><i class="ti ti-clock-pause"></i> Belum Tersedia</div>
             </div>
           </div>
         </div>
@@ -3774,7 +3699,7 @@ tr:active td{background:var(--bg4)}
 
 <script>
 /* ══════════════════════════════════════════════════════════════════
-   ICRM — FOUNDATION STABLE v2.0
+   ICRM vNext — FOUNDATION STABLE v2.0
    ──────────────────────────────────────────────────────────────
    ARSITEKTUR NAVIGASI (v2 — REBUILD DARI NOL):
    • Login wall: z-index:999, display:flex di HTML
@@ -3908,7 +3833,7 @@ function _loginOK(usr){
   var av=name.replace(/\s+/g,' ').trim().split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase()||'U';
 
   /* Update sidebar user strip */
-  var els={'sb-av':av,'sb-uname':name,'sb-urole':(CR||'user').toUpperCase(),'hd-sub':'ICRM · '+name};
+  var els={'sb-av':av,'sb-uname':name,'sb-urole':(CR||'user').toUpperCase(),'hd-sub':'ICRM vNext · '+name};
   Object.keys(els).forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=els[id];});
 
   /* Update greeting */
@@ -3924,25 +3849,6 @@ function _loginOK(usr){
   var app=document.getElementById('app');
   if(lw){ lw.style.zIndex='-1'; lw.style.display='none'; }
   if(app){ app.style.display='flex'; app.style.zIndex='100'; }
-
-  /* Welcome overlay — temporary, auto-dismiss after 2.5s */
-  var wov=document.getElementById('welcome-overlay');
-  var wovGreet=document.getElementById('wov-greet');
-  var wovRole=document.getElementById('wov-role');
-  var wovBar=document.getElementById('wov-bar');
-  if(wov){
-    if(wovGreet) wovGreet.textContent=greet+', '+name+'!';
-    if(wovRole)  wovRole.textContent=(CR||'user').toUpperCase();
-    wov.classList.remove('fade-out');
-    wov.classList.add('on');
-    /* Animate progress bar */
-    if(wovBar){ setTimeout(function(){ wovBar.style.width='100%'; },50); }
-    /* Fade out then hide */
-    setTimeout(function(){
-      wov.classList.add('fade-out');
-      setTimeout(function(){ wov.classList.remove('on','fade-out'); },500);
-    },2000);
-  }
 
   _btnState(false);
   sbStatus('ok');
@@ -4875,7 +4781,7 @@ nav = function(key, btnEl, type){
   }
 };
 
-console.log('%c╔══════════════════════════════════════════════════════╗\n║  ICRM · Sidebar Refinement v2.3                      ║\n║  ✓ Dashboard = menu grup STANDALONE (no submenu)     ║\n║  ✓ Overview = menu grup TERPISAH                     ║\n║  ✓ Overview → KPI Vendor + Data Quality              ║\n║  ✓ Klik Dashboard → halaman dashboard langsung       ║\n║  ✓ Klik Overview → expand submenu                    ║\n║  ✓ Semua menu lain tidak berubah                     ║\n╚══════════════════════════════════════════════════════╝','color:#1a56db;font-family:monospace;font-size:11px;font-weight:bold');
+console.log('%c╔══════════════════════════════════════════════════════╗\n║  ICRM vNext · Sidebar Refinement v2.3                ║\n║  ✓ Dashboard = menu grup STANDALONE (no submenu)     ║\n║  ✓ Overview = menu grup TERPISAH                     ║\n║  ✓ Overview → KPI Vendor + Data Quality              ║\n║  ✓ Klik Dashboard → halaman dashboard langsung       ║\n║  ✓ Klik Overview → expand submenu                    ║\n║  ✓ Semua menu lain tidak berubah                     ║\n╚══════════════════════════════════════════════════════╝','color:#1a56db;font-family:monospace;font-size:11px;font-weight:bold');
 </script>
 
 <script>
