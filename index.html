@@ -2338,6 +2338,7 @@ tr:active td{background:var(--bg4)}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
           <button class="imp-tab on" id="imptab-pel"    onclick="impSetTab('pel')"     style="padding:7px 14px;border-radius:8px;border:1.5px solid var(--c1);background:var(--c1b);color:var(--c1);font-size:12px;font-weight:600;cursor:pointer">Pelanggan</button>
           <button class="imp-tab"    id="imptab-odc"    onclick="impSetTab('odc')"     style="padding:7px 14px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">Master ODC</button>
+          <button class="imp-tab"    id="imptab-odp"    onclick="impSetTab('odp')"     style="padding:7px 14px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">Master ODP</button>
           <button class="imp-tab"    id="imptab-mat"    onclick="impSetTab('mat')"     style="padding:7px 14px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">Material</button>
         </div>
         <!-- Drop zone -->
@@ -10250,13 +10251,20 @@ var IMP_CONFIG = {
     cols: ['material_code','material_name','category','unit','brand','minimum_stock','description','status'],
     dupeField: 'material_code',
     dupeLabel: 'Kode Material'
+  },
+  odp: {
+    table: 'master_odp',
+    required: ['kode_odp','nama','kode_odc','capacity'],
+    cols: ['kode_odp','nama','kode_odc','vendor_id','coverage_area_id','alamat','latitude','longitude','capacity','used_port','available_port','status','notes'],
+    dupeField: 'kode_odp',
+    dupeLabel: 'Kode ODP'
   }
 };
 
 function impSetTab(tab){
   _impTab = tab;
   impClear();
-  ['pel','odc','mat'].forEach(function(t){
+  ['pel','odc','odp','mat'].forEach(function(t){
     var btn = document.getElementById('imptab-'+t);
     if(!btn) return;
     if(t===tab){
@@ -10403,6 +10411,7 @@ function impDoImport(){
         rec.created_at = now;
         rec.created_by = actor;
         if(cfg.table==='pelanggan'){ rec.is_deleted=false; rec.cid=String(rec.cid||'').toUpperCase(); }
+        if(cfg.table==='master_odp'){ rec.is_deleted=false; if(rec.kode_odp) rec.kode_odp=String(rec.kode_odp).toUpperCase(); }
         return rec;
       });
 
@@ -10440,6 +10449,7 @@ function impDoImport(){
           /* refresh module */
           if(cfg.table==='pelanggan'&&_cur==='pelanggan') pelLoad(1);
           if(cfg.table==='master_odc'&&_cur==='master-odc') odcLoad(1);
+          if(cfg.table==='master_odp'&&_cur==='master-odp') odpLoad(1);
           if(cfg.table==='material'&&_cur==='material') matLoad(1);
           return;
         }
