@@ -13061,7 +13061,16 @@ function ieDoImport(){
   /* ── Ambil allowed cols dari schema (satu sumber kebenaran) ── */
   var _schema    = _ieSchemas[_ieCurrentModul];
   var _allowed   = _schema ? _schema.cols : [];
-  var _numFields = ['target_homes','jumlah_pon','pon_used','jumlah_port','port_used'];
+  /* Konversi angka — hanya kolom yang memang ada di schema modul ini */
+  var _allNumFields = {
+    areas:     ['target_homes'],
+    olts:      ['jumlah_pon','pon_used'],
+    odcs:      ['jumlah_port','port_used'],
+    odps:      ['jumlah_port','port_used'],
+    pelanggan: [],
+    tickets:   []
+  };
+  var _numFields = _allNumFields[_ieCurrentModul] || [];
   var _conflictKey = {
     areas:'kode', olts:'kode', odcs:'kode', odps:'kode',
     pelanggan:'cid', tickets:'no_tiket'
