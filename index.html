@@ -13076,7 +13076,12 @@ function ieDoImport(){
     numFields.forEach(function(f){ if(row[f]!==null && row[f]!==undefined && row[f]!=='') row[f]=Number(row[f])||0; });
   });
 
-  sb.from(_ieCurrentModul).insert(payload)
+  /* Conflict key per modul */
+  var _conflictKey = {
+    areas:'kode', olts:'kode', odcs:'kode', odps:'kode',
+    pelanggan:'cid', tickets:'no_tiket'
+  }[_ieCurrentModul] || 'kode';
+  sb.from(_ieCurrentModul).upsert(payload, {onConflict:_conflictKey, ignoreDuplicates:false})
     .then(function(r){
       if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-import"></i> Simpan ke Database'; }
       if(r.error){
