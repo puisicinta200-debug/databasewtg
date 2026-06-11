@@ -3117,6 +3117,26 @@ tr:active td{background:var(--bg4)}
         <div class="olt-stat-item tr"><div class="olt-stat-n" id="pelst-cabut">—</div><div class="olt-stat-l">Cabut</div></div>
       </div>
 
+      <!-- Ringkasan Jenis Pelanggan -->
+      <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--c1);margin-bottom:6px"><i class="ti ti-cash"></i> PELANGGAN BERBAYAR</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="tag tc1" style="font-size:11px"><i class="ti ti-user" style="font-size:9px"></i> Reguler: <strong id="pelst-reguler">—</strong></span>
+            <span class="tag tpu" style="font-size:11px"><i class="ti ti-briefcase" style="font-size:9px"></i> UMKM: <strong id="pelst-umkm">—</strong></span>
+            <span class="tag tcy" style="font-size:11px"><i class="ti ti-building" style="font-size:9px"></i> Corporate: <strong id="pelst-corp">—</strong></span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px"><i class="ti ti-gift"></i> PELANGGAN GRATIS</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="tag tgr" style="font-size:11px"><i class="ti ti-school" style="font-size:9px"></i> FASUM: <strong id="pelst-fasum">—</strong></span>
+            <span class="tag tgr" style="font-size:11px"><i class="ti ti-plug" style="font-size:9px"></i> ODP Tempel: <strong id="pelst-odp">—</strong></span>
+            <span class="tag tgr" style="font-size:11px"><i class="ti ti-box" style="font-size:9px"></i> ODC Tempel: <strong id="pelst-odc">—</strong></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Toolbar -->
       <div class="olt-toolbar">
         <div class="olt-search-wrap">
@@ -3141,6 +3161,17 @@ tr:active td{background:var(--bg4)}
         </select>
         <select class="sel olt-fil-sel" id="pel-fil-paket" onchange="pelRender()">
           <option value="">Semua Paket</option>
+        </select>
+        <select class="sel olt-fil-sel" id="pel-fil-jenis" onchange="pelRender()">
+          <option value="">Semua Jenis</option>
+          <option value="berbayar">Berbayar (Reg/UMKM/Corp)</option>
+          <option value="gratis">Gratis (FASUM/ODP/ODC)</option>
+          <option value="Reguler">Reguler</option>
+          <option value="UMKM">UMKM</option>
+          <option value="Corporate">Corporate</option>
+          <option value="FASUM">FASUM</option>
+          <option value="ODP_TEMPEL">ODP Tempel</option>
+          <option value="ODC_TEMPEL">ODC Tempel</option>
         </select>
       </div>
 
@@ -3276,6 +3307,20 @@ tr:active td{background:var(--bg4)}
               <option value="200 Mbps">200 Mbps</option>
               <option value="Dedicated 10M">Dedicated 10M</option>
             </select>
+          </div>
+
+          <!-- Jenis Pelanggan -->
+          <div class="form-group">
+            <label class="form-lbl"><i class="ti ti-tag"></i> Jenis Pelanggan <span class="req">*</span></label>
+            <select class="sel inp" id="pelf-jenis">
+              <option value="Reguler">Reguler</option>
+              <option value="UMKM">UMKM</option>
+              <option value="Corporate">Corporate</option>
+              <option value="FASUM">FASUM (Gratis)</option>
+              <option value="ODP_TEMPEL">ODP Tempel (Gratis)</option>
+              <option value="ODC_TEMPEL">ODC Tempel (Gratis)</option>
+            </select>
+            <div class="form-hint">FASUM / ODP Tempel / ODC Tempel tidak menghasilkan fee &amp; tidak masuk perhitungan Finance</div>
           </div>
 
           <!-- Tgl Pasang & Status -->
@@ -3673,6 +3718,9 @@ tr:active td{background:var(--bg4)}
       <div class="mat-subpane on" id="fin-pane-import">
         <div style="background:var(--c1b);border:1px solid rgba(26,86,219,.2);border-radius:var(--rs);padding:11px 13px;margin-bottom:12px;font-size:11px;color:var(--c1);line-height:1.6">
           <i class="ti ti-info-circle"></i> <strong>Proses 1 — Import Data ISP.</strong> Approval ISP adalah syarat mutlak munculnya fee. Finance hanya <strong>menerima</strong> hasil approval, tidak meng-approve. Hanya status <strong>APPROVED</strong> yang dapat diproses ke tahap fee.
+        </div>
+        <div style="background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:var(--rs);padding:10px 13px;margin-bottom:12px;font-size:11px;color:var(--red);line-height:1.6">
+          <i class="ti ti-shield-lock"></i> <strong>GOVERNANCE — Pelanggan Gratis:</strong> FASUM, ODP Tempel, ODC Tempel <strong>tidak menghasilkan fee</strong> dalam bentuk apapun. Tidak masuk OTF, Recurring, Invoice, Pembayaran, maupun Pendapatan Finance.
         </div>
         <div class="olt-stat-strip">
           <div class="olt-stat-item tg"><div class="olt-stat-n" id="impst-approved">—</div><div class="olt-stat-l">Approved</div></div>
@@ -8222,8 +8270,16 @@ function otfLoad(){
   if(!sb){ if(list) list.innerHTML='<div class="olt-empty"><i class="ti ti-wifi-off"></i><p>Database tidak terhubung</p></div>'; return; }
 
   /* Load approved pelanggan for dropdown */
-  var p1 = sb.from('approval_isp').select('pel_id,paket,tgl_pasang,pelanggan(id,cid,nama,area_id)').eq('status','approved')
-    .then(function(r){ if(!r.error) _approvedPelList = (r.data||[]).map(function(a){ return a.pelanggan; }).filter(Boolean); });
+  /* GOVERNANCE: Pelanggan gratis (FASUM/ODP_TEMPEL/ODC_TEMPEL) tidak boleh masuk OTF */
+  var p1 = sb.from('approval_isp').select('pel_id,paket,tgl_pasang,pelanggan(id,cid,nama,area_id,jenis_pelanggan)').eq('status','approved')
+    .then(function(r){
+      if(!r.error){
+        var FREE_TYPES = ['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+        _approvedPelList = (r.data||[]).map(function(a){ return a.pelanggan; }).filter(function(p){
+          return p && FREE_TYPES.indexOf(p.jenis_pelanggan)===(-1);
+        });
+      }
+    });
 
   var p2 = sb.from('fee_otf').select('*').order('created_at',{ascending:false})
     .then(function(r){
@@ -8446,11 +8502,12 @@ function recOpenForm(){
   var sel=document.getElementById('recf-area');
   sel.innerHTML='<option value="">— Semua Area —</option>';
   _areaData.forEach(function(a){var opt=document.createElement('option');opt.value=a.id;opt.textContent=a.nama+' ('+a.kode+')';sel.appendChild(opt);});
-  /* Count pelanggan aktif */
+  /* Count pelanggan aktif BERBAYAR saja (GOVERNANCE: FASUM/ODP_TEMPEL/ODC_TEMPEL dikecualikan) */
   var countAktif=function(){
     var sb=getSB();if(!sb)return;
     var areaId=document.getElementById('recf-area').value;
-    var q=sb.from('pelanggan').select('id',{count:'exact'}).eq('status','aktif');
+    var q=sb.from('pelanggan').select('id',{count:'exact'}).eq('status','aktif')
+      .not('jenis_pelanggan','in','("FASUM","ODP_TEMPEL","ODC_TEMPEL")');
     if(areaId) q=q.eq('area_id',areaId);
     q.then(function(r){if(!r.error){document.getElementById('recf-jml-aktif').value=r.count||0;recCalcTotal();}});
   };
@@ -9040,7 +9097,9 @@ function closingOpenForm(){
   var d=new Date();
   document.getElementById('closf-periode').value=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);
   /* Auto-fill dari data yang ada */
-  document.getElementById('closf-aktif').value=_invData.filter?(_pelData?_pelData.filter(function(p){return p.status==='aktif';}).length:0):0;
+  /* GOVERNANCE: Count pelanggan aktif BERBAYAR saja — FASUM/ODP_TEMPEL/ODC_TEMPEL dikecualikan */
+  var FREE_TYPES_CLO=['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+  document.getElementById('closf-aktif').value=_invData.filter?(_pelData?_pelData.filter(function(p){return p.status==='aktif'&&FREE_TYPES_CLO.indexOf(p.jenis_pelanggan)===(-1);}).length:0):0;
   document.getElementById('closf-suspend').value=_pelData?_pelData.filter(function(p){return p.status==='suspend';}).length:0;
   document.getElementById('closf-terminasi').value=_pelData?_pelData.filter(function(p){return p.status==='cabut';}).length:0;
   document.getElementById('closf-otf').value=_otfData.reduce(function(a,o){return a+(o.nominal||0);},0);
@@ -10387,6 +10446,14 @@ function _pelUpdateStats(){
   var cabut   = _pelData.filter(function(p){ return p.status==='cabut'; }).length;
   var e = function(id,v){ var el=document.getElementById(id); if(el) el.textContent=_fmt(v); };
   e('pelst-total',total); e('pelst-aktif',aktif); e('pelst-suspend',suspend); e('pelst-cabut',cabut);
+  /* GOVERNANCE: Jenis breakdown */
+  var FREE_TYPES = ['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+  e('pelst-reguler', _pelData.filter(function(p){ return p.jenis_pelanggan==='Reguler'; }).length);
+  e('pelst-umkm',    _pelData.filter(function(p){ return p.jenis_pelanggan==='UMKM'; }).length);
+  e('pelst-corp',    _pelData.filter(function(p){ return p.jenis_pelanggan==='Corporate'; }).length);
+  e('pelst-fasum',   _pelData.filter(function(p){ return p.jenis_pelanggan==='FASUM'; }).length);
+  e('pelst-odp',     _pelData.filter(function(p){ return p.jenis_pelanggan==='ODP_TEMPEL'; }).length);
+  e('pelst-odc',     _pelData.filter(function(p){ return p.jenis_pelanggan==='ODC_TEMPEL'; }).length);
 }
 
 /* ── Helpers ── */
@@ -10421,7 +10488,10 @@ function pelRender(){
   var fSt   = (document.getElementById('pel-fil-status')||{}).value||'';
   var fAr   = (document.getElementById('pel-fil-area')||{}).value||'';
   var fPk   = (document.getElementById('pel-fil-paket')||{}).value||'';
+  var fJn   = (document.getElementById('pel-fil-jenis')||{}).value||'';
   q = q.toLowerCase().trim();
+  var FREE_TYPES = ['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+  var PAID_TYPES = ['Reguler','UMKM','Corporate'];
 
   _pelFil = _pelData.filter(function(p){
     var matchQ = !q ||
@@ -10433,7 +10503,11 @@ function pelRender(){
     var matchSt = !fSt || p.status===fSt;
     var matchAr = !fAr || p.area_id===fAr;
     var matchPk = !fPk || p.paket===fPk;
-    return matchQ && matchSt && matchAr && matchPk;
+    var matchJn = !fJn ||
+      (fJn==='berbayar' ? PAID_TYPES.indexOf(p.jenis_pelanggan||'Reguler')>=0 :
+       fJn==='gratis'   ? FREE_TYPES.indexOf(p.jenis_pelanggan)>=0 :
+       (p.jenis_pelanggan||'Reguler')===fJn);
+    return matchQ && matchSt && matchAr && matchPk && matchJn;
   });
 
   var total = _pelFil.length;
@@ -10475,6 +10549,13 @@ function _pelRowHTML(p){
   var stLabel = stLbl[p.status]||p.status||'—';
   var avCls = p.status==='aktif'?'aktif':p.status==='suspend'?'suspend':p.status==='cabut'?'cabut':'proses';
   var initials = (p.nama||'?').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]||''; }).join('').toUpperCase();
+  /* GOVERNANCE: Jenis pelanggan badge */
+  var FREE_TYPES = ['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+  var jenis = p.jenis_pelanggan||'Reguler';
+  var isGratis = FREE_TYPES.indexOf(jenis)>=0;
+  var jenisCls = isGratis ? 'tgr' : 'tc1';
+  var jenisLbl = jenis==='ODP_TEMPEL'?'ODP Tempel':jenis==='ODC_TEMPEL'?'ODC Tempel':jenis;
+  var jenisTag = '<span class="tag '+jenisCls+'" style="font-size:9px">'+(isGratis?'<i class="ti ti-gift" style="font-size:8px"></i> ':'<i class="ti ti-cash" style="font-size:8px"></i> ')+_esc(jenisLbl)+'</span>';
 
   return '<div class="pel-row" onclick="pelOpenDet(\''+p.id+'\')">'+
     '<button class="pel-row-detail-btn" onclick="event.stopPropagation();pelOpenDet(\''+p.id+'\')"><i class="ti ti-chevron-right"></i></button>'+
@@ -10487,6 +10568,7 @@ function _pelRowHTML(p){
     '</div>'+
     '<div class="pel-row-meta">'+
       '<span class="tag '+stClass+'">'+stLabel+'</span>'+
+      jenisTag+
       (p.paket?'<span class="tag tpu"><i class="ti ti-wifi" style="font-size:9px"></i> '+_esc(p.paket)+'</span>':'')+
       (p.hp?'<span class="tag tgr"><i class="ti ti-phone" style="font-size:9px"></i> '+_esc(p.hp)+'</span>':'')+
       '<span class="tag tgr">'+_esc(_pelAreaName(p.area_id))+'</span>'+
@@ -10517,6 +10599,7 @@ function pelOpenForm(data){
   document.getElementById('pelf-nik').value        = isEdit ? (data.nik||'') : '';
   document.getElementById('pelf-alamat').value     = isEdit ? (data.alamat||'') : '';
   document.getElementById('pelf-paket').value      = isEdit ? (data.paket||'') : '';
+  document.getElementById('pelf-jenis').value      = isEdit ? (data.jenis_pelanggan||'Reguler') : 'Reguler';
   document.getElementById('pelf-tgl-pasang').value = isEdit ? (data.tgl_pasang||'') : '';
   document.getElementById('pelf-status').value     = isEdit ? (data.status||'proses') : 'proses';
   document.getElementById('pelf-port').value       = isEdit ? (data.nomor_port||'') : '';
@@ -10762,6 +10845,7 @@ function pelSave(){
   var odpId    = document.getElementById('pelf-odp').value;
   var nomorPort= parseInt(document.getElementById('pelf-port').value)||null;
   var paket    = document.getElementById('pelf-paket').value;
+  var jenisPel = document.getElementById('pelf-jenis').value||'Reguler';
   var tglPasang= document.getElementById('pelf-tgl-pasang').value;
   var status   = document.getElementById('pelf-status').value;
   var lat      = parseFloat(document.getElementById('pelf-lat').value)||null;
@@ -10810,6 +10894,7 @@ function pelSave(){
     odp_id: odpId||null,
     nomor_port: nomorPort,
     paket: paket,
+    jenis_pelanggan: jenisPel,
     tgl_pasang: tglPasang||null,
     status: status,
     lat: lat,
@@ -10869,6 +10954,7 @@ function pelOpenDet(id){
     dr('Area', '<span class="tag tc1">'+_esc(_pelAreaName(p.area_id))+'</span>')+
     sec('wifi','Layanan')+
     dr('Paket', p.paket ? '<span class="tpu" style="padding:3px 10px;border-radius:20px">'+_esc(p.paket)+'</span>' : '—')+
+    dr('Jenis Pelanggan', (function(){ var FREE=['FASUM','ODP_TEMPEL','ODC_TEMPEL']; var j=p.jenis_pelanggan||'Reguler'; var lbl=j==='ODP_TEMPEL'?'ODP Tempel':j==='ODC_TEMPEL'?'ODC Tempel':j; var cls=FREE.indexOf(j)>=0?'tgr':'tc1'; return '<span class="tag '+cls+'">'+_esc(lbl)+'</span>'+(FREE.indexOf(j)>=0?' <span style="font-size:10px;color:var(--text3)">(Tidak menghasilkan fee)</span>':''); })())+
     dr('Tgl Pasang', p.tgl_pasang||'—')+
     sec('plug','Infra Jaringan')+
     dr('ODP', p.odp_id ? _esc(_pelOdpName(p.odp_id)) : '<span style="color:var(--text3)">Belum di-assign</span>')+
@@ -13216,9 +13302,13 @@ var _fdbWilayahCache = null; /* null = belum diload */
 function fdbInitFilters(){
   var sb = getSB(); if(!sb) return;
   if(_fdbWilayahCache) { _fdbFillAreaCoverageFilter(); return; }
-  sb.from('pelanggan').select('id,area_coverage,kecamatan,kelurahan,rw,rt,status').order('area_coverage')
+  /* GOVERNANCE: Sertakan jenis_pelanggan, filter keluar FASUM/ODP_TEMPEL/ODC_TEMPEL */
+  sb.from('pelanggan').select('id,area_coverage,kecamatan,kelurahan,rw,rt,status,jenis_pelanggan').order('area_coverage')
     .then(function(r){
-      if(!r.error) _fdbWilayahCache = r.data||[];
+      if(!r.error){
+        var FREE_TYPES=['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+        _fdbWilayahCache = (r.data||[]).filter(function(p){ return FREE_TYPES.indexOf(p.jenis_pelanggan)===(-1); });
+      }
       _fdbFillAreaCoverageFilter();
     }).catch(function(){});
 }
@@ -13304,9 +13394,13 @@ function fdbLoad(){
   var fil = _fdbGetFilter();
 
   /* Pastikan wilayah cache ada */
+  /* GOVERNANCE: Include jenis_pelanggan — hanya pelanggan BERBAYAR masuk Finance */
   var pWil = _fdbWilayahCache ? Promise.resolve()
-    : sb.from('pelanggan').select('id,area_coverage,kecamatan,kelurahan,rw,rt,status').then(function(r){
-        if(!r.error) _fdbWilayahCache=r.data||[];
+    : sb.from('pelanggan').select('id,area_coverage,kecamatan,kelurahan,rw,rt,status,jenis_pelanggan').then(function(r){
+        if(!r.error){
+          var FREE_TYPES=['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+          _fdbWilayahCache=(r.data||[]).filter(function(p){ return FREE_TYPES.indexOf(p.jenis_pelanggan)===(-1); });
+        }
       });
 
   pWil.then(function(){
@@ -13315,9 +13409,11 @@ function fdbLoad(){
     var pelMap = {};
     (_fdbWilayahCache||[]).forEach(function(p){ pelMap[p.id]=p; });
 
-    /* Scope: pelanggan sesuai filter wilayah */
+    /* Scope: pelanggan BERBAYAR sesuai filter wilayah */
+    var FREE_TYPES=['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
     var pelInScope = (_fdbWilayahCache||[]).filter(function(p){
-      return (!fil.acv||p.area_coverage===fil.acv)
+      return FREE_TYPES.indexOf(p.jenis_pelanggan)===(-1)
+          && (!fil.acv||p.area_coverage===fil.acv)
           && (!fil.kec||p.kecamatan===fil.kec)
           && (!fil.kel||p.kelurahan===fil.kel)
           && (!fil.rw ||p.rw===fil.rw)
@@ -13851,8 +13947,8 @@ function urSave(){
     is_active: status !== 'nonaktif',   /* konversi: 'aktif'->true, 'nonaktif'->false */
     keterangan:ket||null
   };
-  /* Tambahkan area_id hanya jika role admin_wilayah (pastikan kolom ada di DB sebelum diaktifkan) */
-  /* if(role==='admin_wilayah' && area_id) payload.area_id = area_id; */
+  /* area_id: scope wilayah untuk admin_wilayah — aktifkan setelah kolom ada di DB */
+  if(role==='admin_wilayah' && area_id) payload.area_id = area_id;
   if(pin) payload.pin = pin; /* Idealnya di-hash di server-side via RPC */
 
   if(!sb){
