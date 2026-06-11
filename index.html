@@ -13056,14 +13056,17 @@ function ieDoImport(){
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Menyimpan…'; }
 
   /* Strip internal fields */
+  function _genUUID(){
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
+      var r2=Math.random()*16|0,v=c==='x'?r2:(r2&0x3|0x8);return v.toString(16);
+    });
+  }
+  var _uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   var payload = validRows.map(function(r){
     var obj = {};
     Object.keys(r).forEach(function(k){ if(k[0]!=='_') obj[k]=r[k]||null; });
-    /* Auto-generate UUID jika id tidak ada di CSV */
-    if(!obj.id) obj.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
-      var r2 = Math.random()*16|0, v = c==='x' ? r2 : (r2&0x3|0x8);
-      return v.toString(16);
-    });
+    /* Selalu generate UUID baru — abaikan id dari CSV agar tidak salah format */
+    obj.id = _genUUID();
     return obj;
   });
 
