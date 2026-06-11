@@ -12869,12 +12869,12 @@ function ieSetTab(tab, btn){
 
 /* ── Schema per modul ── */
 var _ieSchemas = {
-  areas:     {label:'Area & Coverage',   cols:['kode','nama','kota','provinsi','type','status','target_homes','keterangan'],        required:['kode','nama','kota']},
-  olts:      {label:'Master OLT',        cols:['kode','nama','lokasi','brand','model','jumlah_pon','pon_used','uplink','status','lat','lng','keterangan'], required:['kode','nama','lokasi']},
-  odcs:      {label:'Master ODC',        cols:['kode','nama','lokasi','type','jumlah_port','port_used','status','lat','lng','keterangan'], required:['kode','nama']},
-  odps:      {label:'Master ODP',        cols:['kode','nama','lokasi','type','jumlah_port','port_used','status','lat','lng','keterangan'], required:['kode','nama']},
-  pelanggan: {label:'Pelanggan',         cols:['cid','nama','hp','nik','alamat','paket','status','lat','lng','keterangan'],          required:['nama','hp']},
-  tickets:   {label:'Ticketing',         cols:['no_tiket','jenis','prioritas','status','judul','deskripsi','teknisi','tgl_buat'],    required:['jenis','judul']}
+  areas:     {label:'Area & Coverage',   cols:['kode','nama','kota','provinsi','type','status','target_homes','keterangan'],                              required:['kode','nama','kota']},
+  olts:      {label:'Master OLT',        cols:['kode','nama','lokasi','brand','model','jumlah_pon','pon_used','uplink','status','lat','lng','keterangan'],required:['kode','nama']},
+  odcs:      {label:'Master ODC',        cols:['kode','nama','lokasi','type','jumlah_port','port_used','status','lat','lng','keterangan'],                required:['kode','nama']},
+  odps:      {label:'Master ODP',        cols:['kode','nama','lokasi','type','jumlah_port','port_used','status','lat','lng','keterangan'],                required:['kode','nama']},
+  pelanggan: {label:'Pelanggan',         cols:['cid','nama','hp','nik','alamat','paket','status','lat','lng','keterangan'],                              required:['cid','nama']},
+  tickets:   {label:'Ticketing',         cols:['no_tiket','jenis','prioritas','status','judul','deskripsi','teknisi','tgl_buat'],                        required:['no_tiket','jenis']}
 };
 
 var _ieCurrentModul = '';
@@ -12904,21 +12904,24 @@ function ieModulChange(){
 function ieDownloadTemplate(){
   var schema = _ieSchemas[_ieCurrentModul];
   if(!schema) return;
+  /* Contoh data per modul */
+  var _ex = {
+    areas:     [['AREA-001','Bandung Utara','Bandung','Jawa Barat','urban','aktif','500','Wilayah padat']],
+    olts:      [['OLT-001','OLT Gegerkalong','Jl. Gegerkalong No.1','Huawei','MA5608T','16','8','10G','aktif','-6.870','107.577','']],
+    odcs:      [['ODC-001','ODC Sukajadi','Jl. Sukajadi No.10','aerial','8','0','aktif','-6.890','107.580',''],
+                ['ODC-002','ODC Cipedes','Jl. Cipedes No.5','aerial','8','2','aktif','-6.895','107.582','']],
+    odps:      [['ODP-001','ODP Sukajadi-01','Tiang Listrik depan warung','aerial','8','0','aktif','-6.891','107.581',''],
+                ['ODP-002','ODP Sukajadi-02','Tiang PLN No.23','aerial','8','3','aktif','-6.892','107.583','']],
+    pelanggan: [['CID-26-0001','Budi Santoso','081234567890','3273010101010001','Jl. Merdeka No.1','20Mbps','aktif','-6.900','107.590','Pelanggan baru'],
+                ['CID-26-0002','Siti Rahayu','082345678901','3273020202020002','Jl. Sudirman No.5','10Mbps','aktif','-6.901','107.591','']],
+    tickets:   [['TKT-001','gangguan','high','open','Internet tidak bisa','Pelanggan tidak bisa browsing sejak pagi','Teknisi A',new Date().toISOString().slice(0,10)],
+                ['TKT-002','pemasangan','medium','open','Pasang baru pelanggan','Request pemasangan baru','Teknisi B',new Date().toISOString().slice(0,10)]]
+  };
+  var rows = _ex[_ieCurrentModul] || [schema.cols.map(function(){ return ''; })];
   var csv = schema.cols.join(',') + '\n';
-  /* Satu baris contoh */
-  var example = schema.cols.map(function(c){
-    var ex = {kode:'CONTOH-001',nama:'Nama Contoh',kota:'Bandung',provinsi:'Jawa Barat',type:'urban',status:'aktif',
-              target_homes:'100',keterangan:'Catatan contoh',lokasi:'Jl. Contoh No.1',brand:'Huawei',model:'MA5608T',
-              jumlah_pon:'16',pon_used:'8',uplink:'10G',lat:'-6.9175',lng:'107.6191',
-              jumlah_port:'8',port_used:'0',cid:'CID-25-0001',hp:'081234567890',nik:'3273010101010001',
-              alamat:'Jl. Pelanggan No.1',paket:'10Mbps',no_tiket:'TKT-001',jenis:'gangguan',
-              prioritas:'medium',judul:'Contoh judul tiket',deskripsi:'Deskripsi tiket',teknisi:'Teknisi A',
-              tgl_buat:new Date().toISOString().slice(0,10),odc_id:'',odp_id:'',area_id:''};
-    return '"'+(ex[c]||'')+'"';
-  });
-  csv += example.join(',') + '\n';
+  rows.forEach(function(r){ csv += r.map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(',') + '\n'; });
   _ieDownloadBlob(csv, 'template_'+_ieCurrentModul+'.csv', 'text/csv');
-  toast('Template diunduh','ok');
+  toast('Template diunduh — '+rows.length+' baris contoh','ok');
 }
 
 /* ── Handle drop ── */
@@ -13055,39 +13058,26 @@ function ieDoImport(){
   var btn = document.getElementById('ie-import-btn');
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Menyimpan…'; }
 
-  /* Strip internal fields */
-  function _genUUID(){
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
-      var r2=Math.random()*16|0,v=c==='x'?r2:(r2&0x3|0x8);return v.toString(16);
-    });
-  }
-  var _uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  var payload = validRows.map(function(r){
-    var obj = {};
-    Object.keys(r).forEach(function(k){ if(k[0]!=='_') obj[k]=r[k]||null; });
-    /* Selalu generate UUID baru — abaikan id dari CSV agar tidak salah format */
-    obj.id = _genUUID();
-    return obj;
-  });
-
-  /* Convert numeric fields */
-  var numFields = ['target_homes','pelanggan','jumlah_pon','pon_used','jumlah_port','port_used','nomor_port'];
-  payload.forEach(function(row){
-    numFields.forEach(function(f){ if(row[f]!==null && row[f]!==undefined && row[f]!=='') row[f]=Number(row[f])||0; });
-  });
-
-  /* Conflict key per modul */
+  /* ── Ambil allowed cols dari schema (satu sumber kebenaran) ── */
+  var _schema    = _ieSchemas[_ieCurrentModul];
+  var _allowed   = _schema ? _schema.cols : [];
+  var _numFields = ['target_homes','jumlah_pon','pon_used','jumlah_port','port_used'];
   var _conflictKey = {
     areas:'kode', olts:'kode', odcs:'kode', odps:'kode',
     pelanggan:'cid', tickets:'no_tiket'
   }[_ieCurrentModul] || 'kode';
 
-  /* Deduplikasi payload — jika ada kode sama di CSV, ambil baris terakhir */
+  /* Bangun payload: hanya kolom schema, konversi angka, dedup by conflict key
+     → kolom id / area_id / olt_id / foreign key dari CSV otomatis diabaikan */
   var _dedupMap = {};
-  payload.forEach(function(row){ if(row[_conflictKey]) _dedupMap[row[_conflictKey]] = row; });
+  validRows.forEach(function(r){
+    var obj = {};
+    _allowed.forEach(function(k){ obj[k] = (r[k]||'').trim() || null; });
+    _numFields.forEach(function(f){ if(obj[f]!==null) obj[f]=Number(obj[f])||0; });
+    var key = obj[_conflictKey];
+    if(key) _dedupMap[key] = obj;
+  });
   var _uniquePayload = Object.keys(_dedupMap).map(function(k){ return _dedupMap[k]; });
-  /* Baris tanpa conflict key tetap dimasukkan */
-  payload.forEach(function(row){ if(!row[_conflictKey]) _uniquePayload.push(row); });
 
   sb.from(_ieCurrentModul).upsert(_uniquePayload, {onConflict:_conflictKey, ignoreDuplicates:false})
     .then(function(r){
