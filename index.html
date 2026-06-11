@@ -13059,6 +13059,11 @@ function ieDoImport(){
   var payload = validRows.map(function(r){
     var obj = {};
     Object.keys(r).forEach(function(k){ if(k[0]!=='_') obj[k]=r[k]||null; });
+    /* Auto-generate UUID jika id tidak ada di CSV */
+    if(!obj.id) obj.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+      var r2 = Math.random()*16|0, v = c==='x' ? r2 : (r2&0x3|0x8);
+      return v.toString(16);
+    });
     return obj;
   });
 
