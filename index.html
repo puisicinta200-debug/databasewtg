@@ -13116,8 +13116,11 @@ function ieDoImport(){
     tickets:   []
   };
   var _numFields = _allNumFields[_ieCurrentModul] || [];
+  /* ODC & ODP: nama yang unik (W1_PRK_JKBN.JJC_001), bukan kode (ODC-001)
+     Area & OLT: kode yang unik
+     Pelanggan: cid, Tiket: no_tiket */
   var _conflictKey = {
-    areas:'kode', olts:'kode', odcs:'kode', odps:'kode',
+    areas:'kode', olts:'kode', odcs:'nama', odps:'nama',
     pelanggan:'cid', tickets:'no_tiket'
   }[_ieCurrentModul] || 'kode';
 
