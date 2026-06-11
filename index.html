@@ -5007,10 +5007,28 @@ tr:active td{background:var(--bg4)}
 
         <!-- Result -->
         <div id="ie-result-wrap" style="display:none">
-          <div class="card" style="text-align:center;padding:22px 16px">
-            <div id="ie-result-ico" style="font-size:42px;margin-bottom:10px"></div>
-            <div id="ie-result-title" style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px"></div>
-            <div id="ie-result-detail" style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:14px"></div>
+          <div class="card" style="padding:18px 16px">
+            <!-- Summary bar -->
+            <div id="ie-result-summary" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"></div>
+            <!-- Progress bar -->
+            <div style="background:var(--bg4);border-radius:20px;height:8px;overflow:hidden;margin-bottom:14px">
+              <div id="ie-result-bar" style="height:100%;border-radius:20px;background:var(--green);width:0%;transition:width .4s"></div>
+            </div>
+            <!-- Detail gagal -->
+            <div id="ie-result-fail-wrap" style="display:none;margin-bottom:14px">
+              <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:6px;display:flex;align-items:center;gap:5px">
+                <i class="ti ti-alert-circle"></i> Detail Baris Gagal
+              </div>
+              <div id="ie-result-fail-list" style="max-height:200px;overflow-y:auto;border:1px solid rgba(220,38,38,.2);border-radius:var(--rs);background:var(--rg2)"></div>
+            </div>
+            <!-- Detail berhasil (collapsible) -->
+            <div id="ie-result-ok-wrap" style="display:none;margin-bottom:14px">
+              <button onclick="var el=document.getElementById('ie-result-ok-list');el.style.display=el.style.display==='none'?'block':'none'" 
+                style="background:none;border:none;font-size:11px;font-weight:700;color:var(--green);cursor:pointer;display:flex;align-items:center;gap:5px;padding:0;margin-bottom:6px">
+                <i class="ti ti-circle-check"></i> <span id="ie-result-ok-label">Lihat Detail Berhasil</span> <i class="ti ti-chevron-down" style="font-size:10px"></i>
+              </button>
+              <div id="ie-result-ok-list" style="display:none;max-height:160px;overflow-y:auto;border:1px solid rgba(5,150,105,.2);border-radius:var(--rs);background:var(--gng2)"></div>
+            </div>
             <button class="btn" onclick="ieResetImport()"><i class="ti ti-plus"></i> Import Lagi</button>
           </div>
         </div>
@@ -7266,17 +7284,34 @@ function _odpFillAreaDropdown(selId, currentVal){
   });
 }
 
-/* ── Fill ODC dropdown (filter by area) ── */
+/* ── Fill ODC dropdown (filter by area, tampilkan semua jika area_id kosong) ── */
 function _odpFillOdcDropdown(selId, currentVal, areaId){
   var sel = document.getElementById(selId);
   if(!sel) return;
   var cur = currentVal || sel.value;
   sel.innerHTML = '<option value="">— Pilih ODC —</option>';
-  var list = areaId ? _odcData.filter(function(o){ return o.area_id===areaId; }) : _odcData;
+  /* Tampilkan ODC yang: (1) area cocok, ATAU (2) area_id kosong/null (belum di-assign) */
+  var list = areaId
+    ? _odcData.filter(function(o){ return o.area_id===areaId || !o.area_id; })
+    : _odcData;
+  /* Sort: area cocok dulu, baru yang belum di-assign */
+  list.sort(function(a,b){
+    var aMatch = a.area_id===areaId ? 0 : 1;
+    var bMatch = b.area_id===areaId ? 0 : 1;
+    if(aMatch!==bMatch) return aMatch-bMatch;
+    return (a.kode||'').localeCompare(b.kode||'');
+  });
   list.forEach(function(o){
     var opt = document.createElement('option');
     opt.value = o.id;
-    opt.textContent = o.kode;
+    var areaNama = '';
+    if(!o.area_id){
+      areaNama = ' ⚠ (area belum diset)';
+    } else if(o.area_id !== areaId && areaId){
+      var ar = _areaData.find(function(a){ return a.id===o.area_id; });
+      areaNama = ar ? ' ['+ar.nama+']' : '';
+    }
+    opt.textContent = o.kode + (o.nama ? ' — '+o.nama : '') + areaNama;
     if(o.id === cur) opt.selected = true;
     sel.appendChild(opt);
   });
@@ -10271,11 +10306,21 @@ function _pelFillOdcDropdown(selId, currentVal, areaId){
   var sel = document.getElementById(selId);
   if(!sel) return;
   sel.innerHTML = '<option value="">— Pilih ODC (opsional) —</option>';
-  var list = areaId ? (window._pelOdcList||[]).filter(function(o){ return o.area_id===areaId; }) : (window._pelOdcList||[]);
+  var all = window._pelOdcList||[];
+  /* Tampilkan ODC area cocok + ODC yang area_id belum diset */
+  var list = areaId
+    ? all.filter(function(o){ return o.area_id===areaId || !o.area_id; })
+    : all;
+  list.sort(function(a,b){
+    var aM=a.area_id===areaId?0:1, bM=b.area_id===areaId?0:1;
+    if(aM!==bM) return aM-bM;
+    return (a.kode||'').localeCompare(b.kode||'');
+  });
   list.forEach(function(o){
     var opt = document.createElement('option');
     opt.value = o.id;
-    opt.textContent = o.kode + ' · ' + o.nama;
+    var suffix = !o.area_id ? ' ⚠ (area belum diset)' : '';
+    opt.textContent = o.kode + ' · ' + o.nama + suffix;
     if(o.id === currentVal) opt.selected = true;
     sel.appendChild(opt);
   });
@@ -10288,8 +10333,8 @@ function _pelFillOdpDropdown(selId, currentVal, areaId, odcId){
   var cur = currentVal || sel.value;
   sel.innerHTML = '<option value="">— Pilih ODP (opsional) —</option>';
   var list = _pelOdpList;
-  if(areaId) list = list.filter(function(o){ return o.area_id===areaId; });
-  if(odcId)  list = list.filter(function(o){ return o.odc_id===odcId; });
+  if(areaId) list = list.filter(function(o){ return o.area_id===areaId || !o.area_id; });
+  if(odcId)  list = list.filter(function(o){ return o.odc_id===odcId  || !o.odc_id; });
   list.forEach(function(o){
     var opt = document.createElement('option');
     opt.value = o.id;
@@ -13088,44 +13133,103 @@ function ieDoImport(){
   });
   var _uniquePayload = Object.keys(_dedupMap).map(function(k){ return _dedupMap[k]; });
 
-  sb.from(_ieCurrentModul).upsert(_uniquePayload, {onConflict:_conflictKey, ignoreDuplicates:false})
-    .then(function(r){
-      if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-import"></i> Simpan ke Database'; }
-      if(r.error){
-        ieShowResult(false, 'Import Gagal', 'Error: '+(r.error.message||'coba lagi')+'\n\nPastikan kolom wajib terisi dan tidak ada duplikat kode.');
-        return;
-      }
-      var msg = validRows.length+' baris berhasil diimpor ke tabel '+_ieCurrentModul+'.';
-      if(_ieParsedData.length > validRows.length){
-        msg += '\n'+ (_ieParsedData.length - validRows.length) +' baris dilewati karena error validasi.';
-      }
-      ieShowResult(true, 'Import Berhasil!', msg);
-      _ieAddLog('Import', _ieSchemas[_ieCurrentModul].label, validRows.length+' baris');
-      /* Reset cached data agar modul reload */
-      if(_ieCurrentModul==='areas')     _areaLoaded=false;
-      if(_ieCurrentModul==='olts')      _oltLoaded=false;
-      if(_ieCurrentModul==='odcs')      _odcLoaded=false;
-      if(_ieCurrentModul==='odps')      _odpLoaded=false;
-      if(_ieCurrentModul==='pelanggan') _pelLoaded=false;
-      if(_ieCurrentModul==='tickets')   _tktLoaded=false;
-    })
-    .catch(function(e){
-      if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-import"></i> Simpan ke Database'; }
-      ieShowResult(false, 'Import Gagal', e.message||'Terjadi kesalahan');
-    });
+  /* Import per-baris agar bisa tracking berhasil/gagal per row */
+  var _total   = _uniquePayload.length;
+  var _ok      = [];
+  var _fail    = [];
+  var _done    = 0;
+
+  function _checkDone(){
+    _done++;
+    if(_done < _total) return;
+    /* Semua selesai */
+    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-import"></i> Simpan ke Database'; }
+    if(_ieCurrentModul==='areas')     _areaLoaded=false;
+    if(_ieCurrentModul==='olts')      _oltLoaded=false;
+    if(_ieCurrentModul==='odcs')      _odcLoaded=false;
+    if(_ieCurrentModul==='odps')      _odpLoaded=false;
+    if(_ieCurrentModul==='pelanggan') _pelLoaded=false;
+    if(_ieCurrentModul==='tickets')   _tktLoaded=false;
+    _ieAddLog('Import', _ieSchemas[_ieCurrentModul].label, _ok.length+' berhasil, '+_fail.length+' gagal');
+    ieShowDetailResult(_total, _ok, _fail, _conflictKey);
+  }
+
+  _uniquePayload.forEach(function(row){
+    sb.from(_ieCurrentModul).upsert([row], {onConflict:_conflictKey, ignoreDuplicates:false})
+      .then(function(r){
+        if(r.error) _fail.push({row:row, err:r.error.message||'Error tidak diketahui'});
+        else        _ok.push(row);
+        _checkDone();
+      })
+      .catch(function(e){
+        _fail.push({row:row, err:e.message||'Error tidak diketahui'});
+        _checkDone();
+      });
+  });
 }
 
-/* ── Show result ── */
-function ieShowResult(ok, title, detail){
+/* ── Show detail result ── */
+function ieShowDetailResult(total, ok, fail, conflictKey){
   document.getElementById('ie-preview-wrap').style.display='none';
-  var wrap  = document.getElementById('ie-result-wrap');
-  var ico   = document.getElementById('ie-result-ico');
-  var ttl   = document.getElementById('ie-result-title');
-  var det   = document.getElementById('ie-result-detail');
-  if(ico)  ico.textContent = ok ? '✅' : '❌';
-  if(ttl){ ttl.textContent=title; ttl.style.color=ok?'var(--green)':'var(--red)'; }
-  if(det)  det.textContent = detail;
-  if(wrap) wrap.style.display='block';
+  var wrap = document.getElementById('ie-result-wrap');
+  if(!wrap) return;
+
+  /* Summary pills */
+  var pct  = total ? Math.round(ok.length/total*100) : 0;
+  var allOk = fail.length===0;
+  var sumEl = document.getElementById('ie-result-summary');
+  sumEl.innerHTML =
+    '<div style="flex:1;background:'+(allOk?'var(--gng2)':'var(--bg3)')+';border:1px solid '+(allOk?'rgba(5,150,105,.25)':'var(--border2)')+';border-radius:var(--rs);padding:10px 12px;text-align:center">'+
+      '<div style="font-size:22px;font-weight:800;color:var(--green)">'+ok.length+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);font-weight:700">BERHASIL</div></div>'+
+    '<div style="flex:1;background:'+(fail.length?'var(--rg2)':'var(--bg3)')+';border:1px solid '+(fail.length?'rgba(220,38,38,.25)':'var(--border2)')+';border-radius:var(--rs);padding:10px 12px;text-align:center">'+
+      '<div style="font-size:22px;font-weight:800;color:'+(fail.length?'var(--red)':'var(--text3)')+'">'+fail.length+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);font-weight:700">GAGAL</div></div>'+
+    '<div style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 12px;text-align:center">'+
+      '<div style="font-size:22px;font-weight:800;color:var(--text)">'+total+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);font-weight:700">TOTAL</div></div>';
+
+  /* Progress bar */
+  var bar = document.getElementById('ie-result-bar');
+  if(bar){ bar.style.width=pct+'%'; bar.style.background=allOk?'var(--green)':(ok.length?'var(--yellow)':'var(--red)'); }
+
+  /* Detail gagal */
+  var failWrap = document.getElementById('ie-result-fail-wrap');
+  var failList = document.getElementById('ie-result-fail-list');
+  if(fail.length && failWrap && failList){
+    failWrap.style.display='block';
+    failList.innerHTML = fail.map(function(f){
+      var key = f.row[conflictKey]||'—';
+      var errShort = f.err.replace(/^.*?:\s*/,'').replace(/\. .*/,'.');
+      return '<div style="padding:8px 11px;border-bottom:1px solid rgba(220,38,38,.12);font-size:11px;display:flex;gap:8px;align-items:flex-start">'+
+        '<span style="flex-shrink:0;font-weight:700;color:var(--red);min-width:90px">'+_esc(key)+'</span>'+
+        '<span style="color:var(--text2);line-height:1.5">'+_esc(errShort)+'</span></div>';
+    }).join('');
+  } else if(failWrap){ failWrap.style.display='none'; }
+
+  /* Detail berhasil (collapsible) */
+  var okWrap  = document.getElementById('ie-result-ok-wrap');
+  var okList  = document.getElementById('ie-result-ok-list');
+  var okLabel = document.getElementById('ie-result-ok-label');
+  if(ok.length && okWrap && okList){
+    okWrap.style.display='block';
+    if(okLabel) okLabel.textContent = 'Lihat '+ok.length+' Data Berhasil';
+    okList.innerHTML = ok.map(function(row){
+      var key = row[conflictKey]||'—';
+      var nama = row.nama||row.judul||row.cid||'';
+      return '<div style="padding:7px 11px;border-bottom:1px solid rgba(5,150,105,.12);font-size:11px;display:flex;gap:8px">'+
+        '<i class="ti ti-circle-check" style="color:var(--green);flex-shrink:0;margin-top:1px"></i>'+
+        '<span style="font-weight:700;color:var(--text);min-width:90px;flex-shrink:0">'+_esc(key)+'</span>'+
+        '<span style="color:var(--text3)">'+_esc(nama)+'</span></div>';
+    }).join('');
+  } else if(okWrap){ okWrap.style.display='none'; }
+
+  wrap.style.display='block';
+}
+
+/* ── Show result (legacy, masih dipakai di tempat lain) ── */
+function ieShowResult(ok, title, detail){
+  ieShowDetailResult(1, ok?[{}]:[], ok?[]:[{row:{},err:detail}], 'kode');
 }
 
 /* ─── BUILD EXPORT LIST ─── */
