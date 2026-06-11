@@ -13123,15 +13123,41 @@ function ieDoImport(){
 
   /* Bangun payload: hanya kolom schema, konversi angka, dedup by conflict key
      → kolom id / area_id / olt_id / foreign key dari CSV otomatis diabaikan */
-  var _dedupMap = {};
+  var _dedupMap   = {};
+  var _dupKodes   = {};   /* kode yang muncul >1x di CSV */
   validRows.forEach(function(r){
     var obj = {};
     _allowed.forEach(function(k){ obj[k] = (r[k]||'').trim() || null; });
     _numFields.forEach(function(f){ if(obj[f]!==null) obj[f]=Number(obj[f])||0; });
     var key = obj[_conflictKey];
-    if(key) _dedupMap[key] = obj;
+    if(!key) return;
+    if(_dedupMap[key]){
+      /* Sudah ada — catat sebagai duplikat */
+      _dupKodes[key] = (_dupKodes[key]||1) + 1;
+    }
+    _dedupMap[key] = obj;
   });
   var _uniquePayload = Object.keys(_dedupMap).map(function(k){ return _dedupMap[k]; });
+  var _dupList = Object.keys(_dupKodes);
+
+  /* Tampilkan peringatan duplikat di CSV sebelum import */
+  if(_dupList.length){
+    var dupWarn = document.getElementById('ie-dup-warn');
+    if(!dupWarn){
+      dupWarn = document.createElement('div');
+      dupWarn.id = 'ie-dup-warn';
+      dupWarn.style.cssText = 'background:var(--yg);border:1px solid rgba(217,119,6,.3);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--yellow);line-height:1.7';
+      var previewWrap = document.getElementById('ie-preview-wrap');
+      if(previewWrap) previewWrap.insertBefore(dupWarn, previewWrap.firstChild);
+    }
+    dupWarn.innerHTML = '<strong><i class="ti ti-alert-triangle"></i> '+_dupList.length+' kode duplikat di CSV — hanya baris terakhir yang diambil:</strong><br>'+
+      _dupList.slice(0,10).map(function(k){ return '• <b>'+k+'</b> muncul '+_dupKodes[k]+'x'; }).join('<br>')+
+      (_dupList.length>10 ? '<br>... dan '+(_dupList.length-10)+' lainnya' : '')+
+      '<br><small style="opacity:.8">Pastikan setiap kode unik di CSV. Kode duplikat kemungkinan adalah ODC di area berbeda yang perlu diberi kode berbeda.</small>';
+  } else {
+    var dupWarn = document.getElementById('ie-dup-warn');
+    if(dupWarn) dupWarn.remove();
+  }
 
   /* Import per-baris agar bisa tracking berhasil/gagal per row */
   var _total   = _uniquePayload.length;
@@ -13151,7 +13177,7 @@ function ieDoImport(){
     if(_ieCurrentModul==='pelanggan') _pelLoaded=false;
     if(_ieCurrentModul==='tickets')   _tktLoaded=false;
     _ieAddLog('Import', _ieSchemas[_ieCurrentModul].label, _ok.length+' berhasil, '+_fail.length+' gagal');
-    ieShowDetailResult(_total, _ok, _fail, _conflictKey);
+    ieShowDetailResult(_total, _ok, _fail, _conflictKey, _dupList||[]);
   }
 
   _uniquePayload.forEach(function(row){
@@ -13169,14 +13195,16 @@ function ieDoImport(){
 }
 
 /* ── Show detail result ── */
-function ieShowDetailResult(total, ok, fail, conflictKey){
+function ieShowDetailResult(total, ok, fail, conflictKey, dupList){
+  dupList = dupList||[];
   document.getElementById('ie-preview-wrap').style.display='none';
   var wrap = document.getElementById('ie-result-wrap');
   if(!wrap) return;
 
   /* Summary pills */
   var pct  = total ? Math.round(ok.length/total*100) : 0;
-  var allOk = fail.length===0;
+  var allOk = fail.length===0 && dupList.length===0;
+  var rawTotal = total + dupList.length; /* total sebelum dedup */
   var sumEl = document.getElementById('ie-result-summary');
   sumEl.innerHTML =
     '<div style="flex:1;background:'+(allOk?'var(--gng2)':'var(--bg3)')+';border:1px solid '+(allOk?'rgba(5,150,105,.25)':'var(--border2)')+';border-radius:var(--rs);padding:10px 12px;text-align:center">'+
@@ -13185,9 +13213,13 @@ function ieShowDetailResult(total, ok, fail, conflictKey){
     '<div style="flex:1;background:'+(fail.length?'var(--rg2)':'var(--bg3)')+';border:1px solid '+(fail.length?'rgba(220,38,38,.25)':'var(--border2)')+';border-radius:var(--rs);padding:10px 12px;text-align:center">'+
       '<div style="font-size:22px;font-weight:800;color:'+(fail.length?'var(--red)':'var(--text3)')+'">'+fail.length+'</div>'+
       '<div style="font-size:10px;color:var(--text3);font-weight:700">GAGAL</div></div>'+
+    (dupList.length ?
+    '<div style="flex:1;background:var(--yg);border:1px solid rgba(217,119,6,.25);border-radius:var(--rs);padding:10px 12px;text-align:center">'+
+      '<div style="font-size:22px;font-weight:800;color:var(--yellow)">'+dupList.length+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);font-weight:700">KODE DOBEL</div></div>' : '')+
     '<div style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 12px;text-align:center">'+
-      '<div style="font-size:22px;font-weight:800;color:var(--text)">'+total+'</div>'+
-      '<div style="font-size:10px;color:var(--text3);font-weight:700">TOTAL</div></div>';
+      '<div style="font-size:22px;font-weight:800;color:var(--text)">'+rawTotal+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);font-weight:700">TOTAL CSV</div></div>';
 
   /* Progress bar */
   var bar = document.getElementById('ie-result-bar');
