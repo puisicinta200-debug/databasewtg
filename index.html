@@ -13081,7 +13081,15 @@ function ieDoImport(){
     areas:'kode', olts:'kode', odcs:'kode', odps:'kode',
     pelanggan:'cid', tickets:'no_tiket'
   }[_ieCurrentModul] || 'kode';
-  sb.from(_ieCurrentModul).upsert(payload, {onConflict:_conflictKey, ignoreDuplicates:false})
+
+  /* Deduplikasi payload — jika ada kode sama di CSV, ambil baris terakhir */
+  var _dedupMap = {};
+  payload.forEach(function(row){ if(row[_conflictKey]) _dedupMap[row[_conflictKey]] = row; });
+  var _uniquePayload = Object.keys(_dedupMap).map(function(k){ return _dedupMap[k]; });
+  /* Baris tanpa conflict key tetap dimasukkan */
+  payload.forEach(function(row){ if(!row[_conflictKey]) _uniquePayload.push(row); });
+
+  sb.from(_ieCurrentModul).upsert(_uniquePayload, {onConflict:_conflictKey, ignoreDuplicates:false})
     .then(function(r){
       if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-import"></i> Simpan ke Database'; }
       if(r.error){
