@@ -23057,7 +23057,9 @@ function ieDoImport(){
   var _needOlt  = (_ieCurrentModul==='odcs');
   var _needOdc  = (_ieCurrentModul==='odps');
 
-  var _pArea = (_needArea && _areaData.length===0)
+  /* Force reload area jika cache tidak punya field kode (load dari halaman lain bisa kurang kolom) */
+  var _areaNeedReload = _needArea && (_areaData.length===0 || !_areaData[0] || _areaData[0].kode===undefined);
+  var _pArea = _areaNeedReload
     ? sb.from('areas').select('id,nama,kode').order('nama').then(function(r){ if(!r.error) _areaData=r.data||[]; })
     : Promise.resolve();
 
@@ -23117,7 +23119,11 @@ function _ieDoImportCore(sb, btn, validRows){
 
     /* ── Resolve area_kode → area_id ── */
     if(obj.area_kode !== undefined){
-      var _ar = (_areaData||[]).find(function(a){ return a.kode===obj.area_kode || a.nama===obj.area_kode; });
+      var _areaVal = (obj.area_kode||'').trim().toLowerCase();
+      var _ar = (_areaData||[]).find(function(a){
+        return (a.kode||'').trim().toLowerCase()===_areaVal
+            || (a.nama||'').trim().toLowerCase()===_areaVal;
+      });
       if(_ar) obj.area_id = _ar.id;
       delete obj.area_kode; /* selalu hapus — kolom ini tidak ada di tabel DB */
     }
@@ -23145,7 +23151,11 @@ function _ieDoImportCore(sb, btn, validRows){
     }
     /* ── Resolve odc_kode → odc_id (untuk ODP) ── */
     if(obj.odc_kode !== undefined){
-      var _odc = (_odcData||[]).find(function(o){ return o.kode===obj.odc_kode || o.nama===obj.odc_kode; });
+      var _odcVal = (obj.odc_kode||'').trim().toLowerCase();
+      var _odc = (_odcData||[]).find(function(o){
+        return (o.kode||'').trim().toLowerCase()===_odcVal
+            || (o.nama||'').trim().toLowerCase()===_odcVal;
+      });
       if(_odc) obj.odc_id = _odc.id;
       delete obj.odc_kode; /* selalu hapus — kolom ini tidak ada di tabel DB */
     }
