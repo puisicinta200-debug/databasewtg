@@ -22830,8 +22830,8 @@ function ieSetTab(tab, btn){
 var _ieSchemas = {
   areas:     {label:'Area & Coverage',   cols:['kode','nama','kota','provinsi','type','status','target_homes','keterangan'],                              required:['kode','nama','kota']},
   olts:      {label:'Master OLT',        cols:['kode','nama','lokasi','brand','model','jumlah_pon','pon_used','uplink','status','lat','lng','keterangan'],required:['kode','nama']},
-  odcs:      {label:'Master ODC',        cols:['kode','nama','area_nama','olt_kode','lokasi','type','jumlah_port','port_used','status','lat','lng','keterangan'],                required:['kode','nama']},
-  odps:      {label:'Master ODP',        cols:['kode','nama','area_nama','odc_kode','lokasi','type','jumlah_port','port_used','status','lat','lng','keterangan'],                required:['kode','nama']},
+  odcs:      {label:'Master ODC',        cols:['kode','nama','area_kode','olt_kode','lokasi','type','jumlah_port','port_used','status','lat','lng','keterangan'],                required:['kode','nama']},
+  odps:      {label:'Master ODP',        cols:['kode','nama','area_kode','odc_kode','lokasi','type','jumlah_port','port_used','status','lat','lng','keterangan'],                required:['kode','nama']},
   pelanggan: {label:'Pelanggan',         cols:['cid','nama','hp','nik','alamat','paket','status','lat','lng','keterangan'],                              required:['cid','nama']},
   material_items: {label:'Material',     cols:['kode','nama','kategori','satuan','merk','stok','min_stok','harga_satuan','status','keterangan'],         required:['kode','nama','kategori']},
   tickets:   {label:'Ticketing',         cols:['no_tiket','jenis','prioritas','status','judul','deskripsi','teknisi','tgl_buat'],                        required:['no_tiket','jenis']}
@@ -22872,12 +22872,12 @@ function ieModulChange(){
     hintEl.style.display='block';
     hintEl.style.background='rgba(26,86,219,.07)';
     hintEl.style.color='var(--c1)';
-    hintEl.innerHTML='<i class="ti ti-info-circle"></i> <strong>area_nama</strong>: isi dengan <b>nama Area</b> (contoh: <code>Parungkuda</code>) &nbsp;·&nbsp; <strong>olt_kode</strong>: isi dengan kode OLT (contoh: <code>OLT-001</code>). Sistem akan otomatis menghubungkan ke ID yang sesuai.';
+    hintEl.innerHTML='<i class="ti ti-info-circle"></i> <strong>area_kode</strong>: isi dengan kode Area (contoh: <code>AREA-001</code>) &nbsp;·&nbsp; <strong>olt_kode</strong>: isi dengan kode OLT parent (contoh: <code>OLT-001</code>). Sistem akan otomatis menghubungkan ke ID yang sesuai.';
   } else if(modul==='odps'){
     hintEl.style.display='block';
     hintEl.style.background='rgba(26,86,219,.07)';
     hintEl.style.color='var(--c1)';
-    hintEl.innerHTML='<i class="ti ti-info-circle"></i> <strong>area_nama</strong>: isi dengan <b>nama Area</b> (contoh: <code>Parungkuda</code>) &nbsp;·&nbsp; <strong>odc_kode</strong>: isi dengan nama/kode ODC parent (contoh: <code>W1_PRK_JJC.JKBN_001</code>). Sistem akan otomatis menghubungkan ke ID yang sesuai.';
+    hintEl.innerHTML='<i class="ti ti-info-circle"></i> <strong>area_kode</strong>: isi dengan kode Area (contoh: <code>AREA-001</code>) &nbsp;·&nbsp; <strong>odc_kode</strong>: isi dengan kode ODC parent (contoh: <code>ODC-001</code>). Sistem akan otomatis menghubungkan ke ID yang sesuai.';
   } else {
     hintEl.style.display='none';
   }
@@ -22891,10 +22891,10 @@ function ieDownloadTemplate(){
   var _ex = {
     areas:     [['AREA-001','Bandung Utara','Bandung','Jawa Barat','urban','aktif','500','Wilayah padat']],
     olts:      [['OLT-001','OLT Gegerkalong','Jl. Gegerkalong No.1','Huawei','MA5608T','16','8','10G','aktif','-6.870','107.577','']],
-    odcs:      [['ODC-001','ODC Sukajadi','Bandung Utara','OLT-001','Jl. Sukajadi No.10','aerial','8','0','aktif','-6.890','107.580',''],
-                ['ODC-002','ODC Cipedes','Bandung Utara','OLT-001','Jl. Cipedes No.5','aerial','8','2','aktif','-6.895','107.582','']],
-    odps:      [['ODP-001','ODP Sukajadi-01','Bandung Utara','W1_PRK_JJC.JKBN_001','Tiang Listrik depan warung','aerial','8','0','aktif','-6.891','107.581',''],
-                ['ODP-002','ODP Sukajadi-02','Bandung Utara','W1_PRK_JJC.JKBN_001','Tiang PLN No.23','aerial','8','3','aktif','-6.892','107.583','']],
+    odcs:      [['ODC-001','ODC Sukajadi','AREA-001','OLT-001','Jl. Sukajadi No.10','aerial','8','0','aktif','-6.890','107.580',''],
+                ['ODC-002','ODC Cipedes','AREA-001','OLT-001','Jl. Cipedes No.5','aerial','8','2','aktif','-6.895','107.582','']],
+    odps:      [['ODP-001','ODP Sukajadi-01','AREA-001','ODC-001','Tiang Listrik depan warung','aerial','8','0','aktif','-6.891','107.581',''],
+                ['ODP-002','ODP Sukajadi-02','AREA-001','ODC-001','Tiang PLN No.23','aerial','8','3','aktif','-6.892','107.583','']],
     pelanggan: [['CID-26-0001','Budi Santoso','081234567890','3273010101010001','Jl. Merdeka No.1','20Mbps','aktif','-6.900','107.590','Pelanggan baru'],
                 ['CID-26-0002','Siti Rahayu','082345678901','3273020202020002','Jl. Sudirman No.5','10Mbps','aktif','-6.901','107.591','']],
     tickets:   [['TKT-001','gangguan','high','open','Internet tidak bisa','Pelanggan tidak bisa browsing sejak pagi','Teknisi A',new Date().toISOString().slice(0,10)],
@@ -23104,15 +23104,11 @@ function _ieDoImportCore(sb, btn, validRows){
     _allowed.forEach(function(k){ obj[k] = (r[k]||'').trim() || null; });
     _numFields.forEach(function(f){ if(obj[f]!==null) obj[f]=Number(obj[f])||0; });
 
-    /* ── Resolve area_nama → area_id (match by nama, fallback kode) ── */
-    if(obj.area_nama){
-      var _areaNamaCsv = (obj.area_nama||'').trim().toLowerCase();
-      var _ar = (_areaData||[]).find(function(a){
-        return (a.nama||'').trim().toLowerCase()===_areaNamaCsv
-            || (a.kode||'').trim().toLowerCase()===_areaNamaCsv;
-      });
+    /* ── Resolve area_kode → area_id ── */
+    if(obj.area_kode){
+      var _ar = (_areaData||[]).find(function(a){ return a.kode===obj.area_kode || a.nama===obj.area_kode; });
       if(_ar) obj.area_id = _ar.id;
-      delete obj.area_nama;
+      delete obj.area_kode;
     }
     /* ── Resolve olt_kode → olt_id (untuk ODC) ── */
     if(obj.olt_kode){
