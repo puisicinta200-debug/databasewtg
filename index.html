@@ -2054,6 +2054,172 @@ tr:active td{background:var(--bg4)}
 .rpt-act-row:last-child{border-bottom:none}
 .rpt-act-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP ACCESSIBILITY — Font size nyaman seperti referensi
+   Hanya berlaku ≥ 768px. Mobile TIDAK berubah.
+═══════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+
+  /* ── Base ── */
+  body { font-size: 15px; }
+
+  /* ── Header ── */
+  .hdr-title { font-size: 18px !important; }
+  .hdr-sub    { font-size: 13px !important; }
+  .net-pill   { font-size: 13px !important; }
+
+  /* ── Sidebar nav ── */
+  .sb-app-name { font-size: 16px !important; }
+  .sb-app-ver  { font-size: 11px !important; }
+  .sb-top      { font-size: 15px !important; min-height: 52px !important; }
+  .sb-top i    { font-size: 20px !important; }
+  .sb-grp-hd   { font-size: 14px !important; min-height: 50px !important; }
+  .sb-grp-hd i.ico { font-size: 20px !important; }
+  .sb-sub      { font-size: 14px !important; min-height: 48px !important; }
+  .sb-sub i    { font-size: 17px !important; }
+  .sb-sub-hd   { font-size: 14px !important; min-height: 46px !important; }
+  .sb-sub-hd i.ico { font-size: 18px !important; }
+  .sb-uname    { font-size: 14px !important; }
+  .sb-urole    { font-size: 12px !important; }
+
+  /* ── Login wall ── */
+  .lw-title        { font-size: 28px !important; }
+  .lw-sub          { font-size: 14px !important; }
+  .lw-feature-text { font-size: 13px !important; }
+  .lw-feature-text b { font-size: 14px !important; }
+  .lw-tagline      { font-size: 13px !important; }
+  .lw-form-title   { font-size: 26px !important; }
+  .lw-form-sub     { font-size: 15px !important; }
+  .lw-lbl          { font-size: 13px !important; }
+  .lw-field input  { font-size: 15px !important; padding: 14px 14px 14px 46px !important; }
+  .lw-field input::placeholder { font-size: 14px !important; }
+  .lw-btn          { font-size: 15px !important; padding: 15px !important; }
+  .lw-err          { font-size: 13px !important; }
+  .lw-hint p       { font-size: 13px !important; }
+  .lw-footer-txt   { font-size: 12px !important; }
+  .lw-noact b      { font-size: 13px !important; }
+  .lw-noact p      { font-size: 12px !important; }
+  .lw-ver          { font-size: 11px !important; }
+
+  /* ── Welcome wall ── */
+  .ww-brand-name   { font-size: 15px !important; }
+  .ww-greet        { font-size: 13px !important; }
+  .ww-name         { font-size: 22px !important; }
+  .ww-role-badge   { font-size: 12px !important; }
+  .ww-tab          { font-size: 12px !important; }
+  .ww-tab i        { font-size: 20px !important; }
+  .ww-section-title { font-size: 11px !important; }
+  .ww-row-lbl      { font-size: 14px !important; }
+  .ww-row-val      { font-size: 14px !important; }
+  .ww-stat-n       { font-size: 26px !important; }
+  .ww-stat-l       { font-size: 11px !important; }
+  .ww-stat-badge   { font-size: 11px !important; }
+
+  /* ── Card / stat umum ── */
+  .card-lbl   { font-size: 13px !important; }
+  .card-val   { font-size: 26px !important; }
+  .card-sub   { font-size: 13px !important; }
+  .card-trend { font-size: 13px !important; }
+
+  /* ── Section headers ── */
+  .sec-hd     { font-size: 18px !important; }
+  .sec-hd-sub { font-size: 13px !important; }
+  .sec-title  { font-size: 18px !important; }
+
+  /* ── Tabel & list rows ── */
+  .tbl-hd   { font-size: 13px !important; }
+  .tbl-row  { font-size: 14px !important; }
+  .row-name { font-size: 14px !important; }
+  .row-sub  { font-size: 12px !important; }
+  .row-val  { font-size: 14px !important; }
+  .row-badge{ font-size: 12px !important; }
+
+  /* ── Chip / badge / pill ── */
+  .chip        { font-size: 12px !important; }
+  .badge       { font-size: 12px !important; }
+  .tag         { font-size: 12px !important; }
+  .pill        { font-size: 12px !important; }
+  .lbl         { font-size: 12px !important; }
+  .status-chip { font-size: 12px !important; }
+
+  /* ── Input & select global ── */
+  input:not([type=checkbox]):not([type=radio]),
+  select,
+  textarea {
+    font-size: 15px !important;
+  }
+
+  /* ── Button global ── */
+  .btn       { font-size: 14px !important; }
+  .btn-sm    { font-size: 13px !important; }
+  .btn-icon  { font-size: 14px !important; }
+  .act-btn   { font-size: 14px !important; }
+  .retry-btn { font-size: 15px !important; }
+
+  /* ── Filter bar & toolbar ── */
+  .filter-lbl  { font-size: 13px !important; }
+  .filter-sel  { font-size: 14px !important; }
+  .toolbar-txt { font-size: 14px !important; }
+
+  /* ── Tab bars ── */
+  .tab-lbl { font-size: 13px !important; }
+  .tab     { font-size: 13px !important; }
+
+  /* ── Modal / overlay ── */
+  .modal-title   { font-size: 20px !important; }
+  .modal-sub     { font-size: 14px !important; }
+  .det-title     { font-size: 20px !important; }
+  .det-lbl       { font-size: 13px !important; }
+  .det-val       { font-size: 15px !important; }
+  .overlay-title { font-size: 20px !important; }
+  .overlay-sub   { font-size: 14px !important; }
+
+  /* ── Form label & field ── */
+  .form-lbl   { font-size: 13px !important; }
+  .field-lbl  { font-size: 13px !important; }
+  .field-hint { font-size: 13px !important; }
+  .inp        { font-size: 15px !important; }
+  .sel        { font-size: 15px !important; }
+  .fld        { font-size: 15px !important; }
+
+  /* ── Toast / notif ── */
+  .toast       { font-size: 14px !important; }
+  .toast-title { font-size: 15px !important; }
+
+  /* ── Empty state ── */
+  .empty-title { font-size: 18px !important; }
+  .empty-sub   { font-size: 14px !important; }
+
+  /* ── Report / chart ── */
+  .rpt-sel      { font-size: 14px !important; }
+  .rpt-bar-name { font-size: 14px !important; }
+  .rpt-bar-val  { font-size: 13px !important; }
+  .rpt-act-row  { font-size: 14px !important; }
+
+  /* ── Offline wall ── */
+  #wall h2   { font-size: 24px !important; }
+  #wall p    { font-size: 15px !important; }
+  .retry-btn { font-size: 15px !important; padding: 14px 32px !important; }
+
+  /* ── Monitor / network tiles ── */
+  .mon-tile-lbl { font-size: 13px !important; }
+  .mon-tile-val { font-size: 24px !important; }
+  .mon-row-name { font-size: 14px !important; }
+  .mon-row-sub  { font-size: 12px !important; }
+
+  /* ── Sales / pipeline ── */
+  .pipe-lbl  { font-size: 13px !important; }
+  .pipe-val  { font-size: 15px !important; }
+  .cust-name { font-size: 15px !important; }
+  .cust-sub  { font-size: 13px !important; }
+
+  /* ── Content padding lebih lega di desktop ── */
+  .content {
+    padding: 20px 24px !important;
+    padding-bottom: calc(var(--sab) + 80px) !important;
+  }
+}
+
 </style>
 <body>
 
