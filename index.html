@@ -23105,13 +23105,13 @@ function _ieDoImportCore(sb, btn, validRows){
     _numFields.forEach(function(f){ if(obj[f]!==null) obj[f]=Number(obj[f])||0; });
 
     /* ── Resolve area_kode → area_id ── */
-    if(obj.area_kode){
+    if(obj.area_kode !== undefined){
       var _ar = (_areaData||[]).find(function(a){ return a.kode===obj.area_kode || a.nama===obj.area_kode; });
       if(_ar) obj.area_id = _ar.id;
-      delete obj.area_kode;
+      delete obj.area_kode; /* selalu hapus — kolom ini tidak ada di tabel DB */
     }
     /* ── Resolve olt_kode → olt_id (untuk ODC) ── */
-    if(obj.olt_kode){
+    if(obj.olt_kode !== undefined){
       var _oltKodeCsv = (obj.olt_kode||'').trim().toLowerCase();
       var _olt = (_oltData||[]).find(function(o){
         return (o.kode||'').trim().toLowerCase()===_oltKodeCsv
@@ -23133,10 +23133,10 @@ function _ieDoImportCore(sb, btn, validRows){
       delete obj.olt_kode;
     }
     /* ── Resolve odc_kode → odc_id (untuk ODP) ── */
-    if(obj.odc_kode){
+    if(obj.odc_kode !== undefined){
       var _odc = (_odcData||[]).find(function(o){ return o.kode===obj.odc_kode || o.nama===obj.odc_kode; });
       if(_odc) obj.odc_id = _odc.id;
-      delete obj.odc_kode;
+      delete obj.odc_kode; /* selalu hapus — kolom ini tidak ada di tabel DB */
     }
 
     var key = obj[_conflictKey];
