@@ -23041,6 +23041,39 @@ function ieDoImport(){
   var btn = document.getElementById('ie-import-btn');
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Menyimpan…'; }
 
+  /* ── Pre-load referensi FK jika belum ada di cache ── */
+  var _needArea = (_ieCurrentModul==='odcs'||_ieCurrentModul==='odps'||_ieCurrentModul==='olts');
+  var _needOlt  = (_ieCurrentModul==='odcs');
+  var _needOdc  = (_ieCurrentModul==='odps');
+
+  var _pArea = (_needArea && _areaData.length===0)
+    ? sb.from('areas').select('id,nama,kode').order('nama').then(function(r){ if(!r.error) _areaData=r.data||[]; })
+    : Promise.resolve();
+
+  var _pOlt = (_needOlt && _oltData.length===0)
+    ? sb.from('olts').select('id,kode,nama,area_id').order('kode').then(function(r){
+        if(!r.error){ _oltData=r.data||[]; }
+      })
+    : Promise.resolve();
+
+  var _pOdc = (_needOdc && _odcData.length===0)
+    ? sb.from('odcs').select('id,kode,nama,area_id').order('kode').then(function(r){ if(!r.error) _odcData=r.data||[]; })
+    : Promise.resolve();
+
+  Promise.all([_pArea, _pOlt, _pOdc]).then(function(){
+    /* Debug: tampilkan berapa OLT/Area yg berhasil di-load */
+    if(_needOlt && _oltData.length===0){
+      toast('⚠️ Data OLT tidak ditemukan di cache — pastikan tabel olts tidak kosong','err');
+    }
+    _ieDoImportCore(sb, btn, validRows);
+  }).catch(function(e){
+    toast('Gagal memuat data referensi: '+(e.message||'coba lagi'),'err');
+    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-import"></i> Simpan ke Database'; }
+  });
+}
+
+function _ieDoImportCore(sb, btn, validRows){
+
   /* ── Ambil allowed cols dari schema (satu sumber kebenaran) ── */
   var _schema    = _ieSchemas[_ieCurrentModul];
   var _allowed   = _schema ? _schema.cols : [];
@@ -23079,8 +23112,24 @@ function ieDoImport(){
     }
     /* ── Resolve olt_kode → olt_id (untuk ODC) ── */
     if(obj.olt_kode){
-      var _olt = (_oltData||[]).find(function(o){ return o.kode===obj.olt_kode || o.nama===obj.olt_kode; });
-      if(_olt) obj.olt_id = _olt.id;
+      var _oltKodeCsv = (obj.olt_kode||'').trim().toLowerCase();
+      var _olt = (_oltData||[]).find(function(o){
+        return (o.kode||'').trim().toLowerCase()===_oltKodeCsv
+            || (o.nama||'').trim().toLowerCase()===_oltKodeCsv;
+      });
+      if(_olt){ obj.olt_id = _olt.id; }
+      else {
+        /* Fallback: coba partial match kode */
+        _olt = (_oltData||[]).find(function(o){
+          return (o.kode||'').toLowerCase().indexOf(_oltKodeCsv)>=0
+              || _oltKodeCsv.indexOf((o.kode||'').toLowerCase())>=0;
+        });
+        if(_olt) obj.olt_id = _olt.id;
+        else {
+          /* Log kode yang tidak ditemukan untuk debugging */
+          console.warn('[Import ODC] olt_kode tidak ditemukan di cache:', obj.olt_kode, '| Total OLT di cache:', (_oltData||[]).length, '| Sample kode:', (_oltData||[]).slice(0,3).map(function(x){return x.kode;}));
+        }
+      }
       delete obj.olt_kode;
     }
     /* ── Resolve odc_kode → odc_id (untuk ODP) ── */
@@ -23118,6 +23167,14 @@ function ieDoImport(){
   } else {
     var dupWarn = document.getElementById('ie-dup-warn');
     if(dupWarn) dupWarn.remove();
+  }
+
+  /* Debug: hitung berapa yg berhasil resolve FK */
+  if(_ieCurrentModul==='odcs'){
+    var _resolvedOlt = _uniquePayload.filter(function(r){ return !!r.olt_id; }).length;
+    var _resolvedArea = _uniquePayload.filter(function(r){ return !!r.area_id; }).length;
+    toast('Resolve: '+_resolvedArea+' area, '+_resolvedOlt+' OLT dari '+_uniquePayload.length+' ODC','ok');
+    console.log('[Import ODC] Sample payload:', JSON.stringify(_uniquePayload[0]));
   }
 
   /* Import per-baris agar bisa tracking berhasil/gagal per row */
