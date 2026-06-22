@@ -8802,8 +8802,29 @@ function navFin(key, tab, btnEl){
 /* ── navMonitoring: navigate ke Monitoring Jaringan + langsung buka tab tertentu ── */
 function navMonitoring(tab, btnEl){
   /* Sub-menu "Area" (ringkasan) sudah aktif dengan data real per area.
-     Sub-menu lain (cek/olt/odc/odp/rusak) masih menampilkan halaman
+     Sub-menu lain (cek/odc/odp/rusak) masih menampilkan halaman
      "Sedang Dikembangkan" yang sudah ada di p-monitoring. */
+  if(tab === 'olt'){
+    /* Aktifkan pane Master OLT yang sudah ada */
+    if(typeof nav === 'function') nav('olt', btnEl || null);
+    if(!_oltLoaded && typeof oltLoad === 'function') oltLoad();
+    if(typeof sbClose === 'function') sbClose();
+    return;
+  }
+  if(tab === 'odc'){
+    /* Aktifkan pane Master ODC yang sudah ada */
+    if(typeof nav === 'function') nav('odc', btnEl || null);
+    if(!_odcLoaded && typeof odcLoad === 'function') odcLoad();
+    if(typeof sbClose === 'function') sbClose();
+    return;
+  }
+  if(tab === 'odp'){
+    /* Aktifkan pane Master ODP yang sudah ada */
+    if(typeof nav === 'function') nav('odp', btnEl || null);
+    if(!_odpLoaded && typeof odpLoad === 'function') odpLoad();
+    if(typeof sbClose === 'function') sbClose();
+    return;
+  }
   if(typeof nav === 'function') nav('monitoring', btnEl || null);
   var areaView = document.getElementById('mon-area-view');
   var stubView = document.getElementById('mon-stub-view');
