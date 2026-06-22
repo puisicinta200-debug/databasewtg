@@ -61,7 +61,7 @@
   document.addEventListener('DOMContentLoaded',function(){
     var btn=document.createElement('div');
     btn.textContent='🐞';
-    btn.style.cssText='position:fixed;right:10px;bottom:10px;width:42px;height:42px;background:#111;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;z-index:999999;box-shadow:0 2px 8px rgba(0,0,0,.4)';
+    btn.style.cssText='position:fixed;right:10px;bottom:10px;width:42px;height:42px;background:#111;color:#fff;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:20px;z-index:999999;box-shadow:0 2px 8px rgba(0,0,0,.4)';
     var panel=document.createElement('div');
     panel.id='_dbgPanel';
     panel.style.cssText='position:fixed;left:0;right:0;bottom:60px;max-height:60vh;overflow:auto;background:rgba(15,15,20,.96);color:#eee;font-family:monospace;font-size:11px;padding:8px;z-index:999998;display:none;-webkit-overflow-scrolling:touch';
@@ -79,6 +79,16 @@
       render();
     });
     clearBtn.addEventListener('click',function(){ logs=[]; render(); });
+    /* ── Tampilkan tombol hanya untuk super_admin ── */
+    var _dbgLastCR=null;
+    setInterval(function(){
+      var cr=window.CR||null;
+      if(cr===_dbgLastCR) return;
+      _dbgLastCR=cr;
+      var show=(cr==='super_admin');
+      btn.style.display=show?'flex':'none';
+      if(!show){ open=false; panel.style.display='none'; clearBtn.style.display='none'; }
+    },500);
   });
 })();
 </script>
@@ -6391,7 +6401,7 @@ ALTER TABLE pelanggan
                 <select class="sel inp" id="val-fil-rw" onchange="valCascadeRw()" style="font-size:12px" disabled>
                   <option value="">— Semua RW —</option>
                 </select>
-                <select class="sel inp" id="val-fil-rt" onchange="valRender()" style="font-size:12px" disabled>
+                <select class="sel inp" id="val-fil-rt" onchange="_valPage=1;valRender()" style="font-size:12px" disabled>
                   <option value="">— Semua RT —</option>
                 </select>
               </div>
@@ -12792,16 +12802,24 @@ function valTabSwitch(tab){
 var _valSearchQ = '';
 function valManualSearch(q){
   _valSearchQ = (q||'').toLowerCase().trim();
+  _valPage=1;
   var c=document.getElementById('val-search-clr'); if(c) c.style.display=_valSearchQ?'block':'none';
   valRender();
 }
 function valManualClearSearch(){
   _valSearchQ='';
+  _valPage=1;
   var i=document.getElementById('val-search'); if(i) i.value='';
   var c=document.getElementById('val-search-clr'); if(c) c.style.display='none';
   valRender();
 }
 
+var _valPage = 1;
+var _valPageSize = 20;
+function valGoPage(p){
+  _valPage = p;
+  valRender();
+}
 function valRender(){
   var list=document.getElementById('val-list'); if(!list) return;
   /* Update stats regardless of tab */
@@ -12835,7 +12853,14 @@ function valRender(){
     return true;
   });
   if(!pend.length){ list.innerHTML='<div class="olt-empty"><i class="ti ti-checks"></i><p>Tidak ada OTF yang menunggu verifikasi</p></div>'; return; }
-  list.innerHTML=pend.map(function(o){
+  /* ── Pagination ── */
+  var totalItem=pend.length;
+  var totalPage=Math.ceil(totalItem/_valPageSize);
+  if(_valPage<1) _valPage=1;
+  if(_valPage>totalPage) _valPage=totalPage;
+  var start=(_valPage-1)*_valPageSize;
+  var pageItems=pend.slice(start,start+_valPageSize);
+  var cardsHtml=pageItems.map(function(o){
     var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;});
     var nomOk=(o.nominal||0)>0; var ok=nomOk;
     var areaN=_otfPelAreaName(o.pel_id); var kec=p&&p.kecamatan||''; var kel=p&&p.kelurahan||''; var rw=p&&p.rw||''; var rt=p&&p.rt||'';
@@ -12857,6 +12882,25 @@ function valRender(){
       '</div>'+
     '</div>';
   }).join('');
+  /* ── Build page buttons (max 5 visible) ── */
+  var pgBtns='';
+  if(totalPage>1){
+    var pStart=Math.max(1,_valPage-2);
+    var pEnd=Math.min(totalPage,pStart+4);
+    if(pEnd-pStart<4) pStart=Math.max(1,pEnd-4);
+    pgBtns='<div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 0 4px;flex-wrap:wrap">'+
+      '<button onclick="valGoPage('+(_valPage-1)+')" '+((_valPage===1)?'disabled':'')+' style="min-width:34px;height:34px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:'+(_valPage===1?'.35':'1')+'"><i class="ti ti-chevron-left"></i></button>';
+    for(var pg=pStart;pg<=pEnd;pg++){
+      var isActive=(pg===_valPage);
+      pgBtns+='<button onclick="valGoPage('+pg+')" style="min-width:34px;height:34px;border:1.5px solid '+(isActive?'var(--c1)':'var(--border2)')+';border-radius:8px;background:'+(isActive?'var(--c1)':'var(--bg2)')+';color:'+(isActive?'#fff':'var(--text2)')+';font-size:13px;font-weight:'+(isActive?'700':'500')+';cursor:pointer">'+pg+'</button>';
+    }
+    pgBtns+='<button onclick="valGoPage('+(_valPage+1)+')" '+((_valPage===totalPage)?'disabled':'')+' style="min-width:34px;height:34px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:'+(_valPage===totalPage?'.35':'1')+'"><i class="ti ti-chevron-right"></i></button>'+
+      '</div>'+
+      '<div style="text-align:center;font-size:11px;color:var(--text3);padding-bottom:8px">'+
+        'Halaman '+_valPage+' dari '+totalPage+' &nbsp;·&nbsp; Total '+totalItem+' data'+
+      '</div>';
+  }
+  list.innerHTML=cardsHtml+pgBtns;
 }
 
 /* ── ISP File Upload ── */
@@ -13011,7 +13055,7 @@ function valCascadeArea(){
     kecs.sort().forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=k;selKec.appendChild(o);});
   }
   ['val-fil-kel','val-fil-rw','val-fil-rt'].forEach(function(id){var s=document.getElementById(id);if(s){s.innerHTML='<option value="">'+s.options[0].text+'</option>';s.disabled=true;}});
-  valRender();
+  _valPage=1; valRender();
 }
 function valCascadeKec(){
   var aId=(document.getElementById('val-fil-area')||{}).value||'';
@@ -13023,7 +13067,7 @@ function valCascadeKec(){
     kels.sort().forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=k;selKel.appendChild(o);});
   }
   ['val-fil-rw','val-fil-rt'].forEach(function(id){var s=document.getElementById(id);if(s){s.innerHTML='<option value="">'+s.options[0].text+'</option>';s.disabled=true;}});
-  valRender();
+  _valPage=1; valRender();
 }
 function valCascadeKel(){
   var aId=(document.getElementById('val-fil-area')||{}).value||'';
@@ -13036,7 +13080,7 @@ function valCascadeKel(){
     rws.sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent='RW '+r;selRw.appendChild(o);});
   }
   var selRt=document.getElementById('val-fil-rt'); if(selRt){selRt.innerHTML='<option value="">— Semua RT —</option>';selRt.disabled=true;}
-  valRender();
+  _valPage=1; valRender();
 }
 function valCascadeRw(){
   var aId=(document.getElementById('val-fil-area')||{}).value||'';
@@ -13049,7 +13093,7 @@ function valCascadeRw(){
     var rts=[]; _approvedPelList.forEach(function(p){if(p&&(!aId||p.area_id===aId)&&(!kec||p.kecamatan===kec)&&(!kel||p.kelurahan===kel)&&p.rw===rw&&p.rt&&rts.indexOf(p.rt)<0)rts.push(p.rt);});
     rts.sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent='RT '+r;selRt.appendChild(o);});
   }
-  valRender();
+  _valPage=1; valRender();
 }
 function valResetFilter(){
   _valSearchQ='';
@@ -13058,7 +13102,7 @@ function valResetFilter(){
   ['val-fil-area','val-fil-kec','val-fil-kel','val-fil-rw','val-fil-rt'].forEach(function(id){
     var s=document.getElementById(id); if(!s) return; s.value=''; s.disabled=(id!=='val-fil-area');
   });
-  valRender();
+  _valPage=1; valRender();
 }
 
 function valMark(id,valid){
