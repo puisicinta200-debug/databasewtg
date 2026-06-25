@@ -11255,8 +11255,8 @@ window.fasOpenForm = function(data){
   /* Load material dropdowns */
   if(typeof _invMatiLoaded!=='undefined'&&!_invMatiLoaded&&typeof invMatiLoad==='function') invMatiLoad();
   if(typeof _invFillPelFormDropdowns==='function'){
-    /* Reuse but also fill fasf-* via _inv2FillDropdowns */
-    setTimeout(function(){if(typeof _inv2FillDropdowns==='function')_inv2FillDropdowns();},100);
+    /* Reuse but also fill fasf-* via _invFillAllDropdowns */
+    setTimeout(function(){if(typeof _invFillAllDropdowns==='function')_invFillAllDropdowns();},100);
   }
   /* Fill material edit values */
   if(isEdit){
@@ -17655,7 +17655,7 @@ function _invLoadAreaBrandMap(cb){
   if(Object.keys(_invAreaBrandCache).length){ if(cb) cb(); return; }
   var sb = (typeof getSB==='function') ? getSB() : null;
   if(!sb){ if(cb) cb(); return; }
-  sb.from('olts').select('area_id,brand,merk')
+  sb.from('olts').select('area_id,brand')
     .then(function(r){
       if(!r.error && r.data) r.data.forEach(function(o){
         if(!o.area_id) return;
@@ -18940,7 +18940,7 @@ function mutSave(){
     toast('Mutasi '+jenis+' dicatat (stok: '+res.stokSebelum+' → '+res.stokSesudah+')','ok');
     mutCloseForm(); _matiLoaded=false; _stokLoaded=false; _mutLoaded=false;
     matiLoad(); stokLoad(); mutLoad();
-    inv2LoadMaster(function(){ inv2DashLoad(); _inv2FillDropdowns(); });
+    inv2LoadMaster(function(){ inv2DashLoad(); if(typeof _invFillAllDropdowns==='function') _invFillAllDropdowns(); });
   }).catch(function(e){
     if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i> Simpan'; }
     toast('Error: '+(e.message||'coba lagi'),'err');
@@ -20108,7 +20108,7 @@ function pelOpenForm(data){
         /* Refresh kecamatan filter saat area berubah */
         _pelOnAreaChangeWilayah();
         /* Refresh ONT dropdown: filter by OLT brand of selected area */
-        if(typeof _inv2FillDropdowns==='function') _inv2FillDropdowns(this.value);
+        if(typeof _invFillAllDropdowns==='function') _invFillAllDropdowns(this.value);
       };
     }
 
@@ -32800,7 +32800,7 @@ SOT.onUpdate(function(evt){
     /* Refresh inv2 master data so stok dropdown stays accurate */
     if(typeof _inv2MatiData !== 'undefined' && typeof inv2LoadMaster === 'function'){
       inv2LoadMaster(function(){
-        _inv2FillDropdowns();
+        if(typeof _invFillAllDropdowns==='function') _invFillAllDropdowns();
         if(typeof _invKirimFillSplit==='function') _invKirimFillSplit();
       });
     }
