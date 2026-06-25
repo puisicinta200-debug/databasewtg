@@ -1,3 +1,26 @@
+<!--
+=================================================================
+  ICRM_JJC — SOT GOVERNANCE v23 CRITICAL PATCH
+  SSOT: AREA (OLT) → ODC → ODP → PORT → PELANGGAN
+  Base: v22 (2026-06-19)
+  Critical Patch: 2026-06-20
+
+  PERBAIKAN PRIORITY 1 KRITIS:
+  [P1-1] port_used dihapus dari semua pembacaan di Monitoring
+         → monSimpleBuildRingkasan, monCekRender, monCekFetch
+         → Semua pakai SOT.cache().ports (odp_ports realtime)
+  [P1-2] owdPaneLoad: area_coverage string fallback dihapus
+         → Wajib area_id UUID. Grouping tanpa wilayah/rw/rt.
+         → owdPaneLoad sekarang baca dari SOT.cache()
+  [P1-3] Monitoring KPI dari SOT (portStats per area)
+         → odpPenuh dari odp_ports, bukan port_used kolom odp
+  [P1-4] SOT-BRIDGE: sync _v6byArea, _sdPelData ke SOT
+         → Semua private cache Sales Dashboard di-reset saat invalidate
+  [P1-5] Sales Territory diblokir dari nav untuk non-admin
+         → Modul Territory hanya untuk super_admin & owner
+         → Semua SSOT boundary enforcement diperketat
+=================================================================
+-->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -56,16 +79,19 @@
       render();
     });
     clearBtn.addEventListener('click',function(){ logs=[]; render(); });
-    /* ── Tampilkan tombol hanya untuk super_admin ── */
-    var _dbgLastCR=null;
-    setInterval(function(){
-      var cr=window.CR||null;
-      if(cr===_dbgLastCR) return;
-      _dbgLastCR=cr;
-      var show=(cr==='super_admin');
-      btn.style.display=show?'flex':'none';
-      if(!show){ open=false; panel.style.display='none'; clearBtn.style.display='none'; }
-    },500);
+    /* ── Tampilkan tombol hanya untuk super_admin ──
+       [PERF P7] Pakai event icrm:rolechange, bukan setInterval 500ms */
+    document.addEventListener('icrm:rolechange', function(e){
+      var show = (e.detail && e.detail.role === 'super_admin');
+      btn.style.display = show ? 'flex' : 'none';
+      if(!show){ open = false; panel.style.display = 'none'; clearBtn.style.display = 'none'; }
+    });
+    /* Cek role saat DOM ready (untuk login yang sudah ada) */
+    var _dbgCheckRole = function(){
+      var show = (window.CR === 'super_admin');
+      btn.style.display = show ? 'flex' : 'none';
+    };
+    _dbgCheckRole();
   });
 })();
 </script>
@@ -75,7 +101,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a56db">
-<title>ICRM_JJC — SOT Governance v23</title>
+<title>ICRM_JJC — SOT Governance v23 (PERF PATCH)</title>
+<!-- [PERF] Preconnect hints untuk koneksi lebih cepat -->
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://unpkg.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -9296,6 +9326,9 @@ function _loginOK(usr) {
   CR = usr.role || 'viewer';
   applyRoleUI(CR);
 
+  /* [PERF P7] Dispatch event untuk debug overlay & komponen lain yang listen role */
+  document.dispatchEvent(new CustomEvent('icrm:rolechange', { detail: { role: CR } }));
+
   var name = usr.nama || usr.username || 'User';
   var av = name.trim().split(' ').slice(0,2).map(function(w){ return w[0]||''; }).join('').toUpperCase() || 'U';
 
@@ -9397,8 +9430,26 @@ function _showWelcome(usr, name, av, scopeLabel, greet){
 }
 
 function _wwLoadStats(){
+  /* [PERF P4] Coba dari SOT cache dulu — skip 3 DB query */
+  if(window.SOT){
+    var _c = SOT.cache();
+    if(_c.pelanggan && _c.pelanggan.length > 0){
+      var _JG = window.JENIS_GRATIS || ['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+      var _aktif = _c.pelanggan.filter(function(p){
+        return p.status === 'aktif' && _JG.indexOf(p.jenis_pelanggan) < 0;
+      }).length;
+      var _odpAktif = (_c.odps||[]).filter(function(o){ return o.status==='aktif'; }).length;
+      var _areaCount = (_c.areas||[]).length;
+      var _n = function(id,v){ var e=document.getElementById(id); if(e) e.textContent=(v||0); };
+      _n('ww-s-pel', _aktif);
+      _n('ww-s-area', _areaCount);
+      _n('ww-s-odp', _odpAktif);
+      var eb = document.getElementById('ww-s-pel-b'); if(eb) eb.textContent = _aktif + ' aktif';
+      return; /* selesai — 0 DB query */
+    }
+  }
   var sb=getSB(); if(!sb) return;
-  /* Build queries dengan area filter untuk role teknisi/sales/area_manager */
+  /* Fallback ke DB kalau SOT belum warm */
   var qPel = sb.from('pelanggan').select('id',{count:'exact',head:true}).eq('status','aktif');
   var qOdp = sb.from('odps').select('id',{count:'exact',head:true}).eq('status','aktif');
   if (!_isGlobalRole()) {
@@ -27564,25 +27615,25 @@ function _autoSyncStart(){
   _autoSyncRunning = true;
 
   /* 1. Perpendek TTL SOT untuk data pelanggan & jaringan ke 15 detik */
-  SOT._ttl = 15000;
+  /* [PERF P3] SOT._ttl dibiarkan 30s — jangan perpendek */ // SOT._ttl = 15000;
 
   /* 2. Subscribe semua tabel sekaligus (tanpa tampilkan toast manual) */
   RT_TABLES.forEach(function(t){
     _autoSyncSubscribe(t.name);
   });
 
-  /* 3. Heartbeat: setiap 15 detik flush SOT cache sehingga data tidak stale */
+  /* 3. [PERF P1] Heartbeat: 60 detik — cukup untuk multi-user, kurangi beban DB */
   _autoSyncHbInt = setInterval(function(){
     if(window.SOT) SOT.invalidate('general');
-  }, 15000);
+  }, 60000);
 
-  /* 4. Reconnect watcher: setiap 30 detik cek channel mana yang mati & re-subscribe */
+  /* 4. [PERF P2] Reconnect watcher: 120 detik — lebih ringan untuk banyak user */
   _autoSyncReconInt = setInterval(function(){
     if(!getSB()) return;
     RT_TABLES.forEach(function(t){
       if(!_rtChannels[t.name]) _autoSyncSubscribe(t.name);
     });
-  }, 30000);
+  }, 120000);
 
   /* 5. Pulihkan koneksi saat browser kembali online setelah offline */
   window.addEventListener('online', function(){
@@ -27622,23 +27673,46 @@ function _autoSyncSubscribe(tbl){
           var recId= rec.id ? ' id='+String(rec.id).slice(0,8) : '';
           rtLog('[AUTO '+tbl+'] '+ev+recId, 'evt');
 
-          /* Invalidate + reload modul terkait */
+          /* [PERF P6] Invalidate + reload modul terkait — HANYA jika pane aktif */
           if(window.SOT) SOT.invalidate('general');
+
+          var _curPane = window._currentPane || '';
 
           if(tbl==='pelanggan'){
             _pelLoaded=false;
-            if(typeof pelLoad==='function') pelLoad();
+            /* Reload full hanya kalau pane pelanggan sedang tampil */
+            if(_curPane === 'pelanggan' && typeof pelLoad==='function'){
+              pelLoad();
+            } else {
+              /* Update stats saja */
+              if(window.SOT) SOT.refresh(false, function(){
+                if(typeof _pelUpdateStats==='function') _pelUpdateStats();
+              });
+            }
           }
           if(tbl==='areas'||tbl==='odcs'||tbl==='odps'||tbl==='odp_ports'){
             _areaLoaded=false; _odcLoaded=false; _odpLoaded=false; _portLoaded=false;
             if(window.SOT) SOT.refresh(true, function(){
-              if(typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
+              if((_curPane==='mon'||_curPane==='monitoring') && typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
             });
           }
-          if(tbl==='app_users'){ _urLoaded=false; if(typeof urLoad==='function') urLoad(); }
-          if(tbl==='tickets' && typeof ticketLoad==='function'){ if(typeof _ticketLoaded!=='undefined') _ticketLoaded=false; ticketLoad(); }
-          if(tbl==='fee_otf'){ _otfLoaded=false; if(typeof otfLoad==='function') otfLoad(); }
-          if(tbl==='approval_isp' && typeof appLoad==='function') appLoad();
+          if(tbl==='app_users'){
+            _urLoaded=false;
+            if(_curPane==='userrole' && typeof urLoad==='function') urLoad();
+          }
+          if(tbl==='tickets' && typeof ticketLoad==='function'){
+            if(_curPane==='tiket'||_curPane==='ticket'){
+              if(typeof _ticketLoaded!=='undefined') _ticketLoaded=false;
+              ticketLoad();
+            }
+          }
+          if(tbl==='fee_otf'){
+            _otfLoaded=false;
+            if(_curPane==='fin-otf' && typeof otfLoad==='function') otfLoad();
+          }
+          if(tbl==='approval_isp' && typeof appLoad==='function'){
+            if(_curPane==='approval') appLoad();
+          }
         }
       )
       .subscribe(function(status){
@@ -36017,6 +36091,124 @@ function _lapOntCell(n, lbl, col){
   '</div>';
 }
 
+})();
+</script>
+<!-- ════════════════════════════════════════════════════════════════
+     ICRM PERF PATCH v1.0 — Inline injection
+     Fixes: SOT.refresh dedup, RT per-role subscribe optimization
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+'use strict';
+if(window.__ICRM_PERF_INLINE__) return;
+window.__ICRM_PERF_INLINE__ = true;
+
+/* [P8] SOT.refresh — DEDUPLICATE concurrent calls */
+if(window.SOT && typeof SOT.refresh === 'function'){
+  var _origSotRefresh = SOT.refresh.bind(SOT);
+  SOT._refreshPending = false;
+  SOT._pendingCbs     = [];
+
+  SOT.refresh = function(force, cb){
+    var self = this;
+    var now  = Date.now();
+    var anyExpired = force;
+    if(!anyExpired){
+      for(var mod in self._cache.ts){
+        if((now - self._cache.ts[mod]) >= self._ttl){ anyExpired = true; break; }
+      }
+    }
+    if(!anyExpired && self._cache.pelanggan && self._cache.pelanggan.length){
+      if(cb) cb(self._cache);
+      return;
+    }
+    if(self._refreshPending && !force){
+      if(cb) self._pendingCbs.push(cb);
+      return;
+    }
+    self._refreshPending = true;
+    if(cb) self._pendingCbs.push(cb);
+    _origSotRefresh(force, function(cache){
+      self._refreshPending = false;
+      var cbs = self._pendingCbs.slice();
+      self._pendingCbs = [];
+      cbs.forEach(function(fn){ try{ fn(cache); }catch(e){} });
+    });
+  };
+  SOT.refresh._perf_patch = true;
+}
+
+/* [P5] Override _autoSyncStart untuk RT subscribe per-role */
+var _origAutoSyncStart = window._autoSyncStart;
+window._autoSyncStart = function(){
+  if(window._autoSyncRunning) return;
+  var sb = (typeof getSB === 'function') ? getSB() : null;
+  if(!sb){ setTimeout(window._autoSyncStart, 2000); return; }
+  window._autoSyncRunning = true;
+
+  /* Pulihkan TTL ke 30s (bukan 15s) */
+  if(window.SOT) window.SOT._ttl = 30000;
+
+  /* Subscribe per role */
+  var RT_BY_ROLE = {
+    super_admin : ['pelanggan','odp_ports','odps','odcs','areas','app_users','tickets','approval_isp','fee_otf'],
+    owner       : ['pelanggan','odp_ports','odps','odcs','areas','tickets'],
+    area_manager: ['pelanggan','odp_ports','odps','odcs'],
+    teknisi     : ['pelanggan','odp_ports','tickets'],
+    sales       : ['pelanggan','approval_isp'],
+    finance     : ['pelanggan','fee_otf','approval_isp'],
+    viewer      : ['pelanggan']
+  };
+  var role = (typeof normalizeRole === 'function') ? normalizeRole(window.CR) : (window.CR || 'viewer');
+  var myTables = RT_BY_ROLE[role] || RT_BY_ROLE.viewer;
+
+  myTables.forEach(function(tbl){
+    if(typeof window._autoSyncSubscribe === 'function') window._autoSyncSubscribe(tbl);
+  });
+
+  /* Heartbeat 60s (bukan 15s) */
+  if(window._autoSyncHbInt) clearInterval(window._autoSyncHbInt);
+  window._autoSyncHbInt = setInterval(function(){
+    if(window.SOT) SOT.invalidate('general');
+  }, 60000);
+
+  /* Reconnect 120s (bukan 30s) */
+  if(window._autoSyncReconInt) clearInterval(window._autoSyncReconInt);
+  window._autoSyncReconInt = setInterval(function(){
+    if(!getSB()) return;
+    myTables.forEach(function(tbl){
+      if(window._rtChannels && !window._rtChannels[tbl]){
+        if(typeof window._autoSyncSubscribe === 'function') window._autoSyncSubscribe(tbl);
+      }
+    });
+  }, 120000);
+
+  window.addEventListener('online', function(){
+    setTimeout(function(){
+      myTables.forEach(function(tbl){
+        if(window._rtChannels && !window._rtChannels[tbl]){
+          if(typeof window._autoSyncSubscribe === 'function') window._autoSyncSubscribe(tbl);
+        }
+      });
+      if(window.SOT){ SOT.invalidate('general'); SOT.refresh(true); }
+    }, 1500);
+  });
+
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && window.SOT){
+      SOT.invalidate('general');
+      SOT.refresh(false, function(){
+        var cur = window._currentPane || '';
+        if(cur === 'pelanggan' && typeof pelLoad === 'function'){ window._pelLoaded = false; pelLoad(); }
+        if((cur === 'mon' || cur === 'monitoring') && typeof monSimpleRender === 'function'){
+          try{ monSimpleRender(); }catch(e){}
+        }
+      });
+    }
+  });
+};
+
+console.log('%c[ICRM PERF v1.0] ✅ Patch aktif — Heartbeat 60s, RT per-role, SOT.refresh dedup', 'color:#059669;font-weight:700');
 })();
 </script>
 </body>
