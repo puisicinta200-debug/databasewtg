@@ -1,26 +1,3 @@
-<!--
-=================================================================
-  ICRM_JJC — SOT GOVERNANCE v23 CRITICAL PATCH
-  SSOT: AREA (OLT) → ODC → ODP → PORT → PELANGGAN
-  Base: v22 (2026-06-19)
-  Critical Patch: 2026-06-20
-
-  PERBAIKAN PRIORITY 1 KRITIS:
-  [P1-1] port_used dihapus dari semua pembacaan di Monitoring
-         → monSimpleBuildRingkasan, monCekRender, monCekFetch
-         → Semua pakai SOT.cache().ports (odp_ports realtime)
-  [P1-2] owdPaneLoad: area_coverage string fallback dihapus
-         → Wajib area_id UUID. Grouping tanpa wilayah/rw/rt.
-         → owdPaneLoad sekarang baca dari SOT.cache()
-  [P1-3] Monitoring KPI dari SOT (portStats per area)
-         → odpPenuh dari odp_ports, bukan port_used kolom odp
-  [P1-4] SOT-BRIDGE: sync _v6byArea, _sdPelData ke SOT
-         → Semua private cache Sales Dashboard di-reset saat invalidate
-  [P1-5] Sales Territory diblokir dari nav untuk non-admin
-         → Modul Territory hanya untuk super_admin & owner
-         → Semua SSOT boundary enforcement diperketat
-=================================================================
--->
 <!DOCTYPE html>
 <html lang="id">
 <head>
