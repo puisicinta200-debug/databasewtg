@@ -9568,6 +9568,9 @@ function _wwGoDashDirect(){
   _initDebounceWrappers(); /* OPT: init debounced search wrappers */
   nav('dash', document.getElementById('sbt-dash'));
   toast('Selamat datang, '+(CU&&(CU.nama||CU.username)||'')+'!','ok');
+
+  /* ── AUTO-SYNC: mulai Realtime otomatis saat masuk dashboard ── */
+  setTimeout(_autoSyncStart, 800);
 }
 
 /* Quick action dari welcome */
@@ -9587,6 +9590,8 @@ function wwLogout(){
 
 function doLogout() {
   if (!confirm('Keluar dari aplikasi?')) return;
+  /* Hentikan auto-sync sebelum logout */
+  if(typeof _autoSyncStop==='function') _autoSyncStop();
   CU = null; CR = null;
 
   // Reset semua cache modul
@@ -9687,6 +9692,7 @@ var _cur = 'dash';
 
 function nav(key, btnEl, type){
   if(!PANES[key]) return;
+  window._currentPane = key; /* track pane aktif untuk auto-sync visibility refresh */
   /* OPT: gunakan DocumentFragment-style toggle — hanya hide/show pane aktif */
   var allPanes = document.querySelectorAll('.pane');
   var targetPaneId = PANES[key][0];
@@ -19470,12 +19476,11 @@ function _getPelData(){
 }
 /* [T4.2] Pagination variables untuk p-pelanggan */
 var _pelPage   = 1;
-var _pelPerPage = 50;
+var _pelPerPage = 50;  /* jumlah baris per halaman DB */
+var _pelPerPg  = 50;   /* alias dipakai pelRender() — harus sama dengan _pelPerPage */
 var _pelTotal  = 0;
 var _pelFallbackCount = 0;
 var _pelFil    = [];
-var _pelPage   = 1;
-var _pelPerPg  = 15;
 var _pelDetId  = null;
 var _pelLoaded = false;
 var _pelOdpList = [];
@@ -19699,24 +19704,10 @@ function _pelFillFilters(){
 
 /* [T4.2] Pagination helper — render pagination UI */
 function _pelRenderPagination(){
-  /* Total berbayar akurat dari SOT (lintas halaman), fallback ke _pelTotal */
-  var totalBerbayar = (window.SOT && SOT.cache().pelanggan.length)
-    ? SOT.customerStats().berbayar : _pelTotal;
-  var maxPage = Math.ceil(_pelTotal / _pelPerPage);
+  /* [FIX] Pagination DB sekarang dihandle oleh pelRender() via pel-pagi.
+     Fungsi ini hanya menyembunyikan pel-pagination lama agar tidak dobel. */
   var nav = document.getElementById('pel-pagination');
-  if(!nav){
-    nav = document.createElement('div');
-    nav.id = 'pel-pagination';
-    nav.style.cssText = 'text-align:center;padding:10px;font-size:12px;color:var(--text2);margin-top:10px;';
-    var list = document.getElementById('pel-list');
-    if(list && list.parentNode) list.parentNode.insertBefore(nav, list.nextSibling);
-  }
-  if(_pelTotal <= _pelPerPage){ nav.style.display='none'; return; }
-  nav.style.display = 'block';
-  nav.innerHTML =
-    (_pelPage > 1 ? '<button onclick="pelLoadPage(1)" style="padding:4px 8px;margin-right:8px;cursor:pointer;">← Awal</button> ' : '') +
-    '<span style="margin:0 10px;">Halaman ' + _pelPage + ' / ' + maxPage + ' (' + totalBerbayar + ' pelanggan berbayar)</span>' +
-    (_pelPage < maxPage ? ' <button onclick="pelLoadPage('+(_pelPage+1)+')" style="padding:4px 8px;margin-left:8px;cursor:pointer;">Lanjut →</button>' : '');
+  if(nav) nav.style.display = 'none';
 }
 
 /* [T4.2] Load & render pelanggan data for specific page */
@@ -19902,15 +19893,28 @@ function pelRender(){
 
   list.innerHTML = slice.map(function(p){ return _pelRowHTML(p); }).join('');
 
+  /* Hitung total halaman dari _pelTotal (DB count) jika tersedia,
+     fallback ke jumlah data lokal yang sudah difilter */
+  var dbMaxPage = _pelTotal > 0 ? Math.ceil(_pelTotal / _pelPerPage) : pages;
+  var totalBerbayar = (window.SOT && SOT.cache().pelanggan && SOT.cache().pelanggan.length)
+    ? SOT.customerStats().berbayar : _pelTotal;
+  var showNext = (_pelPage < pages) || (_pelPage < dbMaxPage);
+  var showPrev = _pelPage > 1;
+
   var pagi = document.getElementById('pel-pagi');
-  if(pages > 1){
+  if(pages > 1 || dbMaxPage > 1){
     pagi.style.display = 'flex';
     var prev = document.getElementById('pel-prev');
     var next = document.getElementById('pel-next');
     var info = document.getElementById('pel-pagi-info');
-    if(prev) prev.disabled = _pelPage<=1;
-    if(next) next.disabled = _pelPage>=pages;
-    if(info) info.textContent = _pelPage+' / '+pages;
+    if(prev) prev.disabled = !showPrev;
+    if(next) next.disabled = !showNext;
+    if(info){
+      var infoTxt = 'Halaman ' + _pelPage + ' / ' + dbMaxPage;
+      if(totalBerbayar > 0) infoTxt += ' (' + totalBerbayar + ' pelanggan berbayar)';
+      info.textContent = infoTxt;
+      info.style.fontSize = '10px';
+    }
   } else {
     pagi.style.display = 'none';
   }
@@ -19953,8 +19957,23 @@ function _pelRowHTML(p){
 
 /* ── Pagination ── */
 function pelPage(dir){
-  var pages = Math.max(1, Math.ceil(_pelFil.length / _pelPerPg));
-  _pelPage = Math.min(pages, Math.max(1, _pelPage + dir));
+  var localPages = Math.max(1, Math.ceil(_pelFil.length / _pelPerPg));
+  var dbMaxPage  = _pelTotal > 0 ? Math.ceil(_pelTotal / _pelPerPage) : localPages;
+  var newPage    = _pelPage + dir;
+  if(newPage < 1) newPage = 1;
+
+  /* Jika arah maju dan sudah di akhir data lokal tapi masih ada halaman DB → load DB */
+  if(dir > 0 && _pelPage >= localPages && _pelPage < dbMaxPage){
+    pelLoadPage(_pelPage + 1);
+    return;
+  }
+  /* Jika arah mundur dan sudah di awal data lokal tapi masih ada halaman DB sebelumnya → load DB */
+  if(dir < 0 && _pelPage <= 1 && _pelTotal > _pelPerPage){
+    var prevDbPage = Math.max(1, Math.ceil((_pelPage * _pelPerPage - _pelPerPage) / _pelPerPage));
+    if(prevDbPage < _pelPage) { pelLoadPage(prevDbPage); return; }
+  }
+
+  _pelPage = Math.min(localPages, Math.max(1, newPage));
   pelRender();
 }
 
@@ -24767,7 +24786,7 @@ var _ieSchemas = {
   olts:      {label:'Master OLT',        cols:['kode','nama','lokasi','brand','model','jumlah_pon','pon_used','uplink','status','lat','lng','keterangan'],required:['kode','nama']},
   odcs:      {label:'Master ODC',        cols:['kode','nama','area_kode','olt_kode','lokasi','type','jumlah_port',/* port_used deprecated-SSOT */'status','lat','lng','keterangan'],                required:['kode','nama']},
   odps:      {label:'Master ODP',        cols:['kode','nama','area_kode','odc_kode','lokasi','type','jumlah_port',/* port_used deprecated-SSOT */'status','lat','lng','keterangan'],                required:['kode','nama']},
-  pelanggan: {label:'Pelanggan', cols:['cid','nama','hp','nik','alamat','kecamatan','kelurahan','rw','rt','paket','jenis_pelanggan','tgl_pasang','status','tipe_recurring','area_kode','odp_kode','nomor_port','sn_ont','mac_ont','ont_model','teknisi_pasang','lat','lng','keterangan'], resolve_cols:['area_kode','odp_kode','area_coverage'], required:['cid','nama']},
+  pelanggan: {label:'Pelanggan', cols:['cid','nama','hp','nik','alamat','kecamatan','kelurahan','rw','rt','paket','jenis_pelanggan','tgl_pasang','status','tipe_recurring','area_id','odp_id','nomor_port','sn_ont','mac_ont','ont_model','teknisi_pasang','lat','lng','keterangan'], resolve_cols:['area_kode','odp_kode','area_coverage'], required:['cid','nama']},
   material_items: {label:'Material',     cols:['kode','nama','kategori','satuan','merk','stok','min_stok','harga_satuan','status','keterangan'],         required:['kode','nama','kategori']},
   tickets:   {label:'Ticketing',         cols:['no_tiket','jenis','prioritas','status','judul','deskripsi','teknisi','tgl_buat'],                        required:['no_tiket','jenis']}
 };
@@ -24831,8 +24850,8 @@ function ieModulChange(){
     hintEl.innerHTML='<i class="ti ti-info-circle"></i> '+
       '<strong>📤 Export lalu Import:</strong> Gunakan tombol <b>Export</b> untuk mengunduh data existing dalam format CSV yang langsung bisa diimpor kembali — semua kolom (hp, nik, sn_ont, odp, area, dll) sudah terpetakan otomatis.<br>'+
       '<strong>📥 Import baru:</strong> Unduh template, isi datanya, lalu upload. '+
-      '<strong>area_kode</strong>: kode atau nama Area (cth: <code>CBD</code> atau <code>Cibadak</code>) &nbsp;·&nbsp; '+
-      '<strong>odp_kode</strong>: kode ODP (cth: <code>W1_CBD_JJC.JKBN_001_001</code>). '+
+      '<strong>area_kode</strong> / <strong>Area</strong>: kode atau nama Area (cth: <code>CBD</code> atau <code>Cibadak</code>) &nbsp;·&nbsp; '+
+      '<strong>odp_kode</strong> / <strong>ODP</strong>: kode ODP (cth: <code>W1_CBD_JJC.JKBN_001_001</code>). '+
       '<strong>status</strong>: <code>aktif</code> / <code>proses</code> / <code>isolir</code> / <code>cabut</code>. '+
       '<strong>jenis_pelanggan</strong>: <code>Reguler</code> / <code>UMKM</code> / <code>Corporate</code>.';
   } else {
@@ -25107,6 +25126,15 @@ function _executeBatchChunk(sb, modul, chunkRows, conflictKey){
   if(!chunkRows.length) return Promise.resolve({ok: [], fail: [], portOps: []});
   
   var result = {ok: [], fail: [], portOps: []};
+
+  /* [FIX] Kumpulkan portOps SEBELUM strip, lalu bersihkan __portMeta dari
+     setiap row agar tidak ikut masuk ke payload DB (kolom tidak ada di schema). */
+  chunkRows.forEach(function(row){
+    if(row.__portMeta && row.__portMeta.odpId){
+      result.portOps.push({row: row, meta: row.__portMeta});
+    }
+    delete row.__portMeta;
+  });
   
   // Step 1: Try batch upsert
   return sb.from(modul).upsert(chunkRows, {onConflict: conflictKey})
@@ -25114,12 +25142,6 @@ function _executeBatchChunk(sb, modul, chunkRows, conflictKey){
       if(!upsertRes.error){
         // Upsert success — all rows accepted
         result.ok = chunkRows;
-        // Collect port assignments (rows with __portMeta)
-        chunkRows.forEach(function(row){
-          if(row.__portMeta && row.__portMeta.odpId){
-            result.portOps.push({row: row, meta: row.__portMeta});
-          }
-        });
         return result;
       }
       
@@ -25129,11 +25151,6 @@ function _executeBatchChunk(sb, modul, chunkRows, conflictKey){
         .then(function(insertRes){
           if(!insertRes.error){
             result.ok = failedChunk;
-            failedChunk.forEach(function(row){
-              if(row.__portMeta && row.__portMeta.odpId){
-                result.portOps.push({row: row, meta: row.__portMeta});
-              }
-            });
             return result;
           }
           
@@ -27487,6 +27504,10 @@ var _rtActive     = false;
 
 var RT_TABLES = [
   { name:'pelanggan',    icon:'ti-user-circle',  color:'var(--c1)'   },
+  { name:'odp_ports',    icon:'ti-plug',         color:'var(--cyan)' },
+  { name:'odps',         icon:'ti-router',       color:'var(--c2)'   },
+  { name:'odcs',         icon:'ti-server',       color:'var(--pu)'   },
+  { name:'areas',        icon:'ti-map-pin',      color:'var(--green)'},
   { name:'app_users',    icon:'ti-shield-lock',  color:'var(--pu)'   },
   { name:'tickets',      icon:'ti-ticket',       color:'var(--c2)'   },
   { name:'approval_isp', icon:'ti-checks',       color:'var(--green)'},
@@ -27547,6 +27568,130 @@ function rtBuildChannelList(){
   }).join('');
 }
 
+/* ════════════════════════════════════════════════════════════════
+   AUTO-SYNC ENGINE — Realtime otomatis tanpa tombol manual
+   · Berjalan saat user masuk dashboard
+   · Semua device selalu dapat data yang sama dari Supabase
+   · Auto-reconnect jika koneksi putus
+   · TTL cache diperpendek ke 15 detik untuk data kritis
+════════════════════════════════════════════════════════════════ */
+
+var _autoSyncRunning  = false;
+var _autoSyncReconInt = null; /* interval reconnect checker */
+var _autoSyncHbInt    = null; /* interval heartbeat TTL flush */
+
+function _autoSyncStart(){
+  if(_autoSyncRunning) return; /* idempotent */
+  var sb = getSB();
+  if(!sb){ setTimeout(_autoSyncStart, 2000); return; }
+  _autoSyncRunning = true;
+
+  /* 1. Perpendek TTL SOT untuk data pelanggan & jaringan ke 15 detik */
+  SOT._ttl = 15000;
+
+  /* 2. Subscribe semua tabel sekaligus (tanpa tampilkan toast manual) */
+  RT_TABLES.forEach(function(t){
+    _autoSyncSubscribe(t.name);
+  });
+
+  /* 3. Heartbeat: setiap 15 detik flush SOT cache sehingga data tidak stale */
+  _autoSyncHbInt = setInterval(function(){
+    if(window.SOT) SOT.invalidate('general');
+  }, 15000);
+
+  /* 4. Reconnect watcher: setiap 30 detik cek channel mana yang mati & re-subscribe */
+  _autoSyncReconInt = setInterval(function(){
+    if(!getSB()) return;
+    RT_TABLES.forEach(function(t){
+      if(!_rtChannels[t.name]) _autoSyncSubscribe(t.name);
+    });
+  }, 30000);
+
+  /* 5. Pulihkan koneksi saat browser kembali online setelah offline */
+  window.addEventListener('online', function(){
+    setTimeout(function(){
+      RT_TABLES.forEach(function(t){
+        if(!_rtChannels[t.name]) _autoSyncSubscribe(t.name);
+      });
+      if(window.SOT){ SOT.invalidate('general'); SOT.refresh(true); }
+    }, 1500);
+  });
+
+  /* 6. Saat tab kembali aktif (visibility), flush cache & refresh data */
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && window.SOT){
+      SOT.invalidate('general');
+      SOT.refresh(false, function(){
+        /* Re-render tampilan aktif saat ini */
+        var cur = window._currentPane || '';
+        if(cur==='pelanggan'&&typeof pelLoad==='function'){ _pelLoaded=false; pelLoad(); }
+        if((cur==='mon'||cur==='monitoring')&&typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
+      });
+    }
+  });
+}
+
+/* Subscribe satu tabel — silent (tidak rtLog ke panel, tidak toast) */
+function _autoSyncSubscribe(tbl){
+  var sb = getSB();
+  if(!sb || _rtChannels[tbl]) return;
+  try{
+    var ch = sb.channel('as-'+tbl) /* prefix 'as-' beda dari 'rt-' manual */
+      .on('postgres_changes', { event:'*', schema:'public', table:tbl },
+        function(payload){
+          rtUpdateEventCount();
+          var ev   = payload.eventType || payload.type || 'CHANGE';
+          var rec  = payload.new || payload.old || {};
+          var recId= rec.id ? ' id='+String(rec.id).slice(0,8) : '';
+          rtLog('[AUTO '+tbl+'] '+ev+recId, 'evt');
+
+          /* Invalidate + reload modul terkait */
+          if(window.SOT) SOT.invalidate('general');
+
+          if(tbl==='pelanggan'){
+            _pelLoaded=false;
+            if(typeof pelLoad==='function') pelLoad();
+          }
+          if(tbl==='areas'||tbl==='odcs'||tbl==='odps'||tbl==='odp_ports'){
+            _areaLoaded=false; _odcLoaded=false; _odpLoaded=false; _portLoaded=false;
+            if(window.SOT) SOT.refresh(true, function(){
+              if(typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
+            });
+          }
+          if(tbl==='app_users'){ _urLoaded=false; if(typeof urLoad==='function') urLoad(); }
+          if(tbl==='tickets' && typeof ticketLoad==='function'){ if(typeof _ticketLoaded!=='undefined') _ticketLoaded=false; ticketLoad(); }
+          if(tbl==='fee_otf'){ _otfLoaded=false; if(typeof otfLoad==='function') otfLoad(); }
+          if(tbl==='approval_isp' && typeof appLoad==='function') appLoad();
+        }
+      )
+      .subscribe(function(status){
+        if(status==='SUBSCRIBED'){
+          _rtChannels[tbl] = ch;
+          rtUpdateStatus(true);
+        } else if(status==='CHANNEL_ERROR'||status==='CLOSED'){
+          delete _rtChannels[tbl];
+          rtUpdateStatus(Object.keys(_rtChannels).length>0);
+          /* Jadwalkan reconnect dalam 5 detik */
+          setTimeout(function(){ _autoSyncSubscribe(tbl); }, 5000);
+        }
+      });
+  } catch(e){
+    /* Coba lagi dalam 5 detik */
+    setTimeout(function(){ _autoSyncSubscribe(tbl); }, 5000);
+  }
+}
+
+/* Stop auto-sync (dipanggil saat logout) */
+function _autoSyncStop(){
+  _autoSyncRunning = false;
+  if(_autoSyncHbInt)    clearInterval(_autoSyncHbInt);
+  if(_autoSyncReconInt) clearInterval(_autoSyncReconInt);
+  _autoSyncHbInt = null;
+  _autoSyncReconInt = null;
+  /* Kembalikan TTL ke normal */
+  if(window.SOT) SOT._ttl = 60000;
+}
+
 function rtSubscribeTable(tbl){
   var sb = getSB();
   if(!sb){ rtLog('Supabase tidak terhubung','err'); return; }
@@ -27564,10 +27709,40 @@ function rtSubscribeTable(tbl){
           var rec  = payload.new || payload.old || {};
           var recId= rec.id ? ' id='+String(rec.id).slice(0,8) : '';
           rtLog('['+tbl+'] '+ev+recId, 'evt');
-          /* Refresh modul terkait jika sedang aktif */
-          if(tbl==='pelanggan'    && typeof pelLoad==='function')    pelLoad();
-          if(tbl==='app_users'    && typeof urLoad==='function')     { _urLoaded=false; urLoad(); }
-          if(tbl==='approval_isp' && typeof appLoad==='function')    appLoad();
+          /* ── AUTO-SYNC: refresh modul terkait di semua device secara otomatis ── */
+          /* Invalidate SOT cache dulu — wajib agar fetch ulang dari DB */
+          if(window.SOT) SOT.invalidate('general');
+
+          /* Pelanggan */
+          if(tbl==='pelanggan'){
+            _pelLoaded=false;
+            if(typeof pelLoad==='function') pelLoad();
+          }
+          /* Network data (area, OLT, ODC, ODP, port) → refresh SOT + monitoring */
+          if(tbl==='areas'||tbl==='odcs'||tbl==='odps'||tbl==='odp_ports'){
+            _areaLoaded=false; _odcLoaded=false; _odpLoaded=false; _portLoaded=false;
+            if(window.SOT) SOT.refresh(true, function(){
+              /* Re-render monitoring jika sedang aktif */
+              if(typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
+            });
+          }
+          /* Users & roles */
+          if(tbl==='app_users'){
+            _urLoaded=false;
+            if(typeof urLoad==='function') urLoad();
+          }
+          /* Tiket */
+          if(tbl==='tickets' && typeof ticketLoad==='function'){
+            if(typeof _ticketLoaded!=='undefined') _ticketLoaded=false;
+            ticketLoad();
+          }
+          /* Fee OTF */
+          if(tbl==='fee_otf'){
+            _otfLoaded=false;
+            if(typeof otfLoad==='function') otfLoad();
+          }
+          /* Approval */
+          if(tbl==='approval_isp' && typeof appLoad==='function') appLoad();
         }
       )
       .subscribe(function(status){
