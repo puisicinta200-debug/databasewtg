@@ -79,19 +79,16 @@
       render();
     });
     clearBtn.addEventListener('click',function(){ logs=[]; render(); });
-    /* ── Tampilkan tombol hanya untuk super_admin ──
-       [PERF P7] Pakai event icrm:rolechange, bukan setInterval 500ms */
-    document.addEventListener('icrm:rolechange', function(e){
-      var show = (e.detail && e.detail.role === 'super_admin');
-      btn.style.display = show ? 'flex' : 'none';
-      if(!show){ open = false; panel.style.display = 'none'; clearBtn.style.display = 'none'; }
-    });
-    /* Cek role saat DOM ready (untuk login yang sudah ada) */
-    var _dbgCheckRole = function(){
-      var show = (window.CR === 'super_admin');
-      btn.style.display = show ? 'flex' : 'none';
-    };
-    _dbgCheckRole();
+    /* ── Tampilkan tombol hanya untuk super_admin ── */
+    var _dbgLastCR=null;
+    setInterval(function(){
+      var cr=window.CR||null;
+      if(cr===_dbgLastCR) return;
+      _dbgLastCR=cr;
+      var show=(cr==='super_admin');
+      btn.style.display=show?'flex':'none';
+      if(!show){ open=false; panel.style.display='none'; clearBtn.style.display='none'; }
+    },500);
   });
 })();
 </script>
@@ -101,11 +98,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a56db">
-<title>ICRM_JJC — SOT Governance v23 (PERF PATCH)</title>
-<!-- [PERF] Preconnect hints untuk koneksi lebih cepat -->
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link rel="dns-prefetch" href="https://unpkg.com">
+<title>ICRM_JJC — SOT Governance v23</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -9326,9 +9319,6 @@ function _loginOK(usr) {
   CR = usr.role || 'viewer';
   applyRoleUI(CR);
 
-  /* [PERF P7] Dispatch event untuk debug overlay & komponen lain yang listen role */
-  document.dispatchEvent(new CustomEvent('icrm:rolechange', { detail: { role: CR } }));
-
   var name = usr.nama || usr.username || 'User';
   var av = name.trim().split(' ').slice(0,2).map(function(w){ return w[0]||''; }).join('').toUpperCase() || 'U';
 
@@ -9430,26 +9420,8 @@ function _showWelcome(usr, name, av, scopeLabel, greet){
 }
 
 function _wwLoadStats(){
-  /* [PERF P4] Coba dari SOT cache dulu — skip 3 DB query */
-  if(window.SOT){
-    var _c = SOT.cache();
-    if(_c.pelanggan && _c.pelanggan.length > 0){
-      var _JG = window.JENIS_GRATIS || ['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
-      var _aktif = _c.pelanggan.filter(function(p){
-        return p.status === 'aktif' && _JG.indexOf(p.jenis_pelanggan) < 0;
-      }).length;
-      var _odpAktif = (_c.odps||[]).filter(function(o){ return o.status==='aktif'; }).length;
-      var _areaCount = (_c.areas||[]).length;
-      var _n = function(id,v){ var e=document.getElementById(id); if(e) e.textContent=(v||0); };
-      _n('ww-s-pel', _aktif);
-      _n('ww-s-area', _areaCount);
-      _n('ww-s-odp', _odpAktif);
-      var eb = document.getElementById('ww-s-pel-b'); if(eb) eb.textContent = _aktif + ' aktif';
-      return; /* selesai — 0 DB query */
-    }
-  }
   var sb=getSB(); if(!sb) return;
-  /* Fallback ke DB kalau SOT belum warm */
+  /* Build queries dengan area filter untuk role teknisi/sales/area_manager */
   var qPel = sb.from('pelanggan').select('id',{count:'exact',head:true}).eq('status','aktif');
   var qOdp = sb.from('odps').select('id',{count:'exact',head:true}).eq('status','aktif');
   if (!_isGlobalRole()) {
@@ -19508,6 +19480,11 @@ var _pelPerPage = 50;  /* jumlah baris per halaman DB */
 var _pelPerPg  = 50;   /* alias dipakai pelRender() — harus sama dengan _pelPerPage */
 var _pelTotal  = 0;
 var _pelFallbackCount = 0;
+/* [FIX] Search server-side — saat search aktif, _pelData diisi dari hasil query DB
+   (bukan halaman normal), supaya pencarian mencakup SEMUA pelanggan, bukan hanya
+   50 baris yang sedang ter-load di halaman saat ini. */
+var _pelSearchMode = false;
+var _pelSearchQ    = '';
 var _pelFil    = [];
 var _pelDetId  = null;
 var _pelLoaded = false;
@@ -19866,18 +19843,68 @@ function _pelOdpName(odp_id){
 
 /* ── Search ── */
 function pelSearch(q){
-  _pelPage = 1;
   var clr = document.getElementById('pel-search-clr');
   if(clr) clr.style.display = q ? 'block' : 'none';
-  pelRender();
+
+  q = (q||'').trim();
+  if(!q){
+    /* Search dikosongkan — kembali ke mode pagination normal */
+    _pelSearchMode = false;
+    _pelSearchQ = '';
+    pelLoadPage(1);
+    return;
+  }
+  _pelSearchQ = q;
+  pelSearchServer(q, 1);
+}
+
+/* [FIX] Query pencarian ke server — mencakup SEMUA pelanggan (bukan hanya
+   halaman/50 baris yang sedang ter-load), supaya cari CID/nama/HP/alamat
+   selalu konsisten ketemu walau datanya ada di halaman DB lain. */
+function pelSearchServer(q, pageNum){
+  var list = document.getElementById('pel-list');
+  if(list) list.innerHTML = '<div class="olt-empty"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite;opacity:.4;"></i><p>Mencari…</p></div>';
+
+  var sb = getSB();
+  if(!sb){ if(list) list.innerHTML='<div class="olt-empty"><i class="ti ti-alert-triangle"></i><p>Koneksi tidak aktif</p></div>'; return; }
+
+  _pelSearchMode = true;
+  _pelPage = pageNum || 1;
+
+  var p1 = _areaData.length > 0 ? Promise.resolve() : _ensureAreas(sb);
+  var p2 = _pelOdpList.length > 0 ? Promise.resolve()
+    : sb.from('odps').select('id,kode,nama,area_id,odc_id,jumlah_port').order('kode').then(function(r){ if(!r.error) _pelOdpList=r.data||[]; });
+
+  Promise.all([p1, p2]).then(function(){
+    var esc = q.replace(/[%,]/g,'').trim();
+    var offset = (_pelPage-1) * _pelPerPage;
+    var orFilter = 'cid.ilike.%'+esc+'%,nama.ilike.%'+esc+'%,hp.ilike.%'+esc+'%,alamat.ilike.%'+esc+'%,nik.ilike.%'+esc+'%';
+    var query = sb.from('pelanggan').select('*', {count:'exact'}).or(orFilter)
+      .order('created_at', {ascending:false}).range(offset, offset+_pelPerPage-1);
+    if(!_isGlobalRole()){
+      var sc = _getUserAreaScope();
+      if(sc && sc.area_coverage_id) query = query.eq('area_id', sc.area_coverage_id);
+    }
+    return query;
+  }).then(function(r){
+    if(r.error){
+      if(list) list.innerHTML='<div class="olt-empty"><i class="ti ti-alert-triangle"></i><p>Gagal: '+(r.error.message||'coba lagi')+'</p></div>';
+      return;
+    }
+    _pelTotal = r.count || 0;
+    _finishPelRender(r.data || []);
+  }).catch(function(e){
+    if(list) list.innerHTML='<div class="olt-empty"><i class="ti ti-alert-triangle"></i><p>Error: '+(e.message||'coba lagi')+'</p></div>';
+  });
 }
 function pelClearSearch(){
   var inp = document.getElementById('pel-search');
   if(inp) inp.value = '';
   var clr = document.getElementById('pel-search-clr');
   if(clr) clr.style.display = 'none';
-  _pelPage = 1;
-  pelRender();
+  _pelSearchMode = false;
+  _pelSearchQ = '';
+  pelLoadPage(1);
 }
 
 /* ── Render ── */
@@ -19905,9 +19932,12 @@ function pelRender(){
   });
 
   var total = _pelFil.length;
+  /* [FIX] Jangan paksa _pelPage mundur berdasarkan jumlah data LOKAL (maks 1 halaman DB
+     yang sedang ter-load). _pelPage adalah nomor halaman DB sebenarnya (diset oleh
+     pelLoadPage/pelSearchServer) — hanya clamp jika memang TIDAK ada info total DB. */
   var pages = Math.max(1, Math.ceil(total / _pelPerPg));
-  if(_pelPage > pages) _pelPage = pages;
-  var start = (_pelPage - 1) * _pelPerPg;
+  if(_pelTotal <= 0 && _pelPage > pages) _pelPage = pages;
+  var start = 0;
   var slice = _pelFil.slice(start, start + _pelPerPg);
 
   var list = document.getElementById('pel-list');
@@ -19926,7 +19956,7 @@ function pelRender(){
   var dbMaxPage = _pelTotal > 0 ? Math.ceil(_pelTotal / _pelPerPage) : pages;
   var totalBerbayar = (window.SOT && SOT.cache().pelanggan && SOT.cache().pelanggan.length)
     ? SOT.customerStats().berbayar : _pelTotal;
-  var showNext = (_pelPage < pages) || (_pelPage < dbMaxPage);
+  var showNext = _pelPage < dbMaxPage;
   var showPrev = _pelPage > 1;
 
   var pagi = document.getElementById('pel-pagi');
@@ -19985,24 +20015,15 @@ function _pelRowHTML(p){
 
 /* ── Pagination ── */
 function pelPage(dir){
-  var localPages = Math.max(1, Math.ceil(_pelFil.length / _pelPerPg));
-  var dbMaxPage  = _pelTotal > 0 ? Math.ceil(_pelTotal / _pelPerPage) : localPages;
-  var newPage    = _pelPage + dir;
-  if(newPage < 1) newPage = 1;
+  var dbMaxPage = _pelTotal > 0 ? Math.ceil(_pelTotal / _pelPerPage) : 1;
+  var newPage   = Math.min(dbMaxPage, Math.max(1, _pelPage + dir));
+  if(newPage === _pelPage) return;
 
-  /* Jika arah maju dan sudah di akhir data lokal tapi masih ada halaman DB → load DB */
-  if(dir > 0 && _pelPage >= localPages && _pelPage < dbMaxPage){
-    pelLoadPage(_pelPage + 1);
-    return;
+  if(_pelSearchMode){
+    pelSearchServer(_pelSearchQ, newPage);
+  } else {
+    pelLoadPage(newPage);
   }
-  /* Jika arah mundur dan sudah di awal data lokal tapi masih ada halaman DB sebelumnya → load DB */
-  if(dir < 0 && _pelPage <= 1 && _pelTotal > _pelPerPage){
-    var prevDbPage = Math.max(1, Math.ceil((_pelPage * _pelPerPage - _pelPerPage) / _pelPerPage));
-    if(prevDbPage < _pelPage) { pelLoadPage(prevDbPage); return; }
-  }
-
-  _pelPage = Math.min(localPages, Math.max(1, newPage));
-  pelRender();
 }
 
 /* ── Open Form ── */
@@ -27615,25 +27636,25 @@ function _autoSyncStart(){
   _autoSyncRunning = true;
 
   /* 1. Perpendek TTL SOT untuk data pelanggan & jaringan ke 15 detik */
-  /* [PERF P3] SOT._ttl dibiarkan 30s — jangan perpendek */ // SOT._ttl = 15000;
+  SOT._ttl = 15000;
 
   /* 2. Subscribe semua tabel sekaligus (tanpa tampilkan toast manual) */
   RT_TABLES.forEach(function(t){
     _autoSyncSubscribe(t.name);
   });
 
-  /* 3. [PERF P1] Heartbeat: 60 detik — cukup untuk multi-user, kurangi beban DB */
+  /* 3. Heartbeat: setiap 15 detik flush SOT cache sehingga data tidak stale */
   _autoSyncHbInt = setInterval(function(){
     if(window.SOT) SOT.invalidate('general');
-  }, 60000);
+  }, 15000);
 
-  /* 4. [PERF P2] Reconnect watcher: 120 detik — lebih ringan untuk banyak user */
+  /* 4. Reconnect watcher: setiap 30 detik cek channel mana yang mati & re-subscribe */
   _autoSyncReconInt = setInterval(function(){
     if(!getSB()) return;
     RT_TABLES.forEach(function(t){
       if(!_rtChannels[t.name]) _autoSyncSubscribe(t.name);
     });
-  }, 120000);
+  }, 30000);
 
   /* 5. Pulihkan koneksi saat browser kembali online setelah offline */
   window.addEventListener('online', function(){
@@ -27652,7 +27673,6 @@ function _autoSyncStart(){
       SOT.refresh(false, function(){
         /* Re-render tampilan aktif saat ini */
         var cur = window._currentPane || '';
-        if(cur==='pelanggan'&&typeof pelLoad==='function'){ _pelLoaded=false; pelLoad(); }
         if((cur==='mon'||cur==='monitoring')&&typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
       });
     }
@@ -27673,46 +27693,24 @@ function _autoSyncSubscribe(tbl){
           var recId= rec.id ? ' id='+String(rec.id).slice(0,8) : '';
           rtLog('[AUTO '+tbl+'] '+ev+recId, 'evt');
 
-          /* [PERF P6] Invalidate + reload modul terkait — HANYA jika pane aktif */
+          /* Invalidate + reload modul terkait */
           if(window.SOT) SOT.invalidate('general');
 
-          var _curPane = window._currentPane || '';
-
-          if(tbl==='pelanggan'){
-            _pelLoaded=false;
-            /* Reload full hanya kalau pane pelanggan sedang tampil */
-            if(_curPane === 'pelanggan' && typeof pelLoad==='function'){
-              pelLoad();
-            } else {
-              /* Update stats saja */
-              if(window.SOT) SOT.refresh(false, function(){
-                if(typeof _pelUpdateStats==='function') _pelUpdateStats();
-              });
-            }
-          }
+          /* [FIX] Auto-reload pelanggan dimatikan — perubahan tabel pelanggan oleh
+             siapa pun (termasuk modul lain) sebelumnya selalu memaksa reload
+             halaman Data Pelanggan, walau user sedang berada di menu lain.
+             Sekarang data pelanggan hanya reload manual (pindah menu / refresh /
+             setelah simpan sendiri di tempat lain yang sudah handle reload-nya). */
           if(tbl==='areas'||tbl==='odcs'||tbl==='odps'||tbl==='odp_ports'){
             _areaLoaded=false; _odcLoaded=false; _odpLoaded=false; _portLoaded=false;
             if(window.SOT) SOT.refresh(true, function(){
-              if((_curPane==='mon'||_curPane==='monitoring') && typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
+              if(typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
             });
           }
-          if(tbl==='app_users'){
-            _urLoaded=false;
-            if(_curPane==='userrole' && typeof urLoad==='function') urLoad();
-          }
-          if(tbl==='tickets' && typeof ticketLoad==='function'){
-            if(_curPane==='tiket'||_curPane==='ticket'){
-              if(typeof _ticketLoaded!=='undefined') _ticketLoaded=false;
-              ticketLoad();
-            }
-          }
-          if(tbl==='fee_otf'){
-            _otfLoaded=false;
-            if(_curPane==='fin-otf' && typeof otfLoad==='function') otfLoad();
-          }
-          if(tbl==='approval_isp' && typeof appLoad==='function'){
-            if(_curPane==='approval') appLoad();
-          }
+          if(tbl==='app_users'){ _urLoaded=false; if(typeof urLoad==='function') urLoad(); }
+          if(tbl==='tickets' && typeof ticketLoad==='function'){ if(typeof _ticketLoaded!=='undefined') _ticketLoaded=false; ticketLoad(); }
+          if(tbl==='fee_otf'){ _otfLoaded=false; if(typeof otfLoad==='function') otfLoad(); }
+          if(tbl==='approval_isp' && typeof appLoad==='function') appLoad();
         }
       )
       .subscribe(function(status){
@@ -36091,124 +36089,6 @@ function _lapOntCell(n, lbl, col){
   '</div>';
 }
 
-})();
-</script>
-<!-- ════════════════════════════════════════════════════════════════
-     ICRM PERF PATCH v1.0 — Inline injection
-     Fixes: SOT.refresh dedup, RT per-role subscribe optimization
-════════════════════════════════════════════════════════════════ -->
-<script>
-(function(){
-'use strict';
-if(window.__ICRM_PERF_INLINE__) return;
-window.__ICRM_PERF_INLINE__ = true;
-
-/* [P8] SOT.refresh — DEDUPLICATE concurrent calls */
-if(window.SOT && typeof SOT.refresh === 'function'){
-  var _origSotRefresh = SOT.refresh.bind(SOT);
-  SOT._refreshPending = false;
-  SOT._pendingCbs     = [];
-
-  SOT.refresh = function(force, cb){
-    var self = this;
-    var now  = Date.now();
-    var anyExpired = force;
-    if(!anyExpired){
-      for(var mod in self._cache.ts){
-        if((now - self._cache.ts[mod]) >= self._ttl){ anyExpired = true; break; }
-      }
-    }
-    if(!anyExpired && self._cache.pelanggan && self._cache.pelanggan.length){
-      if(cb) cb(self._cache);
-      return;
-    }
-    if(self._refreshPending && !force){
-      if(cb) self._pendingCbs.push(cb);
-      return;
-    }
-    self._refreshPending = true;
-    if(cb) self._pendingCbs.push(cb);
-    _origSotRefresh(force, function(cache){
-      self._refreshPending = false;
-      var cbs = self._pendingCbs.slice();
-      self._pendingCbs = [];
-      cbs.forEach(function(fn){ try{ fn(cache); }catch(e){} });
-    });
-  };
-  SOT.refresh._perf_patch = true;
-}
-
-/* [P5] Override _autoSyncStart untuk RT subscribe per-role */
-var _origAutoSyncStart = window._autoSyncStart;
-window._autoSyncStart = function(){
-  if(window._autoSyncRunning) return;
-  var sb = (typeof getSB === 'function') ? getSB() : null;
-  if(!sb){ setTimeout(window._autoSyncStart, 2000); return; }
-  window._autoSyncRunning = true;
-
-  /* Pulihkan TTL ke 30s (bukan 15s) */
-  if(window.SOT) window.SOT._ttl = 30000;
-
-  /* Subscribe per role */
-  var RT_BY_ROLE = {
-    super_admin : ['pelanggan','odp_ports','odps','odcs','areas','app_users','tickets','approval_isp','fee_otf'],
-    owner       : ['pelanggan','odp_ports','odps','odcs','areas','tickets'],
-    area_manager: ['pelanggan','odp_ports','odps','odcs'],
-    teknisi     : ['pelanggan','odp_ports','tickets'],
-    sales       : ['pelanggan','approval_isp'],
-    finance     : ['pelanggan','fee_otf','approval_isp'],
-    viewer      : ['pelanggan']
-  };
-  var role = (typeof normalizeRole === 'function') ? normalizeRole(window.CR) : (window.CR || 'viewer');
-  var myTables = RT_BY_ROLE[role] || RT_BY_ROLE.viewer;
-
-  myTables.forEach(function(tbl){
-    if(typeof window._autoSyncSubscribe === 'function') window._autoSyncSubscribe(tbl);
-  });
-
-  /* Heartbeat 60s (bukan 15s) */
-  if(window._autoSyncHbInt) clearInterval(window._autoSyncHbInt);
-  window._autoSyncHbInt = setInterval(function(){
-    if(window.SOT) SOT.invalidate('general');
-  }, 60000);
-
-  /* Reconnect 120s (bukan 30s) */
-  if(window._autoSyncReconInt) clearInterval(window._autoSyncReconInt);
-  window._autoSyncReconInt = setInterval(function(){
-    if(!getSB()) return;
-    myTables.forEach(function(tbl){
-      if(window._rtChannels && !window._rtChannels[tbl]){
-        if(typeof window._autoSyncSubscribe === 'function') window._autoSyncSubscribe(tbl);
-      }
-    });
-  }, 120000);
-
-  window.addEventListener('online', function(){
-    setTimeout(function(){
-      myTables.forEach(function(tbl){
-        if(window._rtChannels && !window._rtChannels[tbl]){
-          if(typeof window._autoSyncSubscribe === 'function') window._autoSyncSubscribe(tbl);
-        }
-      });
-      if(window.SOT){ SOT.invalidate('general'); SOT.refresh(true); }
-    }, 1500);
-  });
-
-  document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible' && window.SOT){
-      SOT.invalidate('general');
-      SOT.refresh(false, function(){
-        var cur = window._currentPane || '';
-        if(cur === 'pelanggan' && typeof pelLoad === 'function'){ window._pelLoaded = false; pelLoad(); }
-        if((cur === 'mon' || cur === 'monitoring') && typeof monSimpleRender === 'function'){
-          try{ monSimpleRender(); }catch(e){}
-        }
-      });
-    }
-  });
-};
-
-console.log('%c[ICRM PERF v1.0] ✅ Patch aktif — Heartbeat 60s, RT per-role, SOT.refresh dedup', 'color:#059669;font-weight:700');
 })();
 </script>
 </body>
