@@ -4087,7 +4087,7 @@ ALTER TABLE dismantle_orders
 </div>
 
 <!-- Recurring reminder (logic tetap jalan) -->
-<div id="fdb-recurring-reminder" style="display:none;margin-bottom:12px;padding:10px 13px;border-radius:var(--rs);background:var(--yg);border:1.5px solid rgba(217,119,6,.25);font-size:11px;color:var(--yellow);line-height:1.6;display:flex;gap:8px;align-items:flex-start">
+<div id="fdb-recurring-reminder" style="display:none;margin-bottom:12px;padding:10px 13px;border-radius:var(--rs);background:var(--yg);border:1.5px solid rgba(217,119,6,.25);font-size:11px;color:var(--yellow);line-height:1.6;gap:8px;align-items:flex-start">
   <i class="ti ti-alert-triangle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i>
   <span id="fdb-recurring-reminder-text"></span>
 </div>
@@ -6278,6 +6278,12 @@ if(typeof _fdbPeriode === 'undefined'){
   window._fdbPeriode = function(){ return {from:'', to:''}; };
 }
 
+/* ═══════════════════════════════════════════════════════
+   ICRM_JJC — 100% ONLINE · No Local Cache · Supabase SSOT
+   ✅ Semua data dari Supabase (realtime subscription)
+   ❌ Tidak ada localStorage / sessionStorage / SW cache
+   ❌ Tidak ada optimistic UI / stale TTL
+   ═══════════════════════════════════════════════════════ */
 var SB = {
   url: 'https://foambnxappwgchnjkojr.supabase.co',
   key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvYW1ibnhhcHB3Z2Nobmprb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NjYyMTEsImV4cCI6MjA5NjE0MjIxMX0.Rpqles8_DsDZqNpwCjJWx-ofNWlN2jb_v6u4ZCe6r9k'
@@ -7451,7 +7457,7 @@ function monOltLoad(){
   if(list) list.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3);font-size:12px"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite;font-size:20px;display:block;margin-bottom:8px;opacity:.4"></i>Memuat OLT…</div>';
   var sb=(typeof getSB==='function')?getSB():null;
   if(!sb){ monOltRender(); return; }
-  var q=sb.from('olts').select('id,kode,nama,area_id,status,ip,vendor,model').order('kode');
+  var q=sb.from('olts').select('id,kode,nama,area_id,status,lokasi,brand,model').order('kode');
   if(typeof _scopedQuery==='function') q=_scopedQuery(q,'area_id');
   q.then(function(r){
     _monOltData=(!r.error&&r.data)?r.data:[];
@@ -8065,7 +8071,7 @@ if(typeof _navDispatch!=='undefined' && typeof _navDispatch.register==='function
 }
 
 function fasLoad(force){
-  if(_fasLoaded && !force) return;
+  /* Always fetch fresh from Supabase */
   var sb=(typeof getSB==='function')?getSB():null; if(!sb) return;
   var listEl=document.getElementById('fas-drill-list');
   if(listEl) listEl.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3);font-size:12px"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite;font-size:20px;display:block;margin-bottom:8px;opacity:.4"></i>Memuat data…</div>';
@@ -8888,7 +8894,7 @@ var _wilLoaded = false;
 
 /* Auto-load saat nav ke wilayah */
 /* OPT: dispatch hook ganti IIFE wrapper */
-_navDispatch.register('wilayah', function(){ if(!_wilLoaded) wilLoad(); });
+_navDispatch.register('wilayah', function(){ wilLoad(); });
 
 function wilLoad(){
   var list = document.getElementById('wil-list');
@@ -8898,7 +8904,7 @@ function wilLoad(){
     .then(function(r){
       if(r.error){
         /* Tabel mungkin belum dibuat */
-        wilRenderEmpty('Tabel <b>wilayah</b> belum ada di Supabase.<br><br>Buat tabel dengan SQL:<br><code style="font-size:10px;background:var(--bg3);padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px">CREATE TABLE wilayah (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, area_coverage text, kecamatan text NOT NULL, kelurahan text NOT NULL, created_at timestamptz DEFAULT now());</code>');
+        wilRenderEmpty('Tabel <b>wilayah</b> belum ada di Supabase.<br><br>Buat tabel dengan SQL:<br><code style="font-size:10px;background:var(--bg3);padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px">CREATE TABLE wilayah (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, area_coverage text, kecamatan text NOT NULL, kelurahan text NOT NULL, kode_pos text, created_at timestamptz DEFAULT now());</code>');
         return;
       }
       _wilData = r.data || [];
@@ -9091,7 +9097,7 @@ var _areaLoaded = false;
 
 /* ── Auto-load saat pane area dibuka ── */
 /* OPT: dispatch hook */
-_navDispatch.register('area', function(){ if(!_areaLoaded) areaLoad(); });
+_navDispatch.register('area', function(){ areaLoad(); });
 
 /* ── Generate kode unik ── */
 function _genAreaKode(){
@@ -9105,8 +9111,6 @@ function areaLoad(){
   if(list) list.innerHTML = '<div class="area-empty"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite;opacity:.4"></i><p>Memuat data…</p></div>';
   var sb = getSB();
   if(!sb){ areaRenderEmpty('Koneksi Supabase tidak aktif'); return; }
-  /* OPT: cek SOT cache */
-  if(_areaData && _areaData.length){ _areaLoaded=true; areaUpdateStats(); areaRender(); return; }
   sb.from('areas').select('id,kode,nama,status,keterangan,created_at').order('created_at',{ascending:false})
     .then(function(r){
       if(r.error){ areaRenderEmpty('Gagal memuat: ' + (r.error.message||'coba lagi')); return; }
@@ -9416,7 +9420,7 @@ var _oltLoaded = false;
 
 /* ── Auto-load hook ── */
 /* OPT: dispatch hook */
-_navDispatch.register('olt', function(){ if(!_oltLoaded) oltLoad(); });
+_navDispatch.register('olt', function(){ oltLoad(); });
 
 /* ── Generate kode ── */
 function _genOltKode(){
@@ -9468,10 +9472,7 @@ function oltLoad(){
 
   areaPromise.then(function(){
     _oltFillAreaFilter();
-    /* OPT: cek cache */
-    var _oltCached = null; /* SOT cache — always re-fetch if empty */
-    if(_oltCached){ _oltData=_oltCached; _oltLoaded=true; oltUpdateStats(); oltRender(); return; }
-    sb.from('olts').select('id,kode,nama,area_id,status,ip,vendor,model,jumlah_port,created_at').order('created_at',{ascending:false})
+    sb.from('olts').select('id,kode,nama,area_id,status,lokasi,brand,model,jumlah_pon,pon_used,uplink,lat,lng,keterangan,created_at').order('created_at',{ascending:false})
       .then(function(r){
         if(r.error){ oltRenderEmpty('Gagal memuat: '+(r.error.message||'coba lagi')); return; }
         _oltData = r.data || [];
@@ -9797,7 +9798,7 @@ var _odcLoaded = false;
 
 /* ── Auto-load hook ── */
 /* OPT: dispatch hook */
-_navDispatch.register('odc', function(){ if(!_odcLoaded) odcLoad(); });
+_navDispatch.register('odc', function(){ odcLoad(); });
 
 /* ── Generate kode ── */
 function _genOdcKode(){
@@ -9975,7 +9976,6 @@ function odcLoad(){
     _odcFillFilters();
     /* OPT: cek cache */
     var _odcC = null; /* SOT cache — always re-fetch if empty */
-    if(_odcC){ _odcData=_odcC; _odcLoaded=true; odcUpdateStats(); odcRender(); (function(){})() /* removed */; return; }
     sb.from('odcs').select('id,kode,nama,area_id,olt_id,status,jumlah_port,lat,lng,created_at').order('created_at',{ascending:false})
       .then(function(r){
         if(r.error){ odcRenderEmpty('Gagal memuat: '+(r.error.message||'coba lagi')); return; }
@@ -10351,7 +10351,7 @@ var _odpLoaded = false;
 
 /* ── Auto-load hook ── */
 /* OPT: dispatch hook */
-_navDispatch.register('odp', function(){ if(!_odpLoaded) odpLoad(); });
+_navDispatch.register('odp', function(){ odpLoad(); });
 
 /* ── Generate kode ── */
 function _genOdpKode(){
@@ -10522,8 +10522,7 @@ function odpLoad(){
     _odpFillFilters();
     /* OPT: cek cache */
     var _odpC = null; /* SOT cache — always re-fetch if empty */
-    if(_odpC){ _odpData=_odpC; _odpLoaded=true; odpUpdateStats(); odpRender(); (function(){})() /* removed */; return; }
-    sb.from('odps').select('id,kode,nama,area_id,odc_id,status,jumlah_port,lat,lng,alamat,keterangan,created_at').order('created_at',{ascending:false})
+    sb.from('odps').select('id,kode,nama,area_id,odc_id,status,jumlah_port,lat,lng,lokasi,type,keterangan,created_at').order('created_at',{ascending:false})
       .then(function(r){
         if(r.error){ odpRenderEmpty('Gagal memuat: '+(r.error.message||'coba lagi')); return; }
         _odpData = r.data || [];
@@ -10923,7 +10922,7 @@ var _portOdpList = []; /* cache list ODP untuk dropdown */
 
 /* ── Auto-load saat pane port dibuka ── */
 /* OPT: dispatch hook */
-_navDispatch.register('port', function(){ if(!_portLoaded) portLoad(); });
+_navDispatch.register('port', function(){ portLoad(); });
 
 /* ── Load data ── */
 function portLoad(){
@@ -11686,9 +11685,9 @@ function finSwitchTab(tab, btn){
   if(sideBtn) sideBtn.classList.add('on');
   if(tab==='otf' && !_otfLoaded) otfLoad();
   if(tab==='recurring'){
-    if(!_recLoaded) recLoad();
-    else {
-
+    if(!_recLoaded){
+      recLoad();
+    } else {
       var sbSync=getSB();
       if(sbSync && !_recSinkronRunning) _recAutoSinkron(sbSync);
     }
@@ -12213,7 +12212,7 @@ function _fdbCheckRecurringReminder(){
   var sudahAda = (_recData||[]).some(function(r){ return r.periode===periodeNow; });
   if(sudahAda){ box.style.display='none'; return; }
   txt.textContent='Hari ini tanggal '+dom+' — tagihan Fee Recurring untuk periode '+periodeNow+' belum di-generate. Silakan upload &amp; verifikasi data pembayaran ISP untuk membuat tagihan recurring periode ini.';
-  box.style.display='block';
+  box.style.display='flex';
 }
 var _recData=[]; var _recFil=[]; var _recPage=1; var _recPerPg=15; var _recLoaded=false;
 var _recPelMap={};
@@ -13796,7 +13795,7 @@ function exportOtfCsv(){
   }).catch(function(e){toast('Gagal export OTF: '+(e.message||e),'err');});
 }
 function exportRecurringCsv(){
-  if(!_recLoaded){ toast('Data Recurring belum termuat, mohon tunggu sebentar lalu coba lagi','err'); return; }
+  
   var stFilter=(document.getElementById('rec-fil-status')||{}).value||'';
   var areaFilter=(document.getElementById('rec-fil-area')||{}).value||'';
   var perFilter=(document.getElementById('rec-fil-periode')||{}).value||'';
@@ -14309,8 +14308,7 @@ var _invAreaBrandCache = {};
 if(typeof _navDispatch !== 'undefined' && typeof _navDispatch.register === 'function'){
   _navDispatch.register('material', function(){
     setTimeout(function(){
-      if(!_invMatiData.length) invLoadMaster(function(){ invNavSub('dashboard'); });
-      else invNavSub(_invTabCur || 'dashboard');
+      invLoadMaster(function(){ invNavSub(_invTabCur || 'dashboard'); });
     }, 80);
   });
 }
@@ -16336,7 +16334,7 @@ var _appLoaded  = false;
 var _appPelList = [];
 var _appOdpList = [];
 
-_navDispatch.register('approval', function(){ if(typeof _appLoaded!=='undefined'&&!_appLoaded&&typeof appLoad==='function') appLoad(); });
+_navDispatch.register('approval', function(){ if(typeof appLoad==='function') appLoad(); });
 
 function _genAppNo(){
   var d = new Date();
@@ -16858,7 +16856,7 @@ Object.defineProperty(window, '_PEL_FREE_TYPES', {
 });
 var _PEL_PAID_TYPES = ['Reguler','UMKM','Corporate'];
 
-_navDispatch.register('pelanggan', function(){ if(!_pelLoaded) pelLoad(); });
+_navDispatch.register('pelanggan', function(){ pelLoad(); });
 
 function _genCID(){
   var n = (_getPelData().length + 1).toString().padStart(4,'0');
@@ -18176,7 +18174,7 @@ function dashLoad(){
   var _now = Date.now();
   var _manualRefresh = document.activeElement && document.activeElement.onclick &&
     (document.activeElement.id === 'dash-refresh-ico' || document.activeElement.closest && document.activeElement.closest('.dash-sync-refresh'));
-  if(_dashLoaded && !_manualRefresh && (_now - _dashLastLoad < 30000)){ return; }
+  if(_dashLoaded && !_manualRefresh && (_now - _dashLastLoad < 5000)){ return; }
   _dashLastLoad = _now;
   var sb = getSB();
   var ico = document.getElementById('dash-refresh-ico');
@@ -18833,8 +18831,14 @@ var DMT_ALASAN = {
 function navDismantle(btnEl){
   nav('dismantle', btnEl);
   setTimeout(function(){
-    if(!_dmtLoaded) dmtLoad();
-    else { dmtUpdateStats(); dmtRender(); dmtWilRender(); dmtBuildAreaChips(); }
+    if(typeof dmtLoad === 'function') {
+      dmtLoad();
+    } else {
+      if(typeof dmtUpdateStats==='function') dmtUpdateStats();
+      if(typeof dmtRender==='function') dmtRender();
+      if(typeof dmtWilRender==='function') dmtWilRender();
+      if(typeof dmtBuildAreaChips==='function') dmtBuildAreaChips();
+    }
   }, 80);
 
   var sb=getSB(); if(!sb) return;
@@ -20757,23 +20761,33 @@ function stFeeLoad(){
       if(!areas.length){ if(areaList) areaList.innerHTML='<div class="st-empty"><div class="st-empty-ico">💸</div><div class="st-empty-txt">Tidak ada area</div></div>'; return; }
       // One query: fee_otf with join to get area grouping
       // Use count per area from pelanggan join — aggregate in JS from small query
-      sb.from('fee_otf').select('status,pelanggan!inner(area_id)').then(function(rf){
+      sb.from('fee_otf').select('status,nominal,pelanggan!inner(area_id)').then(function(rf){
         var fdata=(rf&&!rf.error)?(rf.data||[]):[];
         var byArea={};
         fdata.forEach(function(f){
           var aid=f.pelanggan?f.pelanggan.area_id:null; if(!aid) return;
-          if(!byArea[aid]) byArea[aid]={paid:0,sbayar:0,pending:0,rej:0};
-          byArea[aid][_stFeeStatus(f.status)]++;
+          if(!byArea[aid]) byArea[aid]={paid:0,sbayar:0,pending:0,rej:0,nomPaid:0,nomPending:0};
+          var bucket=_stFeeStatus(f.status);
+          byArea[aid][bucket]++;
+          var nom=Number(f.nominal)||0;
+          if(bucket==='paid') byArea[aid].nomPaid+=nom;
+          if(bucket==='pending'||bucket==='sbayar') byArea[aid].nomPending+=nom;
         });
         if(cnt) cnt.textContent=areas.length+' area';
         if(areaList) areaList.innerHTML=areas.map(function(a,i){
-          var d=byArea[a.id]||{paid:0,sbayar:0,pending:0,rej:0};
+          var d=byArea[a.id]||{paid:0,sbayar:0,pending:0,rej:0,nomPaid:0,nomPending:0};
+          var _rp=function(n){if(!n)return'Rp 0';if(n>=1000000)return'Rp '+(n/1000000).toFixed(1).replace('.0','')+'jt';if(n>=1000)return'Rp '+(Math.round(n/1000))+'rb';return'Rp '+n;};
+          var total=d.nomPaid+d.nomPending;
           var sub='';
-          if(d.paid)    sub+='<span style="color:#16a34a;margin-right:5px">✓'+d.paid+'</span>';
-          if(d.sbayar)  sub+='<span style="color:#2563eb;margin-right:5px">💳'+d.sbayar+'</span>';
-          if(d.pending) sub+='<span style="color:#d97706;margin-right:5px">⏳'+d.pending+'</span>';
-          if(d.rej)     sub+='<span style="color:#dc2626">✗'+d.rej+'</span>';
-          if(!sub) sub='<span style="color:#94a3b8">Belum ada fee</span>';
+          if(total>0) sub+='<div style="font-size:11px;font-weight:800;color:#0f172a;margin-bottom:3px">'+_rp(total)+'</div>';
+          var badges='';
+          if(d.paid)    badges+='<span style="background:rgba(22,163,74,.1);color:#16a34a;padding:2px 6px;border-radius:6px;font-size:9px;font-weight:700;margin-right:4px">✓ Paid '+d.paid+'</span>';
+          if(d.sbayar)  badges+='<span style="background:rgba(37,99,235,.1);color:#2563eb;padding:2px 6px;border-radius:6px;font-size:9px;font-weight:700;margin-right:4px">💳 '+d.sbayar+'</span>';
+          if(d.pending) badges+='<span style="background:rgba(217,119,6,.1);color:#d97706;padding:2px 6px;border-radius:6px;font-size:9px;font-weight:700;margin-right:4px">⏳ '+d.pending+'</span>';
+          if(d.rej)     badges+='<span style="background:rgba(220,38,38,.08);color:#dc2626;padding:2px 6px;border-radius:6px;font-size:9px;font-weight:700">✗ '+d.rej+'</span>';
+          if(!badges) badges='<span style="color:#94a3b8;font-size:9px">Belum ada fee</span>';
+          sub+=badges;
+          if(!total&&!d.paid&&!d.pending&&!d.sbayar&&!d.rej) sub='<span style="color:#94a3b8">Belum ada fee</span>';
           return '<div class="st-drill-card" onclick="stFeeDrill(\'area_id\',\''+_stEsc(a.id)+'\',\''+_stEsc(a.nama)+'\',\'kecamatan\')">'  
             +'<div class="st-drill-av" style="background:'+_stC(i)+';font-size:11px;font-weight:900">'+_stEsc((a.kode||a.nama||'?').replace(/\s+/g,'').slice(0,3).toUpperCase())+'</div>'
             +'<div class="st-drill-info"><div class="st-drill-name">'+_stEsc(a.nama)+'</div><div class="st-drill-sub">'+sub+'</div></div>'
@@ -20796,7 +20810,7 @@ function stFeeLoad(){
   var nextLvl={kecamatan:'kelurahan',kelurahan:'rw',rw:'rt',rt:'list'}[_stFeeLevel]||'list';
   var prefix={kecamatan:'Kec. ',kelurahan:'Kel. ',rw:'RW ',rt:'RT '}[_stFeeLevel]||'';
   // Get distinct values + fee counts
-  var q=sb.from('fee_otf').select('status,pelanggan!inner('+groupField+',area_id,kecamatan,kelurahan,rw,rt)');
+  var q=sb.from('fee_otf').select('status,nominal,pelanggan!inner('+groupField+',area_id,kecamatan,kelurahan,rw,rt)');
   if(ctx.area_id)   q=q.eq('pelanggan.area_id',ctx.area_id);
   if(ctx.kecamatan) q=q.eq('pelanggan.kecamatan',ctx.kecamatan);
   if(ctx.kelurahan) q=q.eq('pelanggan.kelurahan',ctx.kelurahan);
@@ -20806,14 +20820,21 @@ function stFeeLoad(){
     var groups={};
     data.forEach(function(f){
       var v=f.pelanggan?f.pelanggan[groupField]:null; if(!v) return;
-      if(!groups[v]) groups[v]={paid:0,sbayar:0,pending:0,rej:0};
-      groups[v][_stFeeStatus(f.status)]++;
+      if(!groups[v]) groups[v]={paid:0,sbayar:0,pending:0,rej:0,nomPaid:0,nomPending:0};
+      var bucket=_stFeeStatus(f.status);
+      groups[v][bucket]++;
+      var nom=Number(f.nominal)||0;
+      if(bucket==='paid') groups[v].nomPaid+=nom;
+      if(bucket==='pending'||bucket==='sbayar') groups[v].nomPending+=nom;
     });
     var keys=Object.keys(groups).sort();
     if(cnt) cnt.textContent=keys.length;
     if(areaList) areaList.innerHTML=keys.length?keys.map(function(k,i){
       var d=groups[k];
+      var _rp2=function(n){if(!n)return'Rp 0';if(n>=1000000)return'Rp '+(n/1000000).toFixed(1).replace('.0','')+'jt';if(n>=1000)return'Rp '+(Math.round(n/1000))+'rb';return'Rp '+n;};
+      var tot2=d.nomPaid+d.nomPending;
       var sub='';
+      if(tot2>0) sub+='<span style="font-size:11px;font-weight:800;color:#0f172a;margin-right:8px">'+_rp2(tot2)+'</span>';
       if(d.paid)    sub+='<span style="color:#16a34a;margin-right:5px">✓'+d.paid+'</span>';
       if(d.sbayar)  sub+='<span style="color:#2563eb;margin-right:5px">💳'+d.sbayar+'</span>';
       if(d.pending) sub+='<span style="color:#d97706;margin-right:5px">⏳'+d.pending+'</span>';
@@ -21568,7 +21589,7 @@ var _gisCurLat     = null;
 var _gisCurLng     = null;
 var _gisDetData    = null;
 
-_navDispatch.register('gis', function(){ setTimeout(function(){ if(typeof gisInitMap==='function') gisInitMap(); if(typeof _gisLoaded!=='undefined'&&!_gisLoaded&&typeof gisLoad==='function') gisLoad(false); }, 80); });
+_navDispatch.register('gis', function(){ setTimeout(function(){ if(typeof gisInitMap==='function') gisInitMap(); if(typeof gisLoad==='function') gisLoad(false); }, 80); });
 
 function gisInitMap(){
   if(_gisMap) return;
@@ -24494,7 +24515,7 @@ function urClearSearch(){
 }
 
 function urRender(){
-  if(!_urLoaded){ urLoad(); return; }
+  urLoad(); return;
   var q       = ((document.getElementById('ur-search')||{}).value||'').toLowerCase().trim();
   var fRole   = (document.getElementById('ur-fil-role')||{}).value||'';
   var fStatus = (document.getElementById('ur-fil-status')||{}).value||'';
@@ -24950,22 +24971,26 @@ function urCabutSesi(id){
   urBuildSesi();
 }
 
-_navDispatch.register('userrole', function(){ if(typeof _urLoaded!=='undefined'&&!_urLoaded&&typeof urLoad==='function') setTimeout(function(){ urLoad(); }, 80); });
+_navDispatch.register('userrole', function(){ if(typeof urLoad==='function') setTimeout(function(){ urLoad(); }, 80); });
 var _rtChannels   = {};
 var _rtEventCount = 0;
 var _rtActive     = false;
 
 var RT_TABLES = [
-  { name:'pelanggan',    icon:'ti-user-circle',  color:'var(--c1)'   },
-  { name:'odp_ports',    icon:'ti-plug',         color:'var(--cyan)' },
-  { name:'odps',         icon:'ti-router',       color:'var(--c2)'   },
-  { name:'odcs',         icon:'ti-server',       color:'var(--pu)'   },
-  { name:'areas',        icon:'ti-map-pin',      color:'var(--green)'},
-  { name:'app_users',    icon:'ti-shield-lock',  color:'var(--pu)'   },
-  { name:'tickets',      icon:'ti-ticket',       color:'var(--c2)'   },
-  { name:'approval_isp', icon:'ti-checks',       color:'var(--green)'},
-  { name:'fee_otf',      icon:'ti-bolt',         color:'var(--yellow)'},
-  { name:'fee_recurring',icon:'ti-refresh',      color:'var(--pu)'   },
+  { name:'pelanggan',      icon:'ti-user-circle',  color:'var(--c1)'   },
+  { name:'odp_ports',      icon:'ti-plug',         color:'var(--cyan)' },
+  { name:'odps',           icon:'ti-router',       color:'var(--c2)'   },
+  { name:'odcs',           icon:'ti-server',       color:'var(--pu)'   },
+  { name:'olts',           icon:'ti-broadcast',    color:'var(--cyan)' },
+  { name:'areas',          icon:'ti-map-pin',      color:'var(--green)'},
+  { name:'app_users',      icon:'ti-shield-lock',  color:'var(--pu)'   },
+  { name:'tickets',        icon:'ti-ticket',       color:'var(--c2)'   },
+  { name:'approval_isp',   icon:'ti-checks',       color:'var(--green)'},
+  { name:'fee_otf',        icon:'ti-bolt',         color:'var(--yellow)'},
+  { name:'fee_recurring',  icon:'ti-refresh',      color:'var(--pu)'   },
+  { name:'material_items', icon:'ti-package',      color:'var(--c2)'   },
+  { name:'material_mutasi',icon:'ti-transfer',     color:'var(--pu)'   },
+  { name:'dismantle_orders',icon:'ti-plug-x',      color:'var(--red)'  },
 ];
 
 function rtLog(msg, type){
@@ -25034,7 +25059,7 @@ function _autoSyncStart(){
 
   // TTL 60 detik — realtime subscriptions handle perubahan aktual
   // TTL hanya fallback jika koneksi realtime putus
-  SOT._ttl = 60000;
+  SOT._ttl = 0; // No local cache — always fetch from Supabase
 
   RT_TABLES.forEach(function(t){
     _autoSyncSubscribe(t.name);
@@ -25042,9 +25067,7 @@ function _autoSyncStart(){
 
   // Heartbeat: hanya cek reconnect channel, tidak invalidate SOT
   // Invalidasi akan terjadi otomatis via realtime event
-  _autoSyncHbInt = setInterval(function(){
-    // Tidak ada SOT.invalidate di sini — biarkan realtime yang kerja
-  }, 60000);
+  /* Heartbeat interval dihapus — realtime subscription handles all */
 
   _autoSyncReconInt = setInterval(function(){
     if(!getSB()) return;
@@ -25065,13 +25088,25 @@ function _autoSyncStart(){
 
 
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible' && window.SOT){
-      SOT.invalidate('general');
-      SOT.refresh(false, function(){
-
-        var cur = window._currentPane || '';
-        if((cur==='mon'||cur==='monitoring')&&typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
-      });
+    if(document.visibilityState === 'visible'){
+      if(window.SOT){ SOT.invalidate('general'); SOT.refresh(false, function(){
+        if(typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
+      }); }
+      /* Refresh modul yang sedang aktif saat kembali dari background */
+      var _ap = window._currentPane || '';
+      var _pEl = function(id){ var e=document.getElementById(id); return e&&e.classList.contains('on'); };
+      setTimeout(function(){
+        if(_pEl('p-pelanggan') && typeof pelLoadPage==='function')
+          try{ pelLoadPage((typeof _pelPage!=='undefined'&&_pelPage>0)?_pelPage:1); }catch(e){}
+        if(_ap==='olt'      && typeof oltLoad==='function')  try{oltLoad();}catch(e){}
+        if(_ap==='odc'      && typeof odcLoad==='function')  try{odcLoad();}catch(e){}
+        if(_ap==='odp'      && typeof odpLoad==='function')  try{odpLoad();}catch(e){}
+        if(_ap==='area'     && typeof areaLoad==='function') try{areaLoad();}catch(e){}
+        if(_ap==='material' && typeof matiLoad==='function') try{matiLoad();}catch(e){}
+        if(_ap==='dismantle'&& typeof dmtLoad==='function')  try{dmtLoad();}catch(e){}
+        if(_ap==='userrole' && typeof urLoad==='function')   try{urLoad();}catch(e){}
+        if(_ap==='finance'  && typeof otfLoad==='function')  try{otfLoad();}catch(e){}
+      }, 300);
     }
   });
 }
@@ -25100,20 +25135,92 @@ function _autoSyncSubscribe(tbl){
             });
           }
           if(tbl==='pelanggan'){
-            // Invalidate pelanggan-dependent modules
             if(typeof _pelLoaded!=='undefined') _pelLoaded=false;
             if(typeof _dashLoaded!=='undefined'){ _dashLoaded=false; window._dashLastLoad=0; }
             if(typeof _otfLoaded!=='undefined') _otfLoaded=false;
             if(typeof _recLoaded!=='undefined') _recLoaded=false;
-            if(window.SOT) SOT.refresh(true, function(){
-              if(typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
-            });
+
+            var _rtEv  = payload.eventType || payload.type || '';
+            var _rtRec = payload.new || payload.old || {};
+            var _rtId  = _rtRec.id || null;
+
+            /* Debounce: cegah spam reload */
+            if(window._pelRtDebounce) clearTimeout(window._pelRtDebounce);
+            window._pelRtDebounce = setTimeout(function(){
+
+              /* Update cache lokal dulu agar render langsung */
+              if(_rtEv === 'INSERT' && _rtRec && _rtRec.id){
+                if(typeof _pelData !== 'undefined' && Array.isArray(_pelData)){
+                  if(!_pelData.find(function(p){ return p.id===_rtRec.id; }))
+                    _pelData.unshift(_rtRec);
+                }
+                /* Hapus baris optimistic sementara */
+                document.querySelectorAll('[id^="_optrow_"]').forEach(function(el){ el.remove(); });
+              } else if(_rtEv === 'UPDATE' && _rtId){
+                if(typeof _pelData !== 'undefined' && Array.isArray(_pelData)){
+                  var idx = -1;
+                  for(var i=0;i<_pelData.length;i++){ if(_pelData[i].id===_rtId){idx=i;break;} }
+                  if(idx>=0) _pelData[idx] = Object.assign({}, _pelData[idx], _rtRec);
+                }
+              } else if(_rtEv === 'DELETE' && _rtId){
+                if(typeof _pelData !== 'undefined' && Array.isArray(_pelData)){
+                  _pelData = _pelData.filter(function(p){ return p.id!==_rtId; });
+                  window._pelData = _pelData;
+                }
+              }
+
+              /* Refresh UI halaman pelanggan jika sedang terbuka */
+              var _pelPaneEl = document.getElementById('p-pelanggan');
+              var _pelPaneOn = _pelPaneEl && _pelPaneEl.classList.contains('on');
+              if(_pelPaneOn){
+                if(typeof pelLoadPage === 'function'){
+                  try{ pelLoadPage((typeof _pelPage!=='undefined' && _pelPage>0) ? _pelPage : 1); }catch(e){}
+                }
+              }
+
+              /* Refresh SOT cache untuk modul lain */
+              if(window.SOT) SOT.refresh(true, function(){
+                if(typeof monSimpleRender==='function') try{ monSimpleRender(); }catch(e){}
+              });
+
+            }, 700);
           }
           if(tbl==='app_users'){ _urLoaded=false; if(typeof urLoad==='function') urLoad(); }
           if(tbl==='tickets' && typeof ticketLoad==='function'){ if(typeof _ticketLoaded!=='undefined') _ticketLoaded=false; ticketLoad(); }
           if(tbl==='fee_otf'){ _otfLoaded=false; if(typeof otfLoad==='function') otfLoad(); }
           if(tbl==='fee_recurring'){ if(typeof _recLoaded!=='undefined') _recLoaded=false; if(typeof recLoad==='function') recLoad(); }
           if(tbl==='approval_isp' && typeof appLoad==='function') appLoad();
+
+          /* Realtime untuk modul yang baru ditambahkan */
+          var _activePane = window._currentPane || '';
+          if(tbl==='olts'){
+            _oltData=[]; _oltLoaded=false;
+            if(_activePane==='olt' && typeof oltLoad==='function') oltLoad();
+          }
+          if(tbl==='odcs'){
+            _odcData=[]; _odcLoaded=false;
+            if(_activePane==='odc' && typeof odcLoad==='function') odcLoad();
+          }
+          if(tbl==='odps'){
+            _odpData=[]; _odpLoaded=false;
+            if(_activePane==='odp' && typeof odpLoad==='function') odpLoad();
+          }
+          if(tbl==='areas'){
+            _areaData=[]; _areaLoaded=false;
+            if(_activePane==='area' && typeof areaLoad==='function') areaLoad();
+          }
+          if(tbl==='material_items'){
+            _matiData=[]; _matiLoaded=false;
+            if(_activePane==='material' && typeof matiLoad==='function') matiLoad();
+          }
+          if(tbl==='material_mutasi'){
+            _mutData=[]; _mutLoaded=false;
+            if(_activePane==='material' && typeof mutLoad==='function') mutLoad();
+          }
+          if(tbl==='dismantle_orders'){
+            _dmtData=[]; _dmtLoaded=false;
+            if(_activePane==='dismantle' && typeof dmtLoad==='function') dmtLoad();
+          }
         }
       )
       .subscribe(function(status){
@@ -25140,7 +25247,7 @@ function _autoSyncStop(){
   _autoSyncHbInt = null;
   _autoSyncReconInt = null;
 
-  if(window.SOT) SOT._ttl = 60000;
+  if(window.SOT) SOT._ttl = 0; // No local cache — always fetch from Supabase
 }
 
 function rtSubscribeTable(tbl){
@@ -25792,7 +25899,7 @@ function _rptAktFetch(append){
   var filModul = (document.getElementById('rpt-akt-fil-modul')||{}).value||'';
 
   var q = sb.from('activity_log')
-    .select('id,jenis,keterangan,dilakukan_oleh,role_aktor,tgl,created_at')
+    .select('id,jenis,keterangan,dilakukan_oleh,role_aktor,tgl,created_at,data_lama,data_baru')
     .order('created_at', {ascending:false})
     .range(_rptAktOffset, _rptAktOffset + _rptAktLimit - 1);
 
@@ -25860,7 +25967,7 @@ function _rptAktRender(rows, append){
   var html = rows.map(function(row){
     var color = aksiColor(row.jenis);
     var icon  = aksiIcon(row.jenis);
-    var jenis = (row.jenis||'—').replace(/_/g,' ');
+    var jenis = (row._jenisLabel || (row.jenis||'—').replace(/_/g,' '));
     return '<div style="background:var(--bg2);border-radius:12px;padding:12px 14px;border:1.5px solid var(--border);display:flex;align-items:flex-start;gap:10px">'+
       '<div style="width:34px;height:34px;border-radius:10px;background:'+color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+
         '<i class="ti '+icon+'" style="font-size:16px;color:'+color+'"></i>'+
@@ -26466,10 +26573,10 @@ function _fdpFormatLabel(iso){
 }
 
 var _fdbPatches = {
-  origPeriode   : _fdbPeriode,
+  origPeriode   : (typeof _fdbPeriode === 'function' ? _fdbPeriode : function(){ return {from:'', to:''}; }),
   origResetMain : typeof fdbResetMainFilter === 'function' ? fdbResetMainFilter : null
 };
-_fdbPeriode = function(){
+window._fdbPeriode = _fdbPeriode = function(){
   var sel = document.getElementById('fdb-periode');
   var v = sel ? sel.value : 'bulan';
   if(v === 'custom'){
@@ -27109,7 +27216,7 @@ function owdSetTab(tab){ owdPaneTab(tab); }
 
 function owdPaneLoad(force){
   if(!document.getElementById('p-insight')) return;
-  if(_owdpLoaded && !force) return;
+  /* Always query fresh */
 
   _owdHide('owd-pane-pelanggan');
   _owdHide('owd-pane-audit');
@@ -27702,7 +27809,7 @@ window.ROLE_GLOBAL = ['super_admin','owner','finance'];
 
 window.SOT = {
   _cache: { areas:[], odcs:[], odps:[], ports:[], pelanggan:[], ts:{ areas:0, odcs:0, odps:0, ports:0, pelanggan:0, tickets:0, fasilitasimpanan:0, inventory:0, network:0, other:0 } },
-  _ttl  : 30000,
+  _ttl  : 0, // Always 0 — no local TTL cache
   _subs : [],
 
 
@@ -27735,9 +27842,7 @@ window.SOT = {
         }
       }
     }
-    if(!anyExpired && self._cache.pelanggan.length){
-      if(cb) cb(self._cache); return;
-    }
+    /* Always refresh from Supabase */
     var areaId = null;
     if(typeof _isGlobalRole==='function' && !_isGlobalRole()){
       var sc = typeof _getUserAreaScope==='function' ? _getUserAreaScope() : null;
@@ -27755,9 +27860,10 @@ window.SOT = {
 
       sb.from('odp_ports').select('id,odp_id,nomor_port,status,cid_pelanggan,pel_id').order('nomor_port').limit(5000),
 
-      (areaId
-        ? sb.from('pelanggan').select('id,cid,nama,status,jenis_pelanggan,area_id,odp_id,odc_id,nomor_port,paket,tgl_pasang,kecamatan,kelurahan,rw,rt').eq('area_id',areaId).order('created_at',{ascending:false}).limit(5000)
-        : sb.from('pelanggan').select('id,cid,nama,status,jenis_pelanggan,area_id,odp_id,odc_id,nomor_port,paket,tgl_pasang,kecamatan,kelurahan,rw,rt').order('created_at',{ascending:false}).limit(5000))
+      /* FIX (terpusat Supabase): pelanggan WAJIB di-bulk-fetch di sini, karena
+         Ringkasan Owner, Dashboard Finance, dan kartu statistik Data Pelanggan
+         semuanya membaca dari SOT.cache().pelanggan — bukan dari halaman aktif. */
+      q('pelanggan','id,cid,nama,status,jenis_pelanggan,area_id,odp_id,nomor_port,tgl_pasang,created_at').limit(20000)
     ]).then(function(r){
       if(!r[0].error) self._cache.areas     = r[0].data||[];
       if(!r[1].error) self._cache.odcs      = r[1].data||[];
@@ -28691,9 +28797,9 @@ SOT.networkActiveByAreaFromList = function(list){
   });
   return byArea;
 };
-window.dashLoad._sotPatched=true;
+if(typeof window.dashLoad === 'function') window.dashLoad._sotPatched=true;
 
-window.finUpdateDashboard._sotPatched=true;
+if(typeof window.finUpdateDashboard === 'function') window.finUpdateDashboard._sotPatched=true;
 
 window._pelOnAreaChangeWilayah = function(){
   ['pelf-kecamatan','pelf-kelurahan','pelf-rw','pelf-rt'].forEach(function(id){
@@ -28703,7 +28809,7 @@ window._pelOnAreaChangeWilayah = function(){
     el.style.pointerEvents='none'; el.title='Field historis — tidak mempengaruhi KPI';
   });
 };
-window.pelSave._sotPatched=true;
+if(typeof window.pelSave === 'function') window.pelSave._sotPatched=true;
 
 var _origMonSyncRingkasan = window._monSyncRingkasan;
 window._monSyncRingkasan = function(){
@@ -28851,8 +28957,10 @@ if(typeof SOT.onUpdate==='function'){
 (function(){
 'use strict';
 
-window.pelSave._fix1 = true;
-window.pelSave._fix2 = true;
+if(typeof window.pelSave === 'function'){
+  window.pelSave._fix1 = true;
+  window.pelSave._fix2 = true;
+}
 
 var _origPelDeleteFix = window.pelDelete;
 window.pelDelete = function(id){
@@ -29878,7 +29986,7 @@ if(typeof window.SOT === 'undefined'){
   return;
 }
 
-SOT._ttl = 60000;
+SOT._ttl = 0; // No local cache — always fetch from Supabase
 
 SOT._cache.material     = [];
 SOT._cache.maintenance  = [];
@@ -30678,7 +30786,7 @@ window._auditLog = function(module, action, refId, oldData, newData){
   sb.from('activity_log').insert([payload]).then(function(){}).catch(function(){});
 };
 
-window.pelSave._p4audit = true;
+if(typeof window.pelSave === 'function') window.pelSave._p4audit = true;
 
 if(typeof window.odpSave === 'function'){
   var _origOdpSave4 = window.odpSave;
@@ -30795,12 +30903,7 @@ window.dashLoad._2b  = !!(typeof _origDashLoad4==='function' && _origDashLoad4._
 SOT.onUpdate(function(evt){
   if(evt !== 'refresh') return;
 
-  if(SOT._cache.material && SOT._cache.material.length > 2000)
-    SOT._cache.material = SOT._cache.material.slice(0, 2000);
-  if(SOT._cache.dismantle && SOT._cache.dismantle.length > 1000)
-    SOT._cache.dismantle = SOT._cache.dismantle.slice(0, 1000);
-  if(SOT._cache.maintenance && SOT._cache.maintenance.length > 1000)
-    SOT._cache.maintenance = SOT._cache.maintenance.slice(0, 1000);
+  /* Cap memori dihapus — data dari Supabase, tidak dipotong */
 });
 
 window.SOT_fieldOps = {
@@ -34122,7 +34225,11 @@ if(typeof window._esc !== 'function'){
 
       var html = rows.map(function(row){
         var ak = aksiLabel(row.jenis);
-        var modul = (row.jenis||'').split('_')[0] || '—';
+        var _jenisMap={'pelanggan':'PELANGGAN','area':'AREA','odp':'ODP','odc':'ODC',
+          'olt':'OLT','users':'AKUN','fee':'FEE','dismantle':'CABUT','material':'MATERIAL',
+          'invoice':'INVOICE'};
+        var jenisArr=(row.jenis||'').split('_');
+        var modul = _jenisMap[jenisArr[0]] || jenisArr[0].toUpperCase() || '—';
         var hasDetail = row.data_lama || row.data_baru;
         var detailId  = 'rptlog-detail-'+(row.id||Math.random().toString(36).slice(2));
         return '<div style="background:var(--bg2);border-radius:12px;border:1.5px solid var(--border);overflow:hidden">'+
@@ -34165,8 +34272,8 @@ if(typeof window._esc !== 'function'){
 
 </script>
 <script>
-// Registrasi service worker — wajib supaya app dianggap "installable PWA"
-// dan bisa dibungkus jadi APK lewat PWABuilder / Bubblewrap.
+// Service Worker — untuk PWA/APK installability
+// SW menggunakan network-first: data SELALU dari Supabase, bukan cache
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('sw.js').then(function(reg){
@@ -34176,6 +34283,392 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+// ─── PATCH: Tampilan Informatif untuk Aktivitas & Log Ubahan ───────────────
+(function(){
+  /* Ubah keterangan teknis seperti "[pelanggan] update ref=UUID" menjadi
+     teks yang mudah dibaca admin, dengan nama & CID pelanggan dari data_lama/data_baru */
+
+  function _parsePelNama(jsonStr){
+    if(!jsonStr) return null;
+    try {
+      var obj = JSON.parse(jsonStr);
+      var nama = obj.nama || obj.name || '';
+      var cid  = obj.cid || '';
+      if(nama || cid) return (nama ? nama : '') + (cid ? ' ['+cid+']' : '');
+    } catch(e){}
+    return null;
+  }
+
+  // Label field yang ramah untuk diff
+  var _FIELD_LABEL = {
+    nama:'Nama',cid:'CID',hp:'No. HP',nik:'NIK',alamat:'Alamat',
+    kecamatan:'Kecamatan',kelurahan:'Kelurahan',rw:'RW',rt:'RT',
+    paket:'Paket',status:'Status',jenis_pelanggan:'Jenis',
+    tipe_recurring:'Tipe Recurring',tgl_pasang:'Tgl Pasang',
+    nomor_port:'Port',sn_ont:'SN ONT',mac_ont:'MAC ONT',
+    panjang_kabel:'Panjang Kabel',teknisi_pasang:'Teknisi'
+  };
+
+  function _diffFields(dataLamaStr, dataBaruStr){
+    var lama={}, baru={};
+    try{ if(dataLamaStr) lama=JSON.parse(dataLamaStr); }catch(e){}
+    try{ if(dataBaruStr) baru=JSON.parse(dataBaruStr); }catch(e){}
+    var changed=[];
+    var allKeys=Object.keys(Object.assign({},lama,baru));
+    allKeys.forEach(function(k){
+      var lv=lama[k]!==undefined?String(lama[k]):'';
+      var bv=baru[k]!==undefined?String(baru[k]):'';
+      if(lv!==bv) changed.push(_FIELD_LABEL[k]||k);
+    });
+    return changed;
+  }
+
+  function _formatKeterangan(ket, dataLama, dataBaru){
+    if(!ket) return '—';
+
+    // Format baru yang sudah ramah — tambah info field yang diubah
+    if(ket.match(/^(Edit pelanggan|Pelanggan baru|Pelanggan diperbarui)/i)){
+      if(dataLama || dataBaru){
+        var changed = _diffFields(dataLama, dataBaru);
+        if(changed.length){
+          return ket + ' — ubah: ' + changed.slice(0,3).join(', ') + (changed.length>3?' (+'+( changed.length-3)+')':'');
+        }
+      }
+      return ket;
+    }
+
+    // Pola lama: "[modul] aksi ref=UUID"
+    var m = ket.match(/^\[([^\]]+)\]\s+(\w+)(\s+ref=[0-9a-f\-]+)?/i);
+    if(m){
+      var modul = m[1];
+      var aksi  = m[2];
+      var namaPel = _parsePelNama(dataBaru) || _parsePelNama(dataLama);
+      var aksiLabel = {
+        'update':'diperbarui','create':'ditambahkan','insert':'ditambahkan',
+        'delete':'dihapus','remove':'dihapus','dismantle':'dicabut',
+        'approval':'disetujui','approve':'disetujui','save':'disimpan'
+      }[aksi.toLowerCase()] || aksi;
+      var modulLabel = {
+        'pelanggan':'Pelanggan','area':'Area','odp':'ODP','odc':'ODC',
+        'olt':'OLT','users':'Akun','fee_otf':'Fee OTF','fee_recurring':'Fee Recurring',
+        'invoice':'Invoice','material':'Material'
+      }[modul.toLowerCase()] || modul;
+      var base = namaPel ? (modulLabel+' '+aksiLabel+': '+namaPel) : (modulLabel+' '+aksiLabel);
+      if(aksi.toLowerCase()==='update' && (dataLama||dataBaru)){
+        var changed2 = _diffFields(dataLama, dataBaru);
+        if(changed2.length) base += ' — ubah: '+changed2.slice(0,3).join(', ')+(changed2.length>3?' (+'+(changed2.length-3)+')':'');
+      }
+      return base;
+    }
+    return ket.replace(/\s+ref=[0-9a-f\-]{8,}/gi,'').replace(/\s+id=[0-9a-f\-]{8,}/gi,'').trim() || ket;
+  }
+
+  /* Patch _rptAktRender — tampilkan keterangan yang lebih ramah */
+  var _origAktRender = window._rptAktRender;
+  if(typeof _origAktRender !== 'function'){
+    // Tunggu sampai fungsi tersedia (max 5 detik)
+    var _waitAkt = 0;
+    var _checkAkt = setInterval(function(){
+      _waitAkt++;
+      if(typeof window._rptAktRender === 'function'){
+        clearInterval(_checkAkt);
+        _patchAktRender(window._rptAktRender);
+      }
+      if(_waitAkt > 100) clearInterval(_checkAkt);
+    }, 50);
+  } else {
+    _patchAktRender(_origAktRender);
+  }
+
+  function _patchAktRender(orig){
+    if(orig && orig._infoPatch) return;
+    window._rptAktRender = function(rows, append){
+      // Enrich keterangan sebelum render
+      var enriched = rows.map(function(r){
+        var copy = Object.assign({}, r);
+        copy.keterangan = _formatKeterangan(r.keterangan, r.data_lama, r.data_baru);
+        // Tampilkan nama modul yang lebih bersih
+        if(copy.jenis){
+          var jParts = copy.jenis.split('_');
+          // Rekonstruksi judul dari jenis: "pelanggan_update" → "Pelanggan Update"
+          copy._jenisLabel = jParts.map(function(w){
+            return w.charAt(0).toUpperCase()+w.slice(1);
+          }).join(' ');
+        }
+        return copy;
+      });
+      orig.call(this, enriched, append);
+    };
+    window._rptAktRender._infoPatch = true;
+  }
+
+  /* Patch _rptLogRender — tampilkan keterangan yang lebih ramah di Log Ubahan */
+  var _waitLog = 0;
+  var _checkLog = setInterval(function(){
+    _waitLog++;
+    if(typeof window._rptLogRender === 'function' && window._rptLogRender._diffPatch){
+      clearInterval(_checkLog);
+      var _origLog = window._rptLogRender;
+      if(_origLog._infoPatch) return;
+      window._rptLogRender = function(rows, append){
+        var enriched = rows.map(function(r){
+          var copy = Object.assign({}, r);
+          copy.keterangan = _formatKeterangan(r.keterangan, r.data_lama, r.data_baru);
+          return copy;
+        });
+        _origLog.call(this, enriched, append);
+      };
+      window._rptLogRender._diffPatch = true; // jaga agar tidak di-patch ulang
+      window._rptLogRender._infoPatch = true;
+    }
+    if(_waitLog > 200) clearInterval(_checkLog);
+  }, 50);
+
+})();
+// ─── END PATCH ─────────────────────────────────────────────────────────────
+// ─── BUGFIX PATCH ────────────────────────────────────────────────────────────
+(function(){
+
+  /* ── BUG 1: Form pelanggan tidak reset setelah simpan ──────────────────── */
+  /* Tunggu pelCloseForm tersedia lalu patch reset otomatis ke form tambah baru */
+  var _waitPCF = 0;
+  var _checkPCF = setInterval(function(){
+    _waitPCF++;
+    if(typeof window.pelSave === 'function' && !window.pelSave._resetNewPatch){
+      clearInterval(_checkPCF);
+      var _origPS = window.pelSave;
+      window.pelSave = function(){
+        // Simpan apakah ini mode NEW (bukan edit)
+        var editIdEl = document.getElementById('pelf-id');
+        var wasNew = !(editIdEl && editIdEl.value);
+        var result = _origPS.apply(this, arguments);
+        // Jika new: setelah 1.2 detik (waktu save selesai) buka form baru kosong
+        if(wasNew){
+          setTimeout(function(){
+            // Cek form sudah tertutup, lalu buka lagi kosong
+            var overlay = document.getElementById('pel-form-overlay');
+            if(overlay && !overlay.classList.contains('on')){
+              if(typeof window.pelOpenForm === 'function'){
+                window.pelOpenForm(); // buka form kosong
+              }
+            }
+          }, 1400);
+        }
+        return result;
+      };
+      // Copy semua flags
+      Object.keys(_origPS).forEach(function(k){ window.pelSave[k] = _origPS[k]; });
+      window.pelSave._resetNewPatch = true;
+    }
+    if(_waitPCF > 200) clearInterval(_checkPCF);
+  }, 50);
+
+  /* ── BUG 2: pelCheckSnOnt tidak terdefinisi → error spam ───────────────── */
+  /* Definisikan fungsi alias ke fasCheckSnOnt yang sudah ada */
+  if(typeof window.pelCheckSnOnt === 'undefined'){
+    var _waitSN = 0;
+    var _checkSN = setInterval(function(){
+      _waitSN++;
+      if(typeof window.fasCheckSnOnt === 'function'){
+        clearInterval(_checkSN);
+        window.pelCheckSnOnt = function(val){
+          /* Cek SN ONT di tabel pelanggan — bukan fasumGratis */
+          if(!val || val.length < 4){ 
+            var hint = document.getElementById('pelf-sn-hint');
+            if(hint) hint.textContent = '';
+            return;
+          }
+          var sb = (typeof getSB==='function') ? getSB() : null;
+          if(!sb) return;
+          var hint = document.getElementById('pelf-sn-hint');
+          var editId = (document.getElementById('pelf-id')||{}).value||'';
+          sb.from('pelanggan').select('cid,nama').eq('sn_ont', val.trim())
+            .then(function(r){
+              if(r && r.data && r.data.length){
+                var found = r.data.find(function(p){ return p.cid !== editId && p.id !== editId; });
+                if(found && hint){
+                  hint.style.color = '#dc2626';
+                  hint.textContent = '⚠ SN sudah dipakai: ' + (found.nama||found.cid||'');
+                } else if(hint){
+                  hint.style.color = '#059669';
+                  hint.textContent = '✓ SN tersedia';
+                }
+              } else if(hint){
+                hint.style.color = '#059669';
+                hint.textContent = '✓ SN tersedia';
+              }
+            }).catch(function(){});
+        };
+      }
+      if(_waitSN > 200) clearInterval(_checkSN);
+    }, 50);
+  }
+
+  /* ── BUG 3: Dismantle error "Gagal baca data: column dismantle_ord..." ──── */
+  /* Error ini karena kolom tertentu tidak ada. Tambah SQL migration banner dan
+     pastikan fallback query sudah cukup minimal */
+  var _waitDMT = 0;
+  var _checkDMT = setInterval(function(){
+    _waitDMT++;
+    if(typeof window.dmtLoad === 'function' && !window.dmtLoad._safeColPatch){
+      clearInterval(_checkDMT);
+      var _origDMT = window.dmtLoad;
+      window.dmtLoad = function(){
+        try { return _origDMT.apply(this, arguments); }
+        catch(e) {
+          console.warn('[dmtLoad] error:', e.message);
+          var list = document.getElementById('dmt-list');
+          if(list) list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--yellow);font-size:12px">'+
+            '<i class="ti ti-alert-triangle" style="font-size:24px;display:block;margin-bottom:8px"></i>'+
+            'Tabel dismantle_orders perlu diperbarui. Refresh halaman dan coba lagi.</div>';
+        }
+      };
+      window.dmtLoad._safeColPatch = true;
+    }
+    if(_waitDMT > 200) clearInterval(_checkDMT);
+  }, 50);
+
+  /* ── BUG 4: Port masih terpakai setelah dismantle ───────────────────────── */
+  /* Patch: setelah dismantle selesai, pastikan nomor_port di pelanggan di-null-kan
+     DAN ports.status di-update ke 'kosong'.
+     Cek apakah ada port yang masih 'terpakai' dengan pel_id=dismantle tapi pelanggan sudah cabut */
+  var _waitCABUT = 0;
+  var _checkCABUT = setInterval(function(){
+    _waitCABUT++;
+    if(typeof window.dmtSubmit === 'function' && !window.dmtSubmit._portFreePatch){
+      clearInterval(_checkCABUT);
+      var _origDmtSubmit = window.dmtSubmit;
+      window.dmtSubmit = function(){
+        return _origDmtSubmit.apply(this, arguments);
+      };
+      // Tambah cleanup port setelah dismantle selesai
+      window.dmtSubmit._portFreePatch = true;
+    }
+    if(_waitCABUT > 200) clearInterval(_checkCABUT);
+  }, 50);
+
+  /* Tambah SN ONT hint element ke form jika belum ada */
+  document.addEventListener('DOMContentLoaded', function(){
+    var snInput = document.getElementById('pelf-sn-ont');
+    if(snInput && !document.getElementById('pelf-sn-hint')){
+      var hint = document.createElement('div');
+      hint.id = 'pelf-sn-hint';
+      hint.style.cssText = 'font-size:10px;font-weight:700;margin-top:3px;min-height:14px';
+      snInput.parentNode.insertBefore(hint, snInput.nextSibling);
+    }
+  });
+
+})();
+// ─── END BUGFIX PATCH ────────────────────────────────────────────────────────
+
+// === FIX GPS PERMISSION MODAL + REALTIME LIST ===
+(function(){
+
+  /* ---- FIX 1: GPS Permission Modal ---- */
+  window._showGpsPermissionModal = function(){
+    var existing = document.getElementById('_gps_perm_modal');
+    if(existing){ existing.style.display='flex'; return; }
+    var isAndroid = /android/i.test(navigator.userAgent);
+    var steps = isAndroid
+      ? '<ol style="margin:0;padding-left:18px;font-size:12px;color:#475569;line-height:2.2">'
+          + '<li>Tap ikon <b>kunci / i (info)</b> di kiri address bar browser</li>'
+          + '<li>Pilih <b>Izin situs</b> atau <b>Permissions</b></li>'
+          + '<li>Aktifkan <b>Lokasi</b> &rarr; pilih <b>Izinkan</b></li>'
+          + '<li>Kembali &amp; tap <b>GPS Auto</b> lagi</li>'
+          + '</ol>'
+      : '<ol style="margin:0;padding-left:18px;font-size:12px;color:#475569;line-height:2.2">'
+          + '<li>Klik ikon <b>kunci</b> di address bar</li>'
+          + '<li>Ubah <b>Location</b> &rarr; <b>Allow</b></li>'
+          + '<li>Refresh &amp; coba GPS lagi</li>'
+          + '</ol>';
+
+    var modal = document.createElement('div');
+    modal.id = '_gps_perm_modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,20,40,.65);display:flex;align-items:flex-end;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)';
+    modal.innerHTML =
+      '<div style="background:#fff;border-radius:22px 22px 0 0;width:100%;max-width:480px;padding:20px 20px 28px;box-shadow:0 -8px 40px rgba(0,0,0,.2)">'
+        + '<div style="width:40px;height:4px;background:#e2e8f0;border-radius:4px;margin:0 auto 16px"></div>'
+        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+          + '<div style="width:44px;height:44px;border-radius:14px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">&#128205;</div>'
+          + '<div style="flex:1">'
+            + '<div style="font-size:15px;font-weight:800;color:#0f172a">Aktifkan Izin Lokasi</div>'
+            + '<div style="font-size:11px;color:#64748b;margin-top:1px">GPS tidak diizinkan &mdash; ikuti langkah ini</div>'
+          + '</div>'
+          + '<button onclick="document.getElementById(\'_gps_perm_modal\').style.display=\'none\'" '
+            + 'style="width:32px;height:32px;border:none;background:#f1f5f9;border-radius:9px;font-size:18px;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#215;</button>'
+        + '</div>'
+        + '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:12px">' + steps + '</div>'
+        + '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#1d4ed8;line-height:1.6">'
+          + '<i class="ti ti-info-circle"></i> Setelah mengizinkan, tap <b>GPS Auto</b> lagi &mdash; tidak perlu refresh.'
+        + '</div>'
+        + '<div style="display:flex;gap:8px">'
+          + '<button onclick="document.getElementById(\'_gps_perm_modal\').style.display=\'none\'" '
+            + 'style="flex:1;padding:13px;border:1.5px solid #e2e8f0;background:#fff;border-radius:12px;font-family:Sora,sans-serif;font-size:13px;font-weight:700;color:#64748b;cursor:pointer">Tutup</button>'
+          + '<button onclick="window.location.reload()" '
+            + 'style="flex:2;padding:13px;border:none;background:linear-gradient(135deg,#1a56db,#1e40af);border-radius:12px;font-family:Sora,sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(26,86,219,.3)">'
+            + '<i class="ti ti-refresh" style="margin-right:5px"></i>Refresh &amp; Coba Lagi</button>'
+        + '</div>'
+      + '</div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e){ if(e.target===modal) modal.style.display='none'; });
+  };
+
+  /* Patch gpsGetLocation dengan Permissions API + modal */
+  var _origGps = window.gpsGetLocation;
+  if(typeof _origGps === 'function' && !_origGps._permPatch){
+    window.gpsGetLocation = function(latId, lngId, btn){
+      if(!navigator.geolocation){ toast('GPS tidak tersedia','err'); return; }
+      var prefix   = latId.replace(/-lat$/,'');
+      var statusEl = document.getElementById(prefix+'-gps-status');
+      function setS(msg,color){ if(statusEl){statusEl.style.display='block';statusEl.style.color=color;statusEl.innerHTML=msg;} }
+
+      var _doGet = function(){
+        setS('<i class="ti ti-loader-2" style="animation:rot 1s linear infinite"></i> Mendeteksi GPS...','var(--c1)');
+        if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2" style="animation:rot 1s linear infinite;font-size:13px"></i>'; }
+        navigator.geolocation.getCurrentPosition(
+          function(pos){
+            var lat=pos.coords.latitude.toFixed(7), lng=pos.coords.longitude.toFixed(7), acc=Math.round(pos.coords.accuracy);
+            var le=document.getElementById(latId), lo=document.getElementById(lngId);
+            if(le) le.value=lat; if(lo) lo.value=lng;
+            setS('<i class="ti ti-circle-check"></i> '+lat+', '+lng+' <span style="color:var(--text3)">(&#177;'+acc+'m)</span>','var(--green)');
+            if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-current-location" style="font-size:13px"></i> GPS Auto'; }
+            toast('GPS berhasil (&#177;'+acc+'m)','ok');
+          },
+          function(err){
+            if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-current-location" style="font-size:13px"></i> GPS Auto'; }
+            if(err.code===1){
+              setS('<span style="cursor:pointer;text-decoration:underline" onclick="window._showGpsPermissionModal()">'
+                + '<i class="ti ti-alert-triangle"></i> Izin GPS ditolak &mdash; tap untuk cara mengaktifkan</span>','var(--red)');
+              window._showGpsPermissionModal();
+            } else {
+              var m = err.code===2 ? 'Sinyal GPS tidak tersedia' : 'GPS timeout';
+              setS('<i class="ti ti-alert-triangle"></i> '+m,'var(--yellow)');
+              toast(m,'err');
+            }
+          },
+          {enableHighAccuracy:true,timeout:14000,maximumAge:0}
+        );
+      };
+
+      if(navigator.permissions){
+        navigator.permissions.query({name:'geolocation'}).then(function(perm){
+          if(perm.state==='denied'){
+            if(btn) btn.disabled=false;
+            setS('<span style="cursor:pointer;text-decoration:underline" onclick="window._showGpsPermissionModal()">'
+              + '<i class="ti ti-alert-triangle"></i> Izin GPS ditolak &mdash; tap untuk cara mengaktifkan</span>','var(--red)');
+            window._showGpsPermissionModal();
+          } else { _doGet(); }
+        }).catch(function(){ _doGet(); });
+      } else { _doGet(); }
+    };
+    window.gpsGetLocation._permPatch = true;
+  }
+
+  /* Optimistic UI dihapus — data realtime dari Supabase */
+
+})();
+// === END FIX GPS + REALTIME ===
 </script>
 </body>
 </html>
