@@ -20385,6 +20385,15 @@ function _stI(n){ return (n||'?').split(' ').map(function(w){return w[0]||'';}).
 function _stFmt(n){ if(!n&&n!==0) return 'Rp 0'; if(n>=1000000) return 'Rp '+(n/1000000).toFixed(1)+'Jt'; if(n>=1000) return 'Rp '+(n/1000).toFixed(0)+'k'; return 'Rp '+n; }
 function _stLoading(id){ var e=document.getElementById(id); if(e) e.innerHTML='<div class="st-shimmer"></div><div class="st-shimmer"></div>'; }
 function _stEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+/* Drill click handler - avoids quote escaping in onclick string building */
+function _stDrillClick(el){
+  var fn=el.dataset.fn, f=el.dataset.f, id=el.dataset.id, name=el.dataset.name, nl=el.dataset.nl;
+  if(fn==='pel')  stPelDrill(f, id, name, nl);
+  if(fn==='net')  stNetDrill(f, id, name, nl);
+  if(fn==='fee')  stFeeDrill(f, id, name, nl);
+  if(fn==='odp')  stNetOpenOdp(id, name);
+}
+
 function getSB2(){ return (typeof getSB==='function')?getSB():null; }
 
 /* ══ ENTRY ══ */
@@ -20454,13 +20463,13 @@ function stHomeLoad(){
       +'<div class="st-hero-name">'+(stIsAdmin()?'Ringkasan Wilayah':'Halo, Sales!')+'</div>'
       +'<div class="st-hero-sub">Data real-time dari Supabase</div></div>'
       +'<div class="st-kpi-strip" style="margin:0 14px;margin-top:-28px;position:relative;z-index:10">'
-      +'<div class="st-kpi-cell" onclick="stGoTab('pelanggan')" style="cursor:pointer"><div class="st-kpi-n" style="color:#16a34a">'+pelN+'</div><div class="st-kpi-l">Pelanggan</div></div>'
-      +'<div class="st-kpi-cell" onclick="stGoTab('jaringan')" style="cursor:pointer"><div class="st-kpi-n" style="color:#2563eb">'+util+'%</div><div class="st-kpi-l">Utilisasi</div></div>'
-      +'<div class="st-kpi-cell" onclick="stGoTab('fee')" style="cursor:pointer"><div class="st-kpi-n" style="color:#7c3aed">'+portN+'</div><div class="st-kpi-l">Total Port</div></div></div>'
+      +'<div class="st-kpi-cell" onclick="stGoTab(\'pelanggan\')" style="cursor:pointer"><div class="st-kpi-n" style="color:#16a34a">'+pelN+'</div><div class="st-kpi-l">Pelanggan</div></div>'
+      +'<div class="st-kpi-cell" onclick="stGoTab(\'jaringan\')" style="cursor:pointer"><div class="st-kpi-n" style="color:#2563eb">'+util+'%</div><div class="st-kpi-l">Utilisasi</div></div>'
+      +'<div class="st-kpi-cell" onclick="stGoTab(\'fee\')" style="cursor:pointer"><div class="st-kpi-n" style="color:#7c3aed">'+portN+'</div><div class="st-kpi-l">Total Port</div></div></div>'
       +'<div style="padding:10px 14px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">'
-      +'<button onclick="stGoTab('pelanggan')" style="padding:12px 8px;background:#dcfce7;border:none;border-radius:10px;cursor:pointer;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:#16a34a">👥 Pelanggan</button>'
-      +'<button onclick="stGoTab('jaringan')" style="padding:12px 8px;background:#dbeafe;border:none;border-radius:10px;cursor:pointer;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:#2563eb">📡 Jaringan</button>'
-      +'<button onclick="stGoTab('fee')" style="padding:12px 8px;background:#ede9fe;border:none;border-radius:10px;cursor:pointer;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:#7c3aed">💰 Fee</button>'
+      +'<button onclick="stGoTab(\'pelanggan\')" style="padding:12px 8px;background:#dcfce7;border:none;border-radius:10px;cursor:pointer;font-family:\'Sora\',sans-serif;font-size:11px;font-weight:700;color:#16a34a">👥 Pelanggan</button>'
+      +'<button onclick="stGoTab(\'jaringan\')" style="padding:12px 8px;background:#dbeafe;border:none;border-radius:10px;cursor:pointer;font-family:\'Sora\',sans-serif;font-size:11px;font-weight:700;color:#2563eb">📡 Jaringan</button>'
+      +'<button onclick="stGoTab(\'fee\')" style="padding:12px 8px;background:#ede9fe;border:none;border-radius:10px;cursor:pointer;font-family:\'Sora\',sans-serif;font-size:11px;font-weight:700;color:#7c3aed">💰 Fee</button>'
       +'</div>';
   }).catch(function(e){ body.innerHTML='<div class="st-empty"><div class="st-empty-ico">⚠️</div><div class="st-empty-txt">'+_stEsc(String(e.message||e))+'</div></div>'; });
 }
@@ -20520,7 +20529,7 @@ function stPelLoad(){
       if(cnt) cnt.textContent=areas.length+' area';
       if(!areas.length){ list.innerHTML='<div class="st-empty"><div class="st-empty-ico">🗺️</div><div class="st-empty-txt">Tidak ada area</div></div>'; return; }
       list.innerHTML=areas.map(function(a,i){
-        return '<div class="st-drill-card" onclick="stPelDrill('area_id',''+_stEsc(a.id)+'',''+_stEsc(a.nama)+'','kecamatan')">'
+        return '<div class="st-drill-card" onclick="stPelDrill(\'area_id\',\''+_stEsc(a.id)+'\',\''+_stEsc(a.nama)+'\',\'kecamatan\')">'  
           +'<div class="st-drill-av" style="background:'+_stC(i)+';font-size:11px;font-weight:900">'+_stEsc((a.kode||a.nama||'?').replace(/\s+/g,'').slice(0,3).toUpperCase())+'</div>'
           +'<div class="st-drill-info"><div class="st-drill-name">'+_stEsc(a.nama)+'</div><div class="st-drill-sub">Klik untuk lihat kecamatan</div></div>'
           +'<span class="st-drill-chev">›</span></div>';
@@ -20572,7 +20581,7 @@ function stPelLoad(){
     if(cnt) cnt.textContent=keys.length;
     list.innerHTML=keys.length?keys.map(function(k,i){
       var d=groups[k];
-      return '<div class="st-drill-card" onclick="stPelDrill(''+groupField+'',''+_stEsc(k)+'',''+_stEsc(prefix+k)+'',''+nextLvl+'')">'
+      return '<div class="st-drill-card" data-fn="pel" data-f="'+_stEsc(groupField)+'" data-id="'+_stEsc(k)+'" data-name="'+_stEsc(prefix+k)+'" data-nl="'+_stEsc(nextLvl)+'" onclick="_stDrillClick(this)">'
         +'<div class="st-drill-av" style="background:'+_stC(i)+';font-size:11px;font-weight:900">'+_stEsc(k.slice(-3))+'</div>'
         +'<div class="st-drill-info"><div class="st-drill-name">'+_stEsc(prefix+k)+'</div><div class="st-drill-sub">'+d.aktif+' aktif · '+d.total+' total</div></div>'
         +'<span class="st-drill-badge" style="background:#dcfce7;color:#16a34a">'+d.aktif+'</span>'
@@ -20616,7 +20625,7 @@ function stNetLoad(){
       var data=(r&&!r.error)?(r.data||[]):[];
       if(cnt) cnt.textContent=data.length;
       list.innerHTML=data.length?data.map(function(a,i){
-        return '<div class="st-drill-card" onclick="stNetDrill('area_id',''+_stEsc(a.id)+'',''+_stEsc(a.nama)+'','kecamatan')">'
+        return '<div class="st-drill-card" onclick="stNetDrill(\'area_id\',\''+_stEsc(a.id)+'\',\''+_stEsc(a.nama)+'\',\'kecamatan\')">'  
           +'<div class="st-drill-av" style="background:'+_stC(i)+';font-size:11px;font-weight:900">'+_stEsc((a.kode||a.nama||'?').replace(/\s+/g,'').slice(0,3).toUpperCase())+'</div>'
           +'<div class="st-drill-info"><div class="st-drill-name">'+_stEsc(a.nama)+'</div><div class="st-drill-sub">'+_stEsc(a.kode||'—')+'</div></div>'
           +'<span class="st-drill-chev">›</span></div>';
@@ -20631,7 +20640,7 @@ function stNetLoad(){
       var data=(r&&!r.error)?(r.data||[]):[];
       if(cnt) cnt.textContent=data.length;
       list.innerHTML=data.length?data.map(function(o,i){
-        return '<div class="st-drill-card" onclick="stNetOpenOdp(''+_stEsc(o.id)+'',''+_stEsc(o.kode||o.nama)+'')">'
+        return '<div class="st-drill-card" data-fn="odp" data-id="'+_stEsc(o.id)+'" data-name="'+_stEsc(o.kode||o.nama)+'" onclick="_stDrillClick(this)">'
           +'<div class="st-drill-av" style="background:'+_stC(i)+'"><i class="ti ti-antenna" style="font-size:15px;color:#fff"></i></div>'
           +'<div class="st-drill-info"><div class="st-drill-name">'+_stEsc(o.kode||o.nama)+'</div><div class="st-drill-sub">'+(o.jumlah_port||0)+' port</div></div>'
           +'<span class="st-drill-badge" style="background:#dbeafe;color:#2563eb">'+(o.jumlah_port||0)+' port</span>'
@@ -20657,7 +20666,7 @@ function stNetLoad(){
     if(cnt) cnt.textContent=keys.length;
     list.innerHTML=keys.length?keys.map(function(k,i){
       var d=groups[k];
-      return '<div class="st-drill-card" onclick="stNetDrill(''+groupField+'',''+_stEsc(k)+'',''+_stEsc(prefix+k)+'',''+nextLvl+'')">'
+      return '<div class="st-drill-card" data-fn="net" data-f="'+_stEsc(groupField)+'" data-id="'+_stEsc(k)+'" data-name="'+_stEsc(prefix+k)+'" data-nl="'+_stEsc(nextLvl)+'" onclick="_stDrillClick(this)">'
         +'<div class="st-drill-av" style="background:'+_stC(i)+';font-size:11px;font-weight:900">'+_stEsc(k.slice(-3))+'</div>'
         +'<div class="st-drill-info"><div class="st-drill-name">'+_stEsc(prefix+k)+'</div><div class="st-drill-sub">'+d.aktif+' aktif · '+d.total+' total</div></div>'
         +'<span class="st-drill-badge" style="background:#dcfce7;color:#16a34a">'+d.aktif+'</span>'
@@ -20765,7 +20774,7 @@ function stFeeLoad(){
           if(d.pending) sub+='<span style="color:#d97706;margin-right:5px">⏳'+d.pending+'</span>';
           if(d.rej)     sub+='<span style="color:#dc2626">✗'+d.rej+'</span>';
           if(!sub) sub='<span style="color:#94a3b8">Belum ada fee</span>';
-          return '<div class="st-drill-card" onclick="stFeeDrill('area_id',''+_stEsc(a.id)+'',''+_stEsc(a.nama)+'','kecamatan')">'
+          return '<div class="st-drill-card" onclick="stFeeDrill(\'area_id\',\''+_stEsc(a.id)+'\',\''+_stEsc(a.nama)+'\',\'kecamatan\')">'  
             +'<div class="st-drill-av" style="background:'+_stC(i)+';font-size:11px;font-weight:900">'+_stEsc((a.kode||a.nama||'?').replace(/\s+/g,'').slice(0,3).toUpperCase())+'</div>'
             +'<div class="st-drill-info"><div class="st-drill-name">'+_stEsc(a.nama)+'</div><div class="st-drill-sub">'+sub+'</div></div>'
             +'<span class="st-drill-chev">›</span></div>';
@@ -20810,7 +20819,7 @@ function stFeeLoad(){
       if(d.pending) sub+='<span style="color:#d97706;margin-right:5px">⏳'+d.pending+'</span>';
       if(d.rej)     sub+='<span style="color:#dc2626">✗'+d.rej+'</span>';
       var ctxCopy=Object.assign({},ctx); ctxCopy[groupField]=k;
-      return '<div class="st-drill-card" onclick="stFeeDrill(''+groupField+'',''+_stEsc(k)+'',''+_stEsc(prefix+k)+'',''+nextLvl+'')">'
+      return '<div class="st-drill-card" data-fn="fee" data-f="'+_stEsc(groupField)+'" data-id="'+_stEsc(k)+'" data-name="'+_stEsc(prefix+k)+'" data-nl="'+_stEsc(nextLvl)+'" onclick="_stDrillClick(this)">'
         +'<div class="st-drill-av" style="background:'+_stC(i)+';font-size:11px;font-weight:900">'+_stEsc(k.slice(-3))+'</div>'
         +'<div class="st-drill-info"><div class="st-drill-name">'+_stEsc(prefix+k)+'</div><div class="st-drill-sub">'+sub+'</div></div>'
         +'<span class="st-drill-chev">›</span></div>';
