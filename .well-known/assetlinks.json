@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "id.my.databasewtg.twa",
+        "sha256_cert_fingerprints": ["43:C1:84:77:B0:52:0E:57:57:B4:C4:6E:0E:CB:1E:5F:8A:8D:DD:54:9A:F6:69:D3:16:75:83:59:F4:00:0C:57"]
+      }
+    }]
