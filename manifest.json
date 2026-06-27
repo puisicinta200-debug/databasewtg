@@ -1,6 +1,6 @@
 {
-  "name": "ICRM_JJC — SOT Governance",
-  "short_name": "ICRM JJC",
+  "name": "ICRM_JJC",
+  "short_name": "ICRM_JJC",
   "description": "ICRM_JJC SOT Governance — aplikasi manajemen jaringan & pelanggan",
   "start_url": "./index.html",
   "scope": "./",
