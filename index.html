@@ -278,6 +278,119 @@
 #p-sales-dash .st-hero-name{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.3px;position:relative;z-index:1}
 #p-sales-dash .st-hero-sub{font-size:10px;color:rgba(255,255,255,.65);margin-top:2px;position:relative;z-index:1}
 /* ═══ END SALES CSS ═══ */
+
+/* ── DESKTOP DASHBOARD FIX: kartu hero biru & hijau tampil penuh ── */
+@media (min-width:768px){
+  /* Wrapper grid dashboard */
+  .dt-dash-grid{
+    display:block !important;
+    padding:0 !important;
+  }
+
+  /* Layout dua kolom di desktop besar */
+  @media (min-width:1024px){
+    .dt-dash-grid{
+      display:grid !important;
+      grid-template-columns:repeat(12,1fr) !important;
+      gap:16px !important;
+      padding:0 !important;
+    }
+    /* Kartu biru: 7 kolom kiri */
+    .dt-dash-hero{
+      grid-column:1 / 8 !important;
+      grid-row:1 !important;
+      margin-bottom:0 !important;
+    }
+    /* Kartu hijau: 5 kolom kanan */
+    .dt-dash-status{
+      grid-column:8 / 13 !important;
+      grid-row:1 !important;
+      margin-bottom:0 !important;
+      flex-direction:column !important;
+      align-items:flex-start !important;
+    }
+    /* Pasang baru: baris 2 kiri */
+    .dt-dash-pasang{
+      grid-column:1 / 7 !important;
+      grid-row:2 !important;
+      margin-bottom:0 !important;
+    }
+    /* Target utilisasi: baris 2 kanan */
+    .dt-dash-target{
+      grid-column:7 / 13 !important;
+      grid-row:2 !important;
+      margin-bottom:0 !important;
+      background:var(--bg2) !important;
+      border:1px solid var(--border2) !important;
+      border-radius:var(--r) !important;
+      padding:16px !important;
+    }
+    /* Per Area: baris 3 full */
+    .dt-dash-area{
+      grid-column:1 / 13 !important;
+      grid-row:3 !important;
+      background:var(--bg2) !important;
+      border:1px solid var(--border2) !important;
+      border-radius:var(--r) !important;
+      padding:18px !important;
+    }
+    .dt-dash-area #dk-top-area{
+      display:grid !important;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr)) !important;
+      gap:10px !important;
+    }
+    /* Sync bar: baris 4 full */
+    .dt-dash-sync{
+      grid-column:1 / 13 !important;
+      grid-row:4 !important;
+    }
+    /* Sembunyikan padding wrapper di desktop */
+    .dt-dash-grid > div[style*="display:none"]{
+      display:none !important;
+    }
+    /* Angka utama lebih besar di desktop */
+    .dt-dash-hero #dk-pel-total{
+      font-size:64px !important;
+    }
+    .dt-dash-status #dk-pel-aktif-berbayar-hero{
+      font-size:48px !important;
+    }
+  }
+
+  /* Dari 768px ke bawah 1024px: satu kolom tapi tidak terpotong */
+  .dt-dash-hero,
+  .dt-dash-status,
+  .dt-dash-pasang,
+  .dt-dash-target,
+  .dt-dash-area{
+    width:100% !important;
+    box-sizing:border-box !important;
+    overflow:visible !important;
+  }
+
+  /* Pastikan content area tidak memotong konten dashboard */
+  .content{
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+  }
+
+  /* Greeting di desktop: transparan */
+  #p-dash .dash-greet{
+    background:transparent !important;
+    border:none !important;
+    box-shadow:none !important;
+    padding:0 0 16px !important;
+    color:var(--text) !important;
+  }
+  #p-dash .dash-greet h2{
+    color:var(--text) !important;
+    font-size:22px !important;
+  }
+  #p-dash .dash-greet-sub{
+    color:var(--text3) !important;
+    opacity:1 !important;
+  }
+}
 </style>
 <body>
 
@@ -664,7 +777,7 @@
         <!-- ══ HERO DASHBOARD FRIENDLY v2 ══ -->
 
         <!-- BARIS 1: Total Pelanggan (paling besar, paling penting) -->
-        <div style="background:linear-gradient(135deg,#1a56db,#1e40af);border-radius:var(--r);padding:16px 16px 14px;margin-bottom:8px;color:#fff;position:relative;overflow:hidden">
+        <div class="dt-dash-hero" style="background:linear-gradient(135deg,#1a56db,#1e40af);border-radius:var(--r);padding:16px 16px 14px;margin-bottom:8px;color:#fff;position:relative;overflow:hidden">
           <div style="position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
           <div style="position:absolute;left:-10px;bottom:-10px;width:70px;height:70px;border-radius:50%;background:rgba(0,0,0,.08)"></div>
           <!-- Label jelas di atas -->
@@ -704,7 +817,7 @@
         </div>
 
         <!-- BARIS 2: Pelanggan Berbayar Aktif (fokus pendapatan) -->
-        <div style="background:linear-gradient(135deg,#059669,#047857);border-radius:var(--r);padding:13px 16px;margin-bottom:8px;color:#fff;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden">
+        <div class="dt-dash-status" style="background:linear-gradient(135deg,#059669,#047857);border-radius:var(--r);padding:13px 16px;margin-bottom:8px;color:#fff;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden">
           <div style="position:absolute;right:-10px;bottom:-10px;width:80px;height:80px;border-radius:50%;background:rgba(0,0,0,.1)"></div>
           <div style="flex:1;position:relative;z-index:1">
             <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px">
