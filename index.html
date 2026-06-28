@@ -19405,15 +19405,32 @@ function mntHistLoad(){
   var since=new Date(Date.now()-hari*86400000).toISOString().slice(0,10);
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite;font-size:24px;display:block;margin-bottom:8px;opacity:.4"></i></div>';
   var mntJenis=['ont_replace','kabel_replace','odp_maintenance','odc_maintenance','signal_check','maintenance_ont','maintenance_kabel','odp_port_move'];
-  var q=sb.from('material_mutasi').select('id,jenis,jumlah,keterangan,tgl,teknisi,sn_ont,pel_cid,item_id').gte('tgl',since).order('tgl',{ascending:false}).limit(60);
+  var q=sb.from('material_mutasi').select('id,jenis,jumlah,keterangan,tgl,teknisi,sn_ont,pel_cid,item_id').gte('tgl',since).order('tgl',{ascending:false}).limit(200);
   if(jenis) q=q.eq('jenis',jenis); else q=q.in('jenis',mntJenis);
   q.then(function(r){
     if(r.error||!r.data||!r.data.length){ el.innerHTML='<div class="mnt-empty"><i class="ti ti-history"></i><p>Belum ada riwayat</p></div>'; return; }
+    var rows = r.data;
+
+    /* Filter sesuai area workspace maintenance aktif (_mntWs.areaId).
+       Tabel material_mutasi tidak punya kolom area_id langsung, jadi
+       dicocokkan via pel_cid terhadap daftar pelanggan area tersebut. */
+    var aid = (typeof _mntWs!=='undefined') ? _mntWs.areaId : null;
+    if(aid){
+      var pelSet = {};
+      ((typeof _mntWs!=='undefined' && _mntWs._rawPel) ? _mntWs._rawPel : []).forEach(function(p){
+        if(p.area_id===aid && p.cid) pelSet[p.cid]=1;
+      });
+      rows = rows.filter(function(h){ return h.pel_cid && pelSet[h.pel_cid]; });
+    }
+
+    rows = rows.slice(0,60);
+    if(!rows.length){ el.innerHTML='<div class="mnt-empty"><i class="ti ti-history"></i><p>Belum ada riwayat</p></div>'; return; }
+
     var matMap={}; _mntWs.material.forEach(function(m){matMap[m.id]=m;});
     var jLbl={maintenance_ont:'Ganti ONT',ont_replace:'Ganti ONT',maintenance_kabel:'Ganti Kabel',kabel_replace:'Ganti Kabel',odp_maintenance:'Maint. ODP',odc_maintenance:'Maint. ODC',odp_port_move:'Pindah Port',signal_check:'Cek Sinyal'};
     var jIco={maintenance_ont:'ti-device-desktop',ont_replace:'ti-device-desktop',maintenance_kabel:'ti-cable',kabel_replace:'ti-cable',odp_maintenance:'ti-plug',odc_maintenance:'ti-box',odp_port_move:'ti-arrows-exchange',signal_check:'ti-signal'};
     var html='<div style="padding-bottom:8px">';
-    r.data.forEach(function(h){
+    rows.forEach(function(h){
       var mat=matMap[h.item_id]||{}; var lbl=jLbl[h.jenis]||_esc(h.jenis||''); var ico=jIco[h.jenis]||'ti-tool';
       html+='<div class="mnt-hist-item">'+
         '<div style="width:30px;height:30px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti '+ico+'" style="font-size:14px;color:var(--cyan)"></i></div>'+
@@ -20037,11 +20054,15 @@ function dmtLoad(){
     dmtBuildAreaChips(); /* Render area chips segera setelah _areaData siap */
     /* Kolom eksplisit — hindari * agar tidak error jika ada kolom baru/beda */
     var cols = 'id,pel_id,cid_pelanggan,nama_pelanggan,tgl_cabut,alasan,catatan,teknisi,ont_kembali,sn_ont,precon_kembali,panjang_kabel,adapter_kembali,status,area_id,kecamatan,kelurahan,created_at,ont_item_id,kabel_item_id';
-    return sb.from('dismantle_orders').select(cols).order('created_at',{ascending:false});
+    var qDmt = sb.from('dismantle_orders').select(cols).order('created_at',{ascending:false});
+    if(typeof _applyAreaFilter==='function') qDmt = _applyAreaFilter(qDmt, 'area_id');
+    return qDmt;
   }).then(function(r){
     if(r && r.error){
       /* Coba fallback minimal columns jika ada error */
-      return sb.from('dismantle_orders').select('id,pel_id,cid_pelanggan,tgl_cabut,alasan,status,ont_kembali,ont_item_id,kabel_item_id,created_at').order('created_at',{ascending:false});
+      var qDmtFb = sb.from('dismantle_orders').select('id,pel_id,cid_pelanggan,tgl_cabut,alasan,status,ont_kembali,ont_item_id,kabel_item_id,created_at,area_id').order('created_at',{ascending:false});
+      if(typeof _applyAreaFilter==='function') qDmtFb = _applyAreaFilter(qDmtFb, 'area_id');
+      return qDmtFb;
     }
     return r;
   }).then(function(r){
@@ -20068,11 +20089,15 @@ function _dmtFillFilters(){
   var sel = document.getElementById('dmt-fil-area');
   if(sel){
     var cur = sel.value;
-    sel.innerHTML = '<option value="">Semua Area</option>';
+    var scoped = (typeof _isGlobalRole==='function' && !_isGlobalRole());
+    var sc = scoped && typeof _getUserAreaScope==='function' ? _getUserAreaScope() : null;
+    sel.innerHTML = scoped ? '' : '<option value="">Semua Area</option>';
     _areaData.forEach(function(a){
+      if(scoped && sc && a.id!==sc.area_coverage_id) return;
       var o=document.createElement('option'); o.value=a.id; o.textContent=a.nama;
-      if(a.id===cur) o.selected=true; sel.appendChild(o);
+      if(a.id===cur || (scoped && sc && a.id===sc.area_coverage_id)) o.selected=true; sel.appendChild(o);
     });
+    if(scoped){ sel.disabled = true; }
   }
 }
 
@@ -20166,6 +20191,7 @@ var _dmtSelArea = '';
 function dmtBuildAreaChips(){
   var chips = document.getElementById('dmt-area-chips'); if(!chips) return;
 
+  var scoped = (typeof _isGlobalRole==='function' && !_isGlobalRole());
 
   var agg = {};
   _dmtData.forEach(function(x){
@@ -20174,6 +20200,11 @@ function dmtBuildAreaChips(){
     agg[key]++;
   });
 
+  /* Role scoped ke 1 area: data sudah difilter server-side, chip area tidak relevan/menyesatkan */
+  if(scoped){
+    chips.innerHTML='';
+    return;
+  }
 
   var areaList = [];
   if(_areaData && _areaData.length){
@@ -24981,6 +25012,11 @@ function urOpenDet(id){
         '</div>');
     })()+
     dr('No. HP', u.hp ? _esc(u.hp) : '<span style="color:var(--text4)">—</span>')+
+    dr('PIN Login',
+      '<div style="display:flex;align-items:center;gap:7px">'+
+        '<span id="ur-det-pin-val" style="font-family:\'JetBrains Mono\',monospace;font-weight:800;letter-spacing:2px;color:var(--text)">'+(u.pin?'••••••':'<span style="color:var(--red);font-size:11px;font-weight:600;letter-spacing:0">⚠ Belum diset</span>')+'</span>'+
+        (u.pin?'<button type="button" onclick="urToggleDetPin()" style="background:transparent;border:none;color:var(--text3);cursor:pointer;padding:3px;touch-action:manipulation"><i class="ti ti-eye" id="ur-det-pin-eye" style="font-size:15px"></i></button>':'')+
+      '</div>')+
     (u.keterangan ? dr('Keterangan', _esc(u.keterangan)) : '')+
     sec('calendar','Audit')+
     dr('Dibuat', u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '—')+
@@ -24993,6 +25029,22 @@ function urOpenDet(id){
   document.getElementById('ur-det-overlay').classList.add('on');
 }
 function urCloseDet(){ document.getElementById('ur-det-overlay').classList.remove('on'); }
+
+function urToggleDetPin(){
+  var span = document.getElementById('ur-det-pin-val');
+  var ico  = document.getElementById('ur-det-pin-eye');
+  if(!span) return;
+  var u = _urData.find(function(x){ return x.id===_urDetId; });
+  var pin = (u && u.pin) ? String(u.pin) : '';
+  var isHidden = span.textContent.indexOf('•') >= 0;
+  if(isHidden){
+    span.textContent = pin || '—';
+    if(ico) ico.className = 'ti ti-eye-off';
+  } else {
+    span.textContent = '••••••';
+    if(ico) ico.className = 'ti ti-eye';
+  }
+}
 
 function urToggleStatus(id){
   var u = _urData.find(function(x){ return x.id===id; });
@@ -31860,6 +31912,13 @@ SOT.aiOps = {
 
 
   quickCheck: function(){
+    /* AI Ops / Ringkasan Owner hanya dapat diakses role global & area_manager.
+       Role lain (teknisi, sales, viewer) tidak punya menu ini, jadi toast
+       "cek AI Ops" akan jadi dead-end yang membingungkan bagi mereka. */
+    var _aiOpsRoles = ['super_admin','owner','area_manager'];
+    var _r = (typeof normalizeRole==='function') ? normalizeRole(window.CR) : window.CR;
+    if(_aiOpsRoles.indexOf(_r) < 0) return { alert_count:0, critical_count:0, alerts:[], insights:[], recommendations:[] };
+
     var r = this.analyze();
     if(r.critical_count > 0){
       if(typeof toast==='function') toast('⚠️ '+r.critical_count+' alert kritis — cek AI Ops','err');
@@ -33721,9 +33780,10 @@ function _v31ShowIncompletePanel(sb){
 
   targetEl.innerHTML = '<div style="padding:10px 13px;background:rgba(217,119,6,.07);border-radius:var(--r);border:1.5px solid rgba(217,119,6,.2);font-size:11px;color:var(--yellow)"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite"></i> Memeriksa data tidak lengkap…</div>';
 
-  sb.from('pelanggan')
-    .select('id,cid,nama,hp,nik,alamat,kecamatan,area_id,paket,odp_id,nomor_port,sn_ont,tgl_pasang,status,jenis_pelanggan')
-    .then(function(r){
+  var v31Q = sb.from('pelanggan')
+    .select('id,cid,nama,hp,nik,alamat,kecamatan,area_id,paket,odp_id,nomor_port,sn_ont,tgl_pasang,status,jenis_pelanggan');
+  if(typeof _applyAreaFilter==='function') v31Q = _applyAreaFilter(v31Q, 'area_id');
+  v31Q.then(function(r){
       if(r.error){ targetEl.innerHTML=''; return; }
       var all = r.data||[];
       var JG = JENIS_GRATIS;
@@ -33801,7 +33861,7 @@ function _v31ShowIncompletePanel(sb){
         var h='';
         /* Header */
         h+='<div style="padding:9px 13px;background:rgba(217,119,6,.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">';
-        h+='<div style="font-size:11px;font-weight:800;color:var(--yellow)"><i class="ti ti-alert-triangle"></i> '+_allData.length+' Pelanggan Data Belum Lengkap</div>';
+        h+='<div style="font-size:11px;font-weight:800;color:var(--yellow)"><i class="ti ti-alert-triangle"></i> '+_allData.length+' Pelanggan Data Belum Lengkap'+((typeof _isGlobalRole==='function'&&!_isGlobalRole())?' · '+_esc(_getAreaScopeLabel()):'')+'</div>';
         h+='<button onclick="v31IncToggle()" style="background:none;border:none;font-size:11px;font-weight:700;color:var(--yellow);cursor:pointer">Lihat/Sembunyikan</button>';
         h+='</div>';
 
