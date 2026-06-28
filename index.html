@@ -1188,6 +1188,7 @@
         </div>
       </div>
 
+    </div>
     </div><!-- /p-sales-dash -->
 
 
@@ -14489,13 +14490,17 @@ window._matMutasiSequence = _matMutasiSequence;
 ════════════════ */
 function invLoadMaster(cb){
   var sb = (typeof getSB === 'function') ? getSB() : null;
-  if(!sb){ if(cb) cb(); return; }
+  if(!sb){ _invMatiLoaded = true; if(cb) cb(); return; }
   sb.from('material_items').select('*').order('kode')
     .then(function(r){
-      if(!r.error){ _invMatiData = r.data || []; _invMatiLoaded = true; }
+      if(!r.error){ _invMatiData = r.data || []; }
+      /* Tandai sudah dicoba load, baik berhasil maupun kosong/gagal —
+         mencegah invDashLoad memanggil ulang invLoadMaster tanpa henti
+         (lihat fix infinite-recursion di invDashLoad). */
+      _invMatiLoaded = true;
       _invFillAllDropdowns();
       if(cb) cb();
-    }).catch(function(){ if(cb) cb(); });
+    }).catch(function(){ _invMatiLoaded = true; if(cb) cb(); });
 }
 
 function _esc3(s){
@@ -14510,7 +14515,24 @@ function _invItemNama(id){
 }
 
 function invDashLoad(){
-  if(!_invMatiData.length){ invLoadMaster(invDashLoad); return; }
+  if(!_invMatiLoaded){
+    /* Pengaman anti infinite-loop: dulu di sini mengecek _invMatiData.length,
+       jadi kalau tabel material_items memang kosong atau fetch gagal,
+       invLoadMaster(invDashLoad) akan saling panggil tanpa henti sampai
+       "Maximum call stack size exceeded". Sekarang dicek dari flag
+       _invMatiLoaded (ditandai true setelah SATU kali percobaan fetch,
+       apa pun hasilnya), plus batas percobaan sebagai pengaman tambahan. */
+    window._invDashRetry = (window._invDashRetry || 0) + 1;
+    if(window._invDashRetry > 5){
+      var rootErr = document.getElementById('inv-d-content');
+      if(rootErr) rootErr.innerHTML = '<div class="inv-ld">Gagal memuat data master barang. Coba refresh halaman.</div>';
+      window._invDashRetry = 0;
+      return;
+    }
+    invLoadMaster(invDashLoad);
+    return;
+  }
+  window._invDashRetry = 0;
   var sb = (typeof getSB === 'function') ? getSB() : null;
   if(!sb) return;
 
