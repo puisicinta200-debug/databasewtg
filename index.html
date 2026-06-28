@@ -661,51 +661,83 @@
       <!-- ── Ringkasan Utama ── -->
       <div class="dt-dash-grid" style="padding:0 14px 10px">
 
-        <!-- Hero: Pelanggan Aktif -->
-        <div class="dt-dash-item dt-dash-hero" style="background:var(--c1);border-radius:var(--r);padding:16px;margin-bottom:10px;color:#fff;position:relative;overflow:hidden">
-          <div style="position:absolute;right:-16px;top:-16px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.07)"></div>
-          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Pelanggan Aktif (Berbayar)</div>
-          <div style="font-size:44px;font-weight:800;font-family:monospace;letter-spacing:-2px;line-height:1" id="dk-pel-aktif">—</div>
-          <div style="height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden;margin-top:8px">
-            <div id="dk-aktif-bar" style="height:5px;background:#4ade80;border-radius:3px;width:0%;transition:width .6s"></div>
+        <!-- ══ HERO DASHBOARD FRIENDLY v2 ══ -->
+
+        <!-- BARIS 1: Total Pelanggan (paling besar, paling penting) -->
+        <div style="background:linear-gradient(135deg,#1a56db,#1e40af);border-radius:var(--r);padding:16px 16px 14px;margin-bottom:8px;color:#fff;position:relative;overflow:hidden">
+          <div style="position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
+          <div style="position:absolute;left:-10px;bottom:-10px;width:70px;height:70px;border-radius:50%;background:rgba(0,0,0,.08)"></div>
+          <!-- Label jelas di atas -->
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;position:relative;z-index:1">
+            📋 TOTAL SEMUA PELANGGAN TERDAFTAR
           </div>
-          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:4px" id="dk-pel-pct"></div>
-          <!-- Breakdown FASUM -->
-          <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.18)">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
-              <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 8px;text-align:center">
-                <div style="font-size:9px;font-weight:700;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">FASUM</div>
-                <div style="font-size:18px;font-weight:800;font-family:monospace" id="dk-bd-fasum">—</div>
-              </div>
-              <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 8px;text-align:center">
-                <div style="font-size:9px;font-weight:700;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">ODP Tmpl</div>
-                <div style="font-size:18px;font-weight:800;font-family:monospace" id="dk-bd-odp">—</div>
-              </div>
-              <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 8px;text-align:center">
-                <div style="font-size:9px;font-weight:700;opacity:.7;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">ODC Tmpl</div>
-                <div style="font-size:18px;font-weight:800;font-family:monospace" id="dk-bd-odc">—</div>
-              </div>
+          <!-- Angka total paling besar -->
+          <div style="font-size:52px;font-weight:900;font-family:monospace;letter-spacing:-3px;line-height:1;position:relative;z-index:1" id="dk-pel-total">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;position:relative;z-index:1">pelanggan terdaftar di sistem</div>
+
+          <!-- Garis pemisah -->
+          <div style="border-top:1px solid rgba(255,255,255,.15);margin:12px 0 10px;position:relative;z-index:1"></div>
+
+          <!-- 4 status dengan label jelas -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;position:relative;z-index:1">
+            <div style="background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);border-radius:10px;padding:8px 6px;text-align:center">
+              <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:3px">✅ AKTIF</div>
+              <div style="font-size:22px;font-weight:900;font-family:monospace;color:#4ade80" id="dk-pel-aktif">—</div>
+              <div style="font-size:8px;color:rgba(255,255,255,.5);margin-top:1px">bayar rutin</div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="font-size:10px;opacity:.75">Total semua pelanggan (aktif)</div>
-              <div style="font-size:15px;font-weight:800" id="dk-bd-total-aktif">—</div>
+            <div style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:8px 6px;text-align:center">
+              <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:3px">⏸ SUSPEND</div>
+              <div style="font-size:22px;font-weight:900;font-family:monospace;color:#fbbf24" id="dk-pel-suspend">—</div>
+              <div style="font-size:8px;color:rgba(255,255,255,.5);margin-top:1px">ditangguhkan</div>
             </div>
-            <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:2px">dari <span id="dk-pel-total" style="font-weight:800;color:#fff">—</span> total seluruh pelanggan</div>
+            <div style="background:rgba(156,163,175,.12);border:1px solid rgba(156,163,175,.25);border-radius:10px;padding:8px 6px;text-align:center">
+              <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:3px">🔌 CABUT</div>
+              <div style="font-size:22px;font-weight:900;font-family:monospace;color:#d1d5db" id="dk-pel-cabut">—</div>
+              <div style="font-size:8px;color:rgba(255,255,255,.5);margin-top:1px">berhenti</div>
+            </div>
+            <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:8px 6px;text-align:center">
+              <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:3px">📊 TOTAL</div>
+              <div style="font-size:22px;font-weight:900;font-family:monospace;color:#fff" id="dk-pel-proses-hero">—</div>
+              <div style="font-size:8px;color:rgba(255,255,255,.5);margin-top:1px">aktif+suspend+cabut</div>
+            </div>
           </div>
         </div>
 
-        <!-- Status Pelanggan -->
-        <div class="dt-dash-item dt-dash-status" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-          <div style="background:rgba(220,38,38,.07);border:1.5px solid rgba(220,38,38,.15);border-radius:var(--r);padding:13px">
-            <div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⏸ Suspend</div>
-            <div style="font-size:26px;font-weight:800;color:var(--red)" id="dk-pel-suspend">—</div>
-            <div style="font-size:9px;color:var(--text3);margin-top:2px">sementara berhenti</div>
+        <!-- BARIS 2: Pelanggan Berbayar Aktif (fokus pendapatan) -->
+        <div style="background:linear-gradient(135deg,#059669,#047857);border-radius:var(--r);padding:13px 16px;margin-bottom:8px;color:#fff;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden">
+          <div style="position:absolute;right:-10px;bottom:-10px;width:80px;height:80px;border-radius:50%;background:rgba(0,0,0,.1)"></div>
+          <div style="flex:1;position:relative;z-index:1">
+            <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px">
+              💚 AKTIF BERBAYAR (bukan fasum/gratis)
+            </div>
+            <div style="font-size:36px;font-weight:900;font-family:monospace;letter-spacing:-2px;line-height:1" id="dk-pel-aktif-berbayar-hero">—</div>
+            <div style="font-size:9px;color:rgba(255,255,255,.65);margin-top:2px">pelanggan yang membayar tagihan bulanan</div>
           </div>
-          <div style="background:rgba(100,116,139,.07);border:1.5px solid var(--border2);border-radius:var(--r);padding:13px">
-            <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">🔌 Cabut</div>
-            <div style="font-size:26px;font-weight:800;color:var(--text2)" id="dk-pel-cabut">—</div>
-            <div style="font-size:9px;color:var(--text3);margin-top:2px">berhenti berlangganan</div>
+          <div style="text-align:right;position:relative;z-index:1;flex-shrink:0">
+            <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;margin-bottom:3px">Tidak Bayar</div>
+            <div style="display:flex;gap:8px">
+              <div style="text-align:center">
+                <div style="font-size:8px;color:rgba(255,255,255,.5)">Fasum</div>
+                <div style="font-size:16px;font-weight:800;font-family:monospace;color:rgba(255,255,255,.8)" id="dk-bd-fasum">—</div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:8px;color:rgba(255,255,255,.5)">ODP</div>
+                <div style="font-size:16px;font-weight:800;font-family:monospace;color:rgba(255,255,255,.8)" id="dk-bd-odp">—</div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:8px;color:rgba(255,255,255,.5)">ODC</div>
+                <div style="font-size:16px;font-weight:800;font-family:monospace;color:rgba(255,255,255,.8)" id="dk-bd-odc">—</div>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <!-- hidden compat IDs -->
+        <div style="display:none">
+          <span id="dk-pel-aktif-compat"></span>
+          <span id="dk-aktif-bar"></span>
+          <span id="dk-pel-pct"></span>
+          <span id="dk-bd-total-aktif"></span>
         </div>
 
         <!-- Pemasangan baru hari ini -->
@@ -950,51 +982,87 @@
     <!-- ── SALES TERRITORY (NEW) ── -->
     <div class="pane" id="p-sales-dash">
 
-      <!-- HEADER -->
-      <div id="st-header">
-        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ea580c);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📡</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:800;color:var(--text);letter-spacing:-.3px">Sales Territory</div>
-          <div id="st-topbar-sub" style="font-size:10px;color:var(--text3);font-family:monospace;margin-top:1px">Memuat…</div>
+      <!-- ══ SALES TERRITORY — Redesign sejajar Ringkasan Owner ══ -->
+
+      <!-- Hero Banner -->
+      <div class="dash-greet" style="background:linear-gradient(135deg,#ea580c,#f97316,#fb923c);margin-bottom:0;border-radius:0">
+        <div class="dash-greet-sub" id="st-topbar-sub">Sales Territory · Semua Wilayah</div>
+        <h2 style="font-size:20px;font-weight:800">Dashboard Sales</h2>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;position:relative;z-index:1">
+          <span id="st-role-badge" style="font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.25)">—</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.7)">Data realtime dari Supabase</span>
         </div>
-        <span id="st-role-badge" style="font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;white-space:nowrap;background:rgba(249,115,22,.12);color:#ea580c;border:1px solid rgba(249,115,22,.25)">—</span>
       </div>
 
-      <!-- CONTENT -->
-      <div id="st-content">
-
-        <!-- ── HOME (dashboard selamat datang) ── -->
-        <div class="st-pane on" id="st-pane-home">
-          <div id="st-home-body" style="padding:12px 14px 16px">
-            <div class="st-empty"><div class="st-empty-ico">📡</div><div class="st-empty-txt">Memuat…</div></div>
+      <!-- KPI Strip -->
+      <div style="background:#fff;border-bottom:1px solid var(--border2);padding:12px 14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div style="text-align:center;background:var(--gng2);border:1px solid rgba(5,150,105,.2);border-radius:10px;padding:10px 6px">
+            <div style="font-size:8px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">👥 Pelanggan</div>
+            <div style="font-size:22px;font-weight:900;font-family:monospace;color:var(--green)" id="st-kpi-pel">—</div>
+            <div style="font-size:8px;color:var(--green);opacity:.7">aktif di wilayah</div>
+          </div>
+          <div style="text-align:center;background:var(--c1b);border:1px solid rgba(26,86,219,.2);border-radius:10px;padding:10px 6px">
+            <div style="font-size:8px;font-weight:700;color:var(--c1);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">📡 Utilisasi</div>
+            <div style="font-size:22px;font-weight:900;font-family:monospace;color:var(--c1)" id="st-kpi-util">—</div>
+            <div style="font-size:8px;color:var(--c1);opacity:.7">dari total port</div>
+          </div>
+          <div style="text-align:center;background:var(--pug);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:10px 6px">
+            <div style="font-size:8px;font-weight:700;color:var(--pu);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">🔌 Total Port</div>
+            <div style="font-size:22px;font-weight:900;font-family:monospace;color:var(--pu)" id="st-kpi-port">—</div>
+            <div style="font-size:8px;color:var(--pu);opacity:.7">kapasitas jaringan</div>
           </div>
         </div>
+      </div>
+
+      <!-- Tab Bar (menggantikan bottom nav) -->
+      <div style="background:#fff;border-bottom:1.5px solid var(--border2);display:flex;padding:0 14px;gap:4px;flex-shrink:0">
+        <button id="st-tab-pelanggan" onclick="stGoTab('pelanggan')"
+          style="flex:1;padding:11px 6px;border:none;background:transparent;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px">
+          <i class="ti ti-users" style="font-size:14px"></i> Pelanggan
+        </button>
+        <button id="st-tab-jaringan" onclick="stGoTab('jaringan')"
+          style="flex:1;padding:11px 6px;border:none;background:transparent;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px">
+          <i class="ti ti-broadcast" style="font-size:14px"></i> Jaringan
+        </button>
+        <button id="st-tab-fee" onclick="stGoTab('fee')"
+          style="flex:1;padding:11px 6px;border:none;background:transparent;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px;position:relative">
+          <i class="ti ti-cash" style="font-size:14px"></i> Fee
+          <div class="st-notif" style="position:absolute;top:8px;right:12px"></div>
+        </button>
+      </div>
+
+      <!-- CONTENT AREA -->
+      <div id="st-content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);padding-bottom:20px">
 
         <!-- ── PELANGGAN ── -->
-        <div class="st-pane" id="st-pane-pelanggan">
-          <!-- Back button (hanya muncul saat sudah drill) -->
-          <div id="st-pel-back-bar" style="display:none;padding:8px 14px 0;flex-shrink:0">
-            <button onclick="stPelBack()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:#475569;cursor:pointer;width:100%;justify-content:flex-start">
-              <span style="font-size:16px">←</span> <span id="st-pel-back-label">Kembali ke Semua Area</span>
+        <div class="st-pane on" id="st-pane-pelanggan">
+          <div id="st-pel-back-bar" style="display:none;padding:10px 14px 0">
+            <button onclick="stPelBack()" style="display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;width:100%;justify-content:flex-start">
+              <i class="ti ti-arrow-left" style="font-size:15px"></i>
+              <span id="st-pel-back-label">Kembali ke Semua Area</span>
             </button>
           </div>
-          <!-- Breadcrumb -->
-          <div class="st-filter-bar" id="st-pel-filter-bar">
-            <button class="st-crumb-btn root" onclick="stPelBack()">Semua Area</button>
+          <div style="padding:10px 14px 4px;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:5px">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+              <span id="st-pel-sec-title">Area Coverage</span>
+            </div>
+            <span style="font-size:10px;font-family:monospace;color:var(--text3)" id="st-pel-count">—</span>
           </div>
-          <div class="st-sec-hd">
-            <div class="st-sec-title"><span class="st-sec-dot" style="background:#16a34a"></span><span id="st-pel-sec-title">Area Coverage</span></div>
-            <span class="st-sec-count" id="st-pel-count">—</span>
-          </div>
-          <!-- Search (hidden at area level) -->
           <div id="st-pel-search-bar" style="padding:0 14px;display:none">
-            <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:7px;margin-bottom:10px">
-              <span style="font-size:14px;color:#94a3b8">🔍</span>
-              <input id="st-pel-search" placeholder="Cari nama, CID…" oninput="stPelSearch(this.value)" style="flex:1;border:none;outline:none;font-family:'Sora',sans-serif;font-size:12px;color:#0f172a;background:transparent">
+            <div style="background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--rs);padding:10px 12px;display:flex;align-items:center;gap:7px;margin-bottom:8px">
+              <i class="ti ti-search" style="font-size:14px;color:var(--text3)"></i>
+              <input id="st-pel-search" placeholder="Cari nama, CID…" oninput="stPelSearch(this.value)"
+                style="flex:1;border:none;outline:none;font-family:'Sora',sans-serif;font-size:13px;color:var(--text);background:transparent">
             </div>
           </div>
-          <div style="padding:0 14px" id="st-pel-list-wrap">
-            <div id="st-pel-list"><div class="st-shimmer"></div><div class="st-shimmer"></div><div class="st-shimmer"></div></div>
+          <div style="padding:8px 14px" id="st-pel-list-wrap">
+            <div id="st-pel-list">
+              <div style="height:72px;border-radius:var(--r);background:linear-gradient(90deg,var(--bg4) 25%,var(--bg3) 50%,var(--bg4) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite linear;margin-bottom:8px"></div>
+              <div style="height:72px;border-radius:var(--r);background:linear-gradient(90deg,var(--bg4) 25%,var(--bg3) 50%,var(--bg4) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite linear;margin-bottom:8px"></div>
+              <div style="height:72px;border-radius:var(--r);background:linear-gradient(90deg,var(--bg4) 25%,var(--bg3) 50%,var(--bg4) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite linear"></div>
+            </div>
           </div>
           <div class="st-pagi" id="st-pel-pagi" style="display:none">
             <button class="st-pagi-btn" id="st-pel-prev" onclick="stPelPage(-1)">‹</button>
@@ -1003,70 +1071,88 @@
           </div>
         </div>
 
-        <!-- ── JARINGAN (drill: Area→Kec→Kel→RW→RT→ODP) ── -->
+        <!-- ── JARINGAN ── -->
         <div class="st-pane" id="st-pane-jaringan">
-          <!-- Back button -->
-          <div id="st-net-back-bar" style="display:none;padding:8px 14px 0;flex-shrink:0">
-            <button onclick="stNetBack()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:#475569;cursor:pointer;width:100%;justify-content:flex-start">
-              <span style="font-size:16px">←</span> <span id="st-net-back-label">Kembali</span>
+          <div id="st-net-back-bar" style="display:none;padding:10px 14px 0">
+            <button onclick="stNetBack()" style="display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;width:100%;justify-content:flex-start">
+              <i class="ti ti-arrow-left" style="font-size:15px"></i>
+              <span id="st-net-back-label">Kembali</span>
             </button>
           </div>
-          <!-- Breadcrumb -->
-          <div class="st-filter-bar" id="st-net-filter-bar">
-            <button class="st-crumb-btn root" onclick="stNetDrill('reset')">Semua Area</button>
+          <div style="padding:10px 14px 4px;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:5px">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--c1);display:inline-block"></span>
+              <span id="st-net-sec-title">Area Coverage</span>
+            </div>
+            <span style="font-size:10px;font-family:monospace;color:var(--text3)" id="st-net-count">—</span>
           </div>
-          <div class="st-sec-hd">
-            <div class="st-sec-title"><span class="st-sec-dot" style="background:#2563eb"></span><span id="st-net-sec-title">Area Coverage</span></div>
-            <span class="st-sec-count" id="st-net-count">—</span>
-          </div>
-          <div style="padding:0 14px 16px" id="st-net-list">
-            <div class="st-shimmer"></div><div class="st-shimmer"></div>
+          <div style="padding:8px 14px 16px" id="st-net-list">
+            <div style="height:72px;border-radius:var(--r);background:linear-gradient(90deg,var(--bg4) 25%,var(--bg3) 50%,var(--bg4) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite linear;margin-bottom:8px"></div>
+            <div style="height:72px;border-radius:var(--r);background:linear-gradient(90deg,var(--bg4) 25%,var(--bg3) 50%,var(--bg4) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite linear"></div>
           </div>
         </div>
 
         <!-- ── FEE ── -->
         <div class="st-pane" id="st-pane-fee">
-          <!-- Back button -->
-          <div id="st-fee-back-bar" style="display:none;padding:8px 14px 0;flex-shrink:0">
-            <button onclick="stFeeBack()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:#475569;cursor:pointer;width:100%;justify-content:flex-start">
-              <span style="font-size:16px">←</span> <span id="st-fee-back-label">Kembali</span>
+          <div id="st-fee-back-bar" style="display:none;padding:10px 14px 0">
+            <button onclick="stFeeBack()" style="display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--rs);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;width:100%;justify-content:flex-start">
+              <i class="ti ti-arrow-left" style="font-size:15px"></i>
+              <span id="st-fee-back-label">Kembali</span>
             </button>
           </div>
-          <!-- Breadcrumb -->
-          <div class="st-filter-bar" id="st-fee-filter-bar">
-            <button class="st-crumb-btn root" onclick="stFeeBack()">Semua Area</button>
+          <div style="padding:10px 14px 4px;display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:5px">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--pu);display:inline-block"></span>
+              <span id="st-fee-sec-title">Area Coverage</span>
+            </div>
+            <span style="font-size:10px;font-family:monospace;color:var(--text3)" id="st-fee-count">—</span>
           </div>
-          <div class="st-sec-hd">
-            <div class="st-sec-title"><span class="st-sec-dot" style="background:#7c3aed"></span><span id="st-fee-sec-title">Area Coverage</span></div>
-            <span class="st-sec-count" id="st-fee-count">—</span>
+          <div style="padding:8px 14px" id="st-fee-area-wrap">
+            <div id="st-fee-area-list">
+              <div style="height:72px;border-radius:var(--r);background:linear-gradient(90deg,var(--bg4) 25%,var(--bg3) 50%,var(--bg4) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite linear;margin-bottom:8px"></div>
+              <div style="height:72px;border-radius:var(--r);background:linear-gradient(90deg,var(--bg4) 25%,var(--bg3) 50%,var(--bg4) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite linear"></div>
+            </div>
           </div>
-          <!-- Area list OR fee detail -->
-          <div style="padding:0 14px" id="st-fee-area-wrap">
-            <div id="st-fee-area-list"><div class="st-shimmer"></div><div class="st-shimmer"></div></div>
-          </div>
-          <!-- Fee detail (hidden until area selected) -->
-          <div id="st-fee-detail-wrap" style="display:none;padding:0 14px">
-            <!-- Rekap -->
-            <div style="background:#fff;border-radius:14px;padding:12px;border:1px solid #e2e8f0;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
-              <div style="font-size:10px;font-weight:800;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">💰 Rekap</div>
-              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9">
-                <div style="display:flex;align-items:center;gap:5px"><span class="st-type-badge stb-otf">OTF</span><span style="font-size:11px;color:#475569">Fee Pemasangan</span></div>
-                <span style="font-size:12px;font-weight:800;color:#16a34a;font-family:monospace" id="st-fee-otf-total">—</span>
+          <div id="st-fee-detail-wrap" style="display:none;padding:8px 14px">
+            <div class="card" style="margin-bottom:10px">
+              <div style="font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                <i class="ti ti-cash" style="font-size:13px;color:var(--green)"></i> Rekap Fee
               </div>
-              <div style="display:flex;justify-content:space-between;padding:6px 0">
-                <div style="display:flex;align-items:center;gap:5px"><span class="st-type-badge stb-rec">REC</span><span style="font-size:11px;color:#475569">Fee Recurring</span></div>
-                <span style="font-size:12px;font-weight:800;color:#7c3aed;font-family:monospace" id="st-fee-rec-total">—</span>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="tag tc2" style="font-size:8px">OTF</span>
+                  <span style="font-size:12px;color:var(--text2)">Fee Pemasangan</span>
+                </div>
+                <span style="font-size:13px;font-weight:800;color:var(--green);font-family:monospace" id="st-fee-otf-total">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:7px 0">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="tag tpu" style="font-size:8px">REC</span>
+                  <span style="font-size:12px;color:var(--text2)">Fee Recurring</span>
+                </div>
+                <span style="font-size:13px;font-weight:800;color:var(--pu);font-family:monospace" id="st-fee-rec-total">—</span>
               </div>
             </div>
-            <!-- 4 status tabs sesuai Finance -->
-            <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Riwayat Fee</div>
-            <div class="st-fee-tabs" style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-              <button class="st-fee-tab t-paid on" onclick="stSwitchFeeTab('paid',this)">✓ Paid<span class="st-fee-tab-cnt" id="st-fee-cnt-paid">—</span></button>
-              <button class="st-fee-tab t-wait" onclick="stSwitchFeeTab('sbayar',this)">💳 Siap Bayar<span class="st-fee-tab-cnt" id="st-fee-cnt-sbayar">—</span></button>
-              <button class="st-fee-tab t-wait" onclick="stSwitchFeeTab('pending',this)">⏳ Pending<span class="st-fee-tab-cnt" id="st-fee-cnt-pending">—</span></button>
-              <button class="st-fee-tab t-rej" onclick="stSwitchFeeTab('rej',this)">✗ Batal<span class="st-fee-tab-cnt" id="st-fee-cnt-rej">—</span></button>
+            <div style="font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Riwayat Fee</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg3);border-radius:var(--rs);padding:4px;margin-bottom:10px">
+              <button class="st-fee-tab t-paid on" onclick="stSwitchFeeTab('paid',this)"
+                style="padding:8px 4px;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;cursor:pointer;background:var(--bg2);color:var(--green);box-shadow:var(--sh-sm)">
+                ✓ Paid <span class="st-fee-tab-cnt" id="st-fee-cnt-paid" style="background:var(--gng);color:var(--green);padding:1px 5px;border-radius:8px;margin-left:2px">—</span>
+              </button>
+              <button class="st-fee-tab t-wait" onclick="stSwitchFeeTab('sbayar',this)"
+                style="padding:8px 4px;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:var(--text3)">
+                💳 Siap Bayar <span class="st-fee-tab-cnt" id="st-fee-cnt-sbayar" style="padding:1px 5px;border-radius:8px;margin-left:2px">—</span>
+              </button>
+              <button class="st-fee-tab t-wait" onclick="stSwitchFeeTab('pending',this)"
+                style="padding:8px 4px;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:var(--text3)">
+                ⏳ Pending <span class="st-fee-tab-cnt" id="st-fee-cnt-pending" style="padding:1px 5px;border-radius:8px;margin-left:2px">—</span>
+              </button>
+              <button class="st-fee-tab t-rej" onclick="stSwitchFeeTab('rej',this)"
+                style="padding:8px 4px;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:var(--text3)">
+                ✗ Batal <span class="st-fee-tab-cnt" id="st-fee-cnt-rej" style="padding:1px 5px;border-radius:8px;margin-left:2px">—</span>
+              </button>
             </div>
-            <div class="st-ftpane on"  id="st-ftab-paid"><div id="st-fee-list-paid"><div class="st-shimmer"></div><div class="st-shimmer"></div></div></div>
+            <div class="st-ftpane on" id="st-ftab-paid"><div id="st-fee-list-paid"><div class="st-shimmer"></div><div class="st-shimmer"></div></div></div>
             <div class="st-ftpane" id="st-ftab-sbayar"><div id="st-fee-list-sbayar"></div></div>
             <div class="st-ftpane" id="st-ftab-pending"><div id="st-fee-list-pending"></div></div>
             <div class="st-ftpane" id="st-ftab-rej"><div id="st-fee-list-rej"></div></div>
@@ -1075,16 +1161,8 @@
 
       </div><!-- /st-content -->
 
-      <!-- BOTTOM NAV -->
-      <div id="st-bottom-nav">
-        <button class="st-nav-btn on" id="st-nav-home" onclick="stGoTab('home')"><span class="st-nav-ico">🏠</span><span>Beranda</span><div class="st-dot"></div></button>
-        <button class="st-nav-btn" id="st-nav-pelanggan" onclick="stGoTab('pelanggan')"><span class="st-nav-ico">👥</span><span>Pelanggan</span></button>
-        <button class="st-nav-btn" id="st-nav-jaringan" onclick="stGoTab('jaringan')"><span class="st-nav-ico">📡</span><span>Jaringan</span></button>
-        <button class="st-nav-btn" id="st-nav-fee" onclick="stGoTab('fee')"><span class="st-nav-ico">💰</span><span>Fee</span><div class="st-notif"></div></button>
-      </div>
-
-      <!-- FEE DETAIL SHEET -->
-      <div class="st-overlay" id="st-fee-overlay" onclick="stCloseSheet('fee')">
+      <!-- FEE DETAIL SHEET (overlay) -->
+      <div class="st-overlay" id="st-fee-overlay" onclick="stCloseSheet('fee')">      <div class="st-overlay" id="st-fee-overlay" onclick="stCloseSheet('fee')">
         <div class="st-sheet" onclick="event.stopPropagation()">
           <div class="st-sheet-handle"></div>
           <div class="st-sheet-hd">
@@ -1109,6 +1187,7 @@
           <div class="st-sheet-body" id="st-odp-body"></div>
         </div>
       </div>
+
     </div><!-- /p-sales-dash -->
 
 
@@ -1216,7 +1295,27 @@ ALTER TABLE dismantle_orders
       </div>
 
       <!-- FILTER BAR -->
-      <div class="dmt-filter-bar">
+      <script>
+(function(){
+  /* Tambah tombol Hapus Semua di toolbar dismantle — tampil hanya untuk super_admin */
+  var _dmtToolbarPatch = setInterval(function(){
+    var toolbar = document.querySelector('.dmt-toolbar');
+    if(!toolbar || document.getElementById('dmt-hapus-semua-btn')) return;
+    clearInterval(_dmtToolbarPatch);
+    var isAdmin = (typeof CR !== 'undefined') && CR === 'super_admin';
+    if(!isAdmin) return;
+    var btn = document.createElement('button');
+    btn.id = 'dmt-hapus-semua-btn';
+    btn.className = 'dmt-sync-btn';
+    btn.title = 'Hapus Semua Data Dismantle';
+    btn.style.cssText = 'background:var(--rg2);border-color:rgba(220,38,38,.25);color:var(--red)';
+    btn.innerHTML = '<i class="ti ti-trash" style="font-size:16px"></i>';
+    btn.onclick = function(){ window.dmtHapusSemua && window.dmtHapusSemua(); };
+    toolbar.appendChild(btn);
+  }, 300);
+})();
+</script>
+<div class="dmt-filter-bar">
         <select id="dmt-fil-status" onchange="dmtRender()">
           <option value="">Semua Status</option>
           <option value="selesai">Selesai</option>
@@ -9111,7 +9210,7 @@ function areaLoad(){
   if(list) list.innerHTML = '<div class="area-empty"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite;opacity:.4"></i><p>Memuat data…</p></div>';
   var sb = getSB();
   if(!sb){ areaRenderEmpty('Koneksi Supabase tidak aktif'); return; }
-  sb.from('areas').select('id,kode,nama,status,keterangan,created_at').order('created_at',{ascending:false})
+  sb.from('areas').select('id,kode,nama,kota,provinsi,type,status,target_homes,pelanggan,lat,lng,keterangan,created_at,updated_at').order('created_at',{ascending:false})
     .then(function(r){
       if(r.error){ areaRenderEmpty('Gagal memuat: ' + (r.error.message||'coba lagi')); return; }
       _areaData = r.data || [];
@@ -18228,14 +18327,29 @@ function dashLoad(){
   var bulanIni = yy+'-'+mm;
 
   var done = 0, total = 6;
+  /* Watchdog: pastikan spinner berhenti setelah max 8 detik */
+  var _tickWatchdog = setTimeout(function(){
+    var ico2 = document.getElementById('dash-refresh-ico');
+    var dot2 = document.getElementById('dash-sync-dot');
+    if(ico2) ico2.style.animation = '';
+    if(dot2) dot2.className = 'dash-sync-dot ok';
+    var now2 = new Date();
+    var pad2 = function(n){ return n<10?'0'+n:n; };
+    _dSet('dash-sync-time', 'Update: '+pad2(now2.getHours())+':'+pad2(now2.getMinutes())+':'+pad2(now2.getSeconds())+' · Selesai');
+    _dashLoaded = true;
+    /* Trigger hero update setelah data pasti sudah ada */
+    if(typeof _updateHero === 'function') setTimeout(_updateHero, 100);
+  }, 8000);
   function tick(){
     done++;
     if(done>=total){
+      clearTimeout(_tickWatchdog);
       if(ico) ico.style.animation='';
-      if(dot) dot.className='dash-sync-dot';
+      if(dot) dot.className='dash-sync-dot ok';
       var pad=function(n){return n<10?'0'+n:n;};
-      _dSet('dash-sync-time','Update: '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds())+' · T20 Dashboard');
+      _dSet('dash-sync-time','Update: '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds())+' · Selesai');
       _dashLoaded=true;
+      if(typeof _updateHero==='function') setTimeout(_updateHero, 100);
     }
   }
 
@@ -18358,22 +18472,28 @@ function dashLoad(){
       var d=r.data||[];
 
       d = _applyDashFilterClient(d, DF);
-      var total=d.length;
+      /* SSOT: total = aktif + suspend + cabut SAJA (proses tidak dihitung) */
       var aktifRaw=d.filter(function(p){return p.status==='aktif'||p.status==='maintenance';}).length;
       var aktif=aktifRaw;
       var totalAktifSemua=aktifRaw;
+      var suspend=d.filter(function(p){return p.status==='suspend';}).length;
+      var cabut=d.filter(function(p){return p.status==='cabut';}).length;
+      /* total TANPA proses — sesuai prinsip dashboard */
+      var total = aktif + suspend + cabut;
 
       if(!DF.area_id && window.SOT && typeof SOT.customerStats==='function'){
         var scopeAid = (!_isGlobalRole() && _getUserAreaScope()) ? _getUserAreaScope().area_coverage_id : null;
         var csSot = SOT.customerStats(scopeAid);
         if(csSot && csSot.raw && csSot.raw.length){
-          total = csSot.total; aktif = csSot.aktif;
-
-          totalAktifSemua = (typeof SOT.networkActiveStats==='function') ? SOT.networkActiveStats(scopeAid).aktif : aktifRaw;
+          /* Override dari SOT — hitung ulang tanpa proses */
+          var _raw = csSot.raw;
+          aktif   = _raw.filter(function(p){return p.status==='aktif';}).length;
+          suspend = _raw.filter(function(p){return p.status==='suspend';}).length;
+          cabut   = _raw.filter(function(p){return p.status==='cabut';}).length;
+          total   = aktif + suspend + cabut; /* TANPA proses */
+          totalAktifSemua = (typeof SOT.networkActiveStats==='function') ? SOT.networkActiveStats(scopeAid).aktif : aktif;
         }
       }
-      var suspend=d.filter(function(p){return p.status==='suspend';}).length;
-      var cabut=d.filter(function(p){return p.status==='cabut';}).length;
       var berbayar=d.filter(function(p){return PAID_TYPES.indexOf(p.jenis_pelanggan||'Reguler')>=0;}).length;
       var fasum=d.filter(function(p){return p.jenis_pelanggan==='FASUM';}).length;
       var odpTempel=d.filter(function(p){return p.jenis_pelanggan==='ODP_TEMPEL';}).length;
@@ -20419,7 +20539,7 @@ function navSalesNew(btnEl){
       if(sub) sub.textContent='Wilayah Sales';
       if(badge){ badge.textContent='Sales'; badge.style.cssText='font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;white-space:nowrap;background:rgba(249,115,22,.12);color:#ea580c;border:1px solid rgba(249,115,22,.25)'; }
     }
-    stGoTab('home');
+    stGoTab('pelanggan');
   }, 30);
 }
 function navSales(k,s,b){ navSalesNew(b); }
@@ -20436,10 +20556,18 @@ function stGoTab(tab){
   if(tab==='fee')       { _stFeeStack=[]; _stFeeLevel='area'; stFeeLoad(); }
 }
 function stUpdateNav(tab){
-  var map={home:'st-nav-home',pelanggan:'st-nav-pelanggan',jaringan:'st-nav-jaringan',fee:'st-nav-fee'};
-  document.querySelectorAll('#p-sales-dash .st-nav-btn').forEach(function(b){ b.classList.remove('on'); b.style.color='#94a3b8'; var d=b.querySelector('.st-dot'); if(d) d.remove(); });
-  var el=document.getElementById(map[tab]||'st-nav-home');
-  if(el){ el.classList.add('on'); el.style.color='#f97316'; var d=document.createElement('div'); d.className='st-dot'; d.style.cssText='width:4px;height:4px;border-radius:50%;background:#f97316'; el.appendChild(d); }
+  /* Update tab bar baru (horizontal tab, bukan bottom nav) */
+  ['pelanggan','jaringan','fee'].forEach(function(t){
+    var btn = document.getElementById('st-tab-'+t);
+    if(!btn) return;
+    var active = (t === tab);
+    btn.style.color = active ? 'var(--c2)' : 'var(--text3)';
+    btn.style.borderBottomColor = active ? 'var(--c2)' : 'transparent';
+    btn.style.fontWeight = active ? '800' : '700';
+    btn.style.background = active ? 'rgba(249,115,22,.06)' : 'transparent';
+  });
+  /* Update KPI */
+  setTimeout(_stUpdateKPI, 300);
 }
 function stCloseSheet(t){ var e=document.getElementById('st-'+t+'-overlay'); if(e) e.classList.remove('on'); }
 
@@ -24515,7 +24643,6 @@ function urClearSearch(){
 }
 
 function urRender(){
-  urLoad(); return;
   var q       = ((document.getElementById('ur-search')||{}).value||'').toLowerCase().trim();
   var fRole   = (document.getElementById('ur-fil-role')||{}).value||'';
   var fStatus = (document.getElementById('ur-fil-status')||{}).value||'';
@@ -27217,6 +27344,7 @@ function owdSetTab(tab){ owdPaneTab(tab); }
 function owdPaneLoad(force){
   if(!document.getElementById('p-insight')) return;
   /* Always query fresh */
+  _owdpLoaded = false;
 
   _owdHide('owd-pane-pelanggan');
   _owdHide('owd-pane-audit');
@@ -27247,6 +27375,11 @@ function owdPaneLoad(force){
         return;
       }
       _owdHide('owd-loading');
+      /* Jika areas masih kosong setelah semua retry, tampilkan pesan error */
+      if(!c.areas || !c.areas.length){
+        _owdShowErr('Data area tidak tersedia. Pastikan tabel areas di Supabase sudah terisi, lalu klik Refresh.');
+        return;
+      }
       _owdpLoaded = true;
       _owdBuildAll(c);
       owdPaneTab(_owdpTab);
@@ -27264,18 +27397,28 @@ function _owdBuildAll(c){
 
   var csGlobal = SOT.customerStats();
   var naGlobal = SOT.networkActiveStats();
-  var totalAktif    = csGlobal.aktif;
-  var totalNonAktif = csGlobal.berbayar - csGlobal.aktif;
 
+  /* Hitung langsung dari data pelanggan — SSOT */
+  var aktifList    = pels.filter(function(p){ return p.status==='aktif'; });
+  var totalAktif   = aktifList.length;            /* 912 semua aktif */
+  var totalSuspend = pels.filter(function(p){ return p.status==='suspend'; }).length;
+  var totalCabut   = pels.filter(function(p){ return p.status==='cabut'; }).length;
 
-  var fasumAktif   = pels.filter(function(p){ return p.jenis_pelanggan==='FASUM' && SOT.isPortActive(p); }).length;
-  var odpTempelAkt = pels.filter(function(p){ return p.jenis_pelanggan==='ODP_TEMPEL' && SOT.isPortActive(p); }).length;
-  var odcTempelAkt = pels.filter(function(p){ return p.jenis_pelanggan==='ODC_TEMPEL' && SOT.isPortActive(p); }).length;
+  /* Non-Aktif = suspend + cabut SAJA (fasum/tempel tetap aktif) */
+  var totalNonAktif = totalSuspend + totalCabut;
+
+  /* Breakdown aktif: berbayar Reguler, fasum, tempel */
+  var fasumAktif   = aktifList.filter(function(p){ return (p.jenis_pelanggan||'').toLowerCase().indexOf('fasum') >= 0; }).length;
+  var odpTempelAkt = aktifList.filter(function(p){ return p.jenis_pelanggan==='ODP_TEMPEL'; }).length;
+  var odcTempelAkt = aktifList.filter(function(p){ return p.jenis_pelanggan==='ODC_TEMPEL'; }).length;
   var totalAktifSemua = naGlobal.aktif;
 
-  _owdSet('owd-pel-total', pels.length);
-  _owdSet('owd-pel-aktif', totalAktif);
-  _owdSet('owd-pel-nonaktif', totalNonAktif);
+  /* Total terdaftar = aktif + suspend + cabut (TANPA proses) */
+  var totalTerdaftar = totalAktif + totalSuspend + totalCabut;
+
+  _owdSet('owd-pel-total', totalTerdaftar);
+  _owdSet('owd-pel-aktif', csGlobal.berbayar);   /* berbayar = Reguler = 862 */
+  _owdSet('owd-pel-nonaktif', totalNonAktif);    /* suspend + cabut = 0+1 = 1 */
   _owdSet('owd-bd-fasum', fasumAktif);
   _owdSet('owd-bd-odp', odpTempelAkt);
   _owdSet('owd-bd-odc', odcTempelAkt);
@@ -27344,26 +27487,56 @@ function _owdRenderPelList(data){
   el.innerHTML = data.map(function(a){
     var pctColor = a.pct===100 ? '#059669' : a.pct>=80 ? '#1a56db' : '#d97706';
     var barW = Math.min(100, a.pct);
-    return '<div onclick="owdPelDrillOpenArea(\''+a.id+'\')" style="cursor:pointer;background:var(--bg2);border-radius:var(--r);padding:13px 14px;border:1.5px solid var(--border);box-shadow:var(--sh-sm)">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
-      +'<div style="display:flex;align-items:center;gap:8px">'
+    var suspend = a.nonaktif; /* suspend+cabut = non-aktif */
+    return '<div style="background:var(--bg2);border-radius:var(--r);padding:13px 14px;border:1.5px solid var(--border);box-shadow:var(--sh-sm)">'
+
+      /* ── Baris atas: nama area + chevron ── */
+      +'<div onclick="owdPelDrillOpenArea(\''+a.id+'\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:8px">'
       +'<i class="ti ti-map-pin" style="color:var(--c1);font-size:15px;flex-shrink:0"></i>'
-      +'<div>'
+      +'<div style="flex:1;min-width:0">'
       +'<div style="font-size:13px;font-weight:800;color:var(--text);letter-spacing:-.2px">'+_owdEsc(a.nama)+'</div>'
-      +'<div style="font-size:11px;color:var(--text3);margin-top:1px">'+a.total+' pelanggan · '+a.pct+'% aktif'+(a.kap>0?' · target '+a.pctKap+'% dari '+a.kap+' port':'')+'</div>'
+      +(a.kap>0?'<div style="font-size:10px;color:var(--text3);margin-top:1px">Target '+a.pctKap+'% dari '+a.kap+' port tersedia</div>':'')
       +'</div>'
-      +'</div>'
-      +'<div style="display:flex;align-items:center;gap:6px">'
-      +'<div style="font-size:16px;font-weight:800;color:'+pctColor+'">'+a.aktif+' aktif</div>'
-      +'<i class="ti ti-chevron-right" style="color:var(--text3);font-size:15px"></i>'
-      +'</div>'
+      +'<i class="ti ti-chevron-right" style="color:var(--text3);font-size:15px;flex-shrink:0"></i>'
       +'</div>'
 
+      /* ── 3 kotak statistik ── */
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">'
+
+      /* Kotak TOTAL */
+      +'<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:9px;padding:8px 6px;text-align:center">'
+      +'<div style="font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">📋 Total</div>'
+      +'<div style="font-size:20px;font-weight:900;font-family:monospace;color:var(--text)">'+a.total+'</div>'
+      +'<div style="font-size:8px;color:var(--text3);margin-top:1px">terdaftar</div>'
+      +'</div>'
+
+      /* Kotak AKTIF */
+      +'<div onclick="owdPelDrillOpenArea(\''+a.id+'\')" style="cursor:pointer;background:rgba(5,150,105,.08);border:1.5px solid rgba(5,150,105,.25);border-radius:9px;padding:8px 6px;text-align:center">'
+      +'<div style="font-size:8px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">✅ Aktif</div>'
+      +'<div style="font-size:20px;font-weight:900;font-family:monospace;color:var(--green)">'+a.aktif+'</div>'
+      +'<div style="font-size:8px;color:var(--green);opacity:.7;margin-top:1px">'+a.pct+'% dari total</div>'
+      +'</div>'
+
+      /* Kotak NON-AKTIF */
+      +(a.nonaktif>0
+        ? '<div onclick="event.stopPropagation();owdPelDrillOpenAreaNonAktif(\''+a.id+'\')" style="cursor:pointer;background:rgba(220,38,38,.07);border:1.5px solid rgba(220,38,38,.25);border-radius:9px;padding:8px 6px;text-align:center">'
+          +'<div style="font-size:8px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⚠️ Non-Aktif</div>'
+          +'<div style="font-size:20px;font-weight:900;font-family:monospace;color:var(--red)">'+a.nonaktif+'</div>'
+          +'<div style="font-size:8px;color:var(--red);opacity:.7;margin-top:1px">tap untuk lihat</div>'
+          +'</div>'
+        : '<div style="background:var(--gng2);border:1.5px solid rgba(5,150,105,.2);border-radius:9px;padding:8px 6px;text-align:center">'
+          +'<div style="font-size:8px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">🎯 Status</div>'
+          +'<div style="font-size:13px;font-weight:800;color:var(--green);margin-top:4px">Semua</div>'
+          +'<div style="font-size:8px;color:var(--green);opacity:.7;margin-top:1px">aktif semua</div>'
+          +'</div>'
+      )
+      +'</div>'
+
+      /* ── Progress bar utilisasi ── */
       +'<div style="height:5px;background:var(--bg4);border-radius:4px;overflow:hidden">'
       +'<div style="height:100%;width:'+barW+'%;background:'+pctColor+';border-radius:4px;transition:width .4s"></div>'
       +'</div>'
 
-      +(a.nonaktif>0?'<div onclick="event.stopPropagation();owdPelDrillOpenAreaNonAktif(\''+a.id+'\')" style="cursor:pointer;margin-top:5px;font-size:10px;font-weight:700;color:var(--red);opacity:.85;display:inline-flex;align-items:center;gap:3px;text-decoration:underline;text-decoration-style:dotted">'+a.nonaktif+' non-aktif <i class="ti ti-chevron-right" style="font-size:10px"></i></div>':'')
       +'</div>';
   }).join('');
 }
@@ -28729,23 +28902,32 @@ if(typeof window.SOT === 'undefined'){
 }
 
 SOT.customerStats = function(areaId){
-  var JG=JENIS_GRATIS;
-  var d  = areaId
+  var d = areaId
     ? this._cache.pelanggan.filter(function(p){ return p.area_id === areaId; })
     : this._cache.pelanggan;
-  var berbayar = d.filter(function(p){ return JG.indexOf(p.jenis_pelanggan) < 0; });
+
+  /* SSOT: total = aktif + suspend + cabut SAJA, proses tidak dihitung */
+  var aktifList   = d.filter(function(p){ return p.status==='aktif'; });
+  var suspendList = d.filter(function(p){ return p.status==='suspend'; });
+  var cabutList   = d.filter(function(p){ return p.status==='cabut'; });
+  var totalSSOT   = aktifList.length + suspendList.length + cabutList.length;
+
+  /* Berbayar = aktif dengan jenis_pelanggan Reguler */
+  var berbayarList = aktifList.filter(function(p){
+    return (p.jenis_pelanggan||'Reguler') === 'Reguler';
+  });
+
   var now = new Date();
   var bulan = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2);
 
-  var maintenanceList = berbayar.filter(function(p){ return p.status==='maintenance'; });
   return {
-    total         : d.length,
-    berbayar      : berbayar.length,
-    aktif         : berbayar.filter(function(p){ return p.status==='aktif'; }).length + maintenanceList.length,
-    suspend       : berbayar.filter(function(p){ return p.status==='suspend'; }).length,
-    cabut         : berbayar.filter(function(p){ return p.status==='cabut'; }).length,
-    maintenance   : maintenanceList.length,
-    baru_bulan_ini: berbayar.filter(function(p){
+    total         : totalSSOT,
+    berbayar      : berbayarList.length,
+    aktif         : aktifList.length,
+    suspend       : suspendList.length,
+    cabut         : cabutList.length,
+    maintenance   : 0,
+    baru_bulan_ini: aktifList.filter(function(p){
       return (p.tgl_pasang||p.created_at||'').slice(0,7)===bulan;
     }).length,
     raw: d
@@ -32456,7 +32638,13 @@ window.dmtOpenDet = function(id){
     dr('Dibuat',x.created_at ? new Date(x.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—');
 
   var foot=document.getElementById('dmt-det-foot');
-  if(foot) foot.innerHTML='<button class="btn btn-ghost" onclick="dmtCloseDet()">Tutup</button>';
+  var isAdmin = (typeof CR !== 'undefined') && (CR === 'super_admin' || CR === 'owner');
+  if(foot) foot.innerHTML=
+    '<button class="btn btn-ghost" style="flex:1" onclick="dmtCloseDet()">Tutup</button>'+
+    (isAdmin
+      ? '<button class="btn" style="flex:1;background:var(--red);color:#fff;gap:6px" onclick="dmtHapusSatu(\''+id+'\')">'
+        + '<i class="ti ti-trash"></i> Hapus</button>'
+      : '');
 
   var overlay=document.getElementById('dmt-det-overlay');
   if(overlay) overlay.classList.add('on');
@@ -34668,6 +34856,169 @@ if ('serviceWorker' in navigator) {
   /* Optimistic UI dihapus — data realtime dari Supabase */
 
 })();
+
+/* ══════════════════════════════════════
+   DISMANTLE — HAPUS FUNGSI
+   ══════════════════════════════════════ */
+
+/* Hapus satu record dismantle */
+window.dmtHapusSatu = function(id){
+  if(!id) return;
+  var x = (window._dmtData||[]).find(function(d){ return d.id===id; });
+  var label = x ? (x.nama_pelanggan||x.cid_pelanggan||id.slice(0,8)) : id.slice(0,8);
+  if(!confirm('Hapus data dismantle pelanggan "'+label+'"?\nData tidak bisa dikembalikan.')) return;
+
+  var sb = typeof getSB==='function' ? getSB() : null;
+  if(!sb){ alert('Tidak terhubung ke database'); return; }
+
+  sb.from('dismantle_orders')
+    .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: (window.CU&&window.CU.username)||'admin' })
+    .eq('id', id)
+    .then(function(r){
+      if(r.error){ alert('Gagal hapus: '+r.error.message); return; }
+      /* Hapus dari cache lokal */
+      if(window._dmtData) window._dmtData = window._dmtData.filter(function(d){ return d.id!==id; });
+      dmtCloseDet();
+      if(typeof dmtRender==='function') dmtRender();
+      /* Toast */
+      if(typeof showToast==='function') showToast('Data dismantle dihapus','ok');
+      else alert('Berhasil dihapus');
+    }).catch(function(e){ alert('Error: '+(e.message||e)); });
+};
+
+/* Hapus SEMUA dismantle (hanya super_admin) */
+window.dmtHapusSemua = function(){
+  var isAdmin = (typeof CR !== 'undefined') && CR === 'super_admin';
+  if(!isAdmin){ alert('Hanya super_admin yang bisa hapus semua data.'); return; }
+
+  var total = (window._dmtData||[]).length;
+  if(total === 0){ alert('Tidak ada data untuk dihapus.'); return; }
+
+  if(!confirm('HAPUS SEMUA '+total+' data dismantle?\n\nTindakan ini TIDAK bisa dibatalkan!')) return;
+  if(!confirm('Konfirmasi sekali lagi: hapus '+total+' data dismantle?')) return;
+
+  var sb = typeof getSB==='function' ? getSB() : null;
+  if(!sb){ alert('Tidak terhubung ke database'); return; }
+
+  var now = new Date().toISOString();
+  var by = (window.CU&&window.CU.username)||'admin';
+
+  sb.from('dismantle_orders')
+    .update({ is_deleted: true, deleted_at: now, deleted_by: by })
+    .eq('is_deleted', false)
+    .then(function(r){
+      if(r.error){ alert('Gagal hapus semua: '+r.error.message); return; }
+      window._dmtData = [];
+      if(typeof dmtRender==='function') dmtRender();
+      if(typeof showToast==='function') showToast('Semua data dismantle dihapus','ok');
+      else alert('Semua data berhasil dihapus');
+    }).catch(function(e){ alert('Error: '+(e.message||e)); });
+};
+
+
+/* ── Patch hero dashboard friendly v3 ── */
+(function(){
+  var _origDashLoad = window.dashLoad;
+  if(!_origDashLoad || window._dashHeroPatch) return;
+  window._dashHeroPatch = true;
+
+  function _updateHero(){
+    if(!window.SOT || !SOT.cache) return;
+    var pels = SOT.cache().pelanggan || [];
+    if(!pels.length){
+      /* SOT belum siap, coba lagi sebentar */
+      setTimeout(_updateHero, 500);
+      return;
+    }
+
+    /* Hitung per status PERSIS dari data Supabase */
+    var aktif   = pels.filter(function(x){ return x.status==='aktif'; }).length;
+    var suspend = pels.filter(function(x){ return x.status==='suspend'; }).length;
+    var cabut   = pels.filter(function(x){ return x.status==='cabut'; }).length;
+    /* proses TIDAK dimasukkan ke total terdaftar */
+
+    /* Total terdaftar = aktif + suspend + cabut (TANPA proses) */
+    var total = aktif + suspend + cabut;
+
+    /* Aktif berbayar = pelanggan aktif yang jenis_pelanggan = 'Reguler' */
+    var berbayar = pels.filter(function(x){
+      return x.status==='aktif' && x.jenis_pelanggan==='Reguler';
+    }).length;
+
+    /* Fasum = aktif yang jenis_pelanggan mengandung 'fasum' (case insensitive) */
+    var fasum = pels.filter(function(x){
+      return x.status==='aktif' &&
+             (x.jenis_pelanggan||'').toLowerCase().indexOf('fasum') >= 0;
+    }).length;
+
+    /* ODP/ODC tempel = aktif selain Reguler dan selain fasum */
+    var tempel = aktif - berbayar - fasum;
+    if(tempel < 0) tempel = 0;
+
+    /* ── Update elemen HTML ── */
+    var _s = function(id, val){
+      var el = document.getElementById(id);
+      if(el) el.textContent = val;
+    };
+
+    /* Kartu biru — total & status */
+    _s('dk-pel-total',   total);
+    _s('dk-pel-aktif',   aktif);
+    _s('dk-pel-suspend', suspend);
+    _s('dk-pel-cabut',   cabut);
+    _s('dk-pel-proses-hero', total); /* kotak ke-4 = total aktif+suspend+cabut */
+
+    /* Kartu hijau — berbayar & breakdown */
+    _s('dk-pel-aktif-berbayar-hero', berbayar);
+    _s('dk-bd-fasum', fasum);
+    _s('dk-bd-odp',   tempel);
+    _s('dk-bd-odc',   '—');
+
+    /* Compat IDs lama */
+    _s('dk-bd-total-aktif', aktif);
+  }
+
+  window.dashLoad = function(){
+    /* Tandai sedang loading — cegah flicker dari data lama */
+    var els = ['dk-pel-total','dk-pel-aktif','dk-pel-suspend','dk-pel-cabut',
+               'dk-pel-aktif-berbayar-hero','dk-pel-proses-hero'];
+    els.forEach(function(id){
+      var el = document.getElementById(id);
+      if(el && el.textContent !== '—') el.setAttribute('data-loading','1');
+    });
+
+    var r = _origDashLoad.apply(this, arguments);
+
+    /* SOT sudah ter-refresh via dashLoad → langsung update hero */
+    setTimeout(function(){
+      _updateHero();
+    }, 200);
+
+    return r;
+  };
+
+  /* Update juga saat SOT realtime sync */
+  if(window.SOT && SOT.onUpdate) {
+    SOT.onUpdate(function(){ setTimeout(_updateHero, 200); });
+  }
+})();
+
+
+/* ── Sales KPI Strip update ── */
+function _stUpdateKPI(){
+  if(!window.SOT || !SOT.cache) return;
+  var pels = SOT.cache().pelanggan || [];
+  var aktif = pels.filter(function(p){ return p.status==='aktif'; }).length;
+  var ps = SOT.portStats ? SOT.portStats() : {total:0, pct:0};
+  var pct = ps.pct || (ps.total ? Math.round((ps.used||0)/ps.total*100) : 0);
+  var el = function(id){ return document.getElementById(id); };
+  if(el('st-kpi-pel'))  el('st-kpi-pel').textContent  = aktif;
+  if(el('st-kpi-util')) el('st-kpi-util').textContent = pct+'%';
+  if(el('st-kpi-port')) el('st-kpi-port').textContent = ps.total || '—';
+}
+if(window.SOT && SOT.onUpdate) SOT.onUpdate(function(){ setTimeout(_stUpdateKPI, 200); });
+setTimeout(_stUpdateKPI, 1000);
+
 // === END FIX GPS + REALTIME ===
 </script>
 </body>
