@@ -444,7 +444,63 @@
   }
 }
 </style>
+<style id="progui-style">
+#progui-overlay{position:fixed;inset:0;z-index:5000;background:rgba(10,20,40,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}
+#progui-overlay.on{display:flex;animation:fadeUp .18s ease}
+.progui-card{background:var(--bg2,#fff);border-radius:20px;width:100%;max-width:380px;box-shadow:0 10px 50px rgba(10,20,60,.28);overflow:hidden;font-family:'Sora',sans-serif}
+.progui-hd{display:flex;align-items:center;gap:12px;padding:20px 20px 14px}
+.progui-ico{width:44px;height:44px;border-radius:13px;background:var(--c1b,rgba(26,86,219,.08));display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,color .2s}
+.progui-ico i{font-size:22px;color:var(--c1,#1a56db)}
+.progui-ico.spin i{animation:rot 1s linear infinite}
+.progui-ico.ok{background:var(--gng2,rgba(5,150,105,.07))}
+.progui-ico.ok i{color:var(--green,#059669)}
+.progui-ico.err{background:var(--rg2,rgba(220,38,38,.06))}
+.progui-ico.err i{color:var(--red,#dc2626)}
+.progui-titlewrap{flex:1;min-width:0}
+.progui-title{font-size:14.5px;font-weight:800;color:var(--text,#1e2a45);letter-spacing:-.2px}
+.progui-step{font-size:11.5px;color:var(--text3,#8494b2);margin-top:2px;line-height:1.4;word-break:break-word}
+.progui-body{padding:0 20px 18px}
+.progui-bar-wrap{width:100%;background:var(--bg4,#e8eef8);border-radius:20px;height:8px;overflow:hidden}
+.progui-bar{height:8px;border-radius:20px;background:linear-gradient(90deg,var(--c1,#1a56db),var(--pu,#7c3aed));transition:width .3s ease;min-width:4px}
+.progui-bar.ok{background:linear-gradient(90deg,#10b981,#059669)}
+.progui-bar.err{background:linear-gradient(90deg,#ef4444,#dc2626)}
+.progui-pct-row{display:flex;justify-content:space-between;align-items:center;margin-top:7px}
+.progui-pct{font-size:11px;font-weight:800;font-family:monospace;color:var(--text2,#4a5878)}
+.progui-count{font-size:10px;color:var(--text3,#8494b2);font-family:monospace}
+.progui-log{max-height:110px;overflow-y:auto;margin-top:12px;border-top:1px solid var(--border,rgba(26,86,219,.09));padding-top:10px;display:none}
+.progui-log.on{display:block}
+.progui-log-item{display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--text2,#4a5878);padding:3px 0;line-height:1.5}
+.progui-log-item i{font-size:12px;color:var(--green,#059669);margin-top:2px;flex-shrink:0}
+.progui-log-item.err i{color:var(--red,#dc2626)}
+.progui-foot{padding:0 20px 20px}
+.progui-close-btn{width:100%;padding:11px;border:1.5px solid var(--border2,rgba(26,86,219,.15));background:transparent;border-radius:11px;font-family:'Sora',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2,#4a5878);cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px;touch-action:manipulation}
+.progui-close-btn.on{display:flex}
+</style>
 <body>
+
+<!-- ══ PROGRESS / IMPORT-EXPORT STATUS MODAL (global, reusable) ══ -->
+<div id="progui-overlay">
+  <div class="progui-card">
+    <div class="progui-hd">
+      <div class="progui-ico spin" id="progui-ico"><i class="ti ti-loader-2"></i></div>
+      <div class="progui-titlewrap">
+        <div class="progui-title" id="progui-title">Memproses…</div>
+        <div class="progui-step" id="progui-step">Mempersiapkan…</div>
+      </div>
+    </div>
+    <div class="progui-body">
+      <div class="progui-bar-wrap"><div class="progui-bar" id="progui-bar" style="width:4%"></div></div>
+      <div class="progui-pct-row">
+        <span class="progui-pct" id="progui-pct">0%</span>
+        <span class="progui-count" id="progui-count"></span>
+      </div>
+      <div class="progui-log" id="progui-log"></div>
+    </div>
+    <div class="progui-foot">
+      <button class="progui-close-btn" id="progui-close-btn" onclick="ProgUI.close()"><i class="ti ti-check"></i> Tutup</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ OFFLINE WALL ══ -->
 <div id="wall">
@@ -1540,7 +1596,9 @@ ALTER TABLE dismantle_orders
 <div class="dmt-filter-bar">
         <select id="dmt-fil-status" onchange="dmtRender()">
           <option value="">Semua Status</option>
+          <option value="menunggu_approval">Menunggu Approval</option>
           <option value="selesai">Selesai</option>
+          <option value="ditolak">Ditolak</option>
         </select>
         <select id="dmt-fil-area" onchange="dmtRender()">
           <option value="">Semua Area</option>
@@ -1561,6 +1619,29 @@ ALTER TABLE dismantle_orders
         <span id="dmt-stat-open"></span>
         <span id="dmt-stat-proses"></span>
         <span id="dmt-stat-selesai"></span>
+      </div>
+
+      <!-- AUTO-DISMANTLE: MENUNGGU APPROVAL -->
+      <div id="dmt-auto-wrap" style="display:none;padding:0 16px 4px">
+        <div class="card" style="border:1.5px solid rgba(217,119,6,.28);background:var(--yg);padding:12px 13px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <i class="ti ti-alert-triangle" style="color:var(--yellow);font-size:16px"></i>
+            <div style="font-size:12.5px;font-weight:800;color:var(--yellow);flex:1">Auto-Dismantle · Menunggu Approval (<span id="dmt-auto-count">0</span>)</div>
+          </div>
+          <div style="font-size:10.5px;color:var(--text2);line-height:1.6;margin-bottom:10px">Pelanggan ini diajukan sistem untuk dicabut otomatis (4 periode berturut-turut tidak divalidasi). <strong>Approve</strong> = pelanggan dicabut & port ODP dikosongkan. <strong>Reject</strong> = pelanggan tetap/kembali aktif.</div>
+
+          <label style="display:flex;align-items:center;gap:7px;margin-bottom:8px;cursor:pointer;touch-action:manipulation">
+            <input type="checkbox" id="dmt-auto-selall" onchange="dmtAutoToggleAll(this.checked)" style="width:16px;height:16px">
+            <span style="font-size:11px;font-weight:700;color:var(--text2)">Pilih Semua</span>
+          </label>
+
+          <div id="dmt-auto-list"></div>
+
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="dmtAutoRejectBulk()" style="flex:1;padding:10px;border:1.5px solid rgba(220,38,38,.3);border-radius:var(--rs);background:#fff;color:var(--red);font-family:'Sora',sans-serif;font-size:12px;font-weight:800;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-x"></i> Reject Terpilih</button>
+            <button onclick="dmtAutoApproveBulk()" style="flex:1;padding:10px;border:none;border-radius:var(--rs);background:var(--green);color:#fff;font-family:'Sora',sans-serif;font-size:12px;font-weight:800;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ti ti-check"></i> Approve Terpilih</button>
+          </div>
+        </div>
       </div>
 
       <!-- LIST -->
@@ -4403,7 +4484,7 @@ ALTER TABLE dismantle_orders
 
 /* ── OUTSTANDING / PAID SUMMARY ── */
 #fin-pane-dashboard .fdb-os-pd-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
+  display: flex; flex-direction: column;
   gap: 10px; margin-bottom: 12px;
 }
 #fin-pane-dashboard .fdb-os-card {
@@ -4537,21 +4618,6 @@ ALTER TABLE dismantle_orders
 
 <!-- ── OUTSTANDING vs PAID SUMMARY ── -->
 <div class="fdb-os-pd-grid">
-  <div class="fdb-os-card">
-    <div class="fdb-sum-lbl"><i class="ti ti-clock-exclamation"></i> Outstanding</div>
-    <div class="fdb-sum-row">
-      <div class="fdb-sum-row-lbl">OTF Belum Bayar</div>
-      <div class="fdb-sum-row-val" id="fdb-os-otf">—</div>
-    </div>
-    <div class="fdb-sum-row">
-      <div class="fdb-sum-row-lbl">Recurring Belum Bayar</div>
-      <div class="fdb-sum-row-val" id="fdb-os-rec">—</div>
-    </div>
-    <div class="fdb-sum-row" style="padding-top:6px;margin-top:2px;border-top:1.5px solid rgba(220,38,38,.12)">
-      <div class="fdb-sum-row-lbl" style="color:var(--red);font-weight:700">Pelanggan Belum Lunas</div>
-      <div class="fdb-sum-row-val" style="color:var(--red)" id="fdb-os-pel">—</div>
-    </div>
-  </div>
   <div class="fdb-pd-card">
     <div class="fdb-sum-lbl"><i class="ti ti-check"></i> Sudah Dibayar</div>
     <div class="fdb-sum-row">
@@ -4565,6 +4631,21 @@ ALTER TABLE dismantle_orders
     <div class="fdb-sum-row" style="padding-top:6px;margin-top:2px;border-top:1.5px solid rgba(5,150,105,.12)">
       <div class="fdb-sum-row-lbl" style="color:var(--green);font-weight:700">Pelanggan Lunas</div>
       <div class="fdb-sum-row-val" style="color:var(--green)" id="fdb-pd-pel">—</div>
+    </div>
+  </div>
+  <div class="fdb-os-card">
+    <div class="fdb-sum-lbl"><i class="ti ti-clock-exclamation"></i> Outstanding</div>
+    <div class="fdb-sum-row">
+      <div class="fdb-sum-row-lbl">OTF Belum Bayar</div>
+      <div class="fdb-sum-row-val" id="fdb-os-otf">—</div>
+    </div>
+    <div class="fdb-sum-row">
+      <div class="fdb-sum-row-lbl">Recurring Belum Bayar</div>
+      <div class="fdb-sum-row-val" id="fdb-os-rec">—</div>
+    </div>
+    <div class="fdb-sum-row" style="padding-top:6px;margin-top:2px;border-top:1.5px solid rgba(220,38,38,.12)">
+      <div class="fdb-sum-row-lbl" style="color:var(--red);font-weight:700">Pelanggan Belum Lunas</div>
+      <div class="fdb-sum-row-val" style="color:var(--red)" id="fdb-os-pel">—</div>
     </div>
   </div>
 </div>
@@ -4894,6 +4975,36 @@ ALTER TABLE dismantle_orders
           4. Tidak tervalidasi <strong>4 periode berturut-turut</strong> → otomatis <strong>Dismantle</strong><br>
           Halaman ini murni <strong>laporan</strong>, dikelompokkan per Kecamatan → Kelurahan → RW → RT.
         </div>
+
+        <!-- PENGATURAN AUTO-DISMANTLE -->
+        <div class="card" style="border:1.5px solid rgba(220,38,38,.22);margin-bottom:10px;padding:11px 13px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <i class="ti ti-plug-x" style="color:var(--red);font-size:15px"></i>
+            <div style="font-size:12px;font-weight:800;color:var(--red);flex:1">Pengaturan Auto-Dismantle</div>
+          </div>
+          <div style="font-size:10.5px;color:var(--text2);line-height:1.6;margin-bottom:10px">
+            Berguna kalau baru <strong>import data pelanggan lama</strong> (mis. aktif sejak Januari) yang periode recurring-nya belum sempat divalidasi — supaya periode lama itu <strong>tidak ikut dihitung</strong> sebagai "4 periode menunggak" dan tidak memicu auto-dismantle massal.
+          </div>
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;cursor:pointer;touch-action:manipulation">
+            <span style="font-size:11.5px;font-weight:700;color:var(--text)">Aktifkan Auto-Dismantle</span>
+            <input type="checkbox" id="rec-auto-dismantle-on" onchange="recAutoDismantleSaveSettings()" style="width:38px;height:20px">
+          </label>
+          <div class="form-lbl" style="margin-bottom:4px"><i class="ti ti-calendar"></i> Mulai Berlaku Dari Periode</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="inp" id="rec-auto-dismantle-cutoff" type="month" style="flex:1;font-size:12px" onchange="recAutoDismantleSaveSettings()">
+            <button onclick="recAutoDismantleSetToday()" style="padding:9px 12px;border:1.5px solid var(--border2);border-radius:var(--rs);background:transparent;color:var(--text2);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap">Bulan Ini</button>
+          </div>
+          <div style="font-size:9.5px;color:var(--text3);margin-top:5px;line-height:1.5">Periode <strong>sebelum</strong> bulan ini diabaikan dari perhitungan 4-periode-menunggak. Kosongkan untuk menghitung semua periode (perilaku lama).</div>
+          <div id="rec-auto-dismantle-saved" style="display:none;margin-top:6px;font-size:10px;color:var(--green);font-weight:700"><i class="ti ti-check"></i> Tersimpan</div>
+          <div id="rec-auto-dismantle-sql-hint" style="display:none;margin-top:10px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 12px">
+            <div style="font-size:10px;font-weight:800;color:var(--red);margin-bottom:6px"><i class="ti ti-database-exclamation"></i> Tabel app_settings belum ada — jalankan SQL ini di Supabase → SQL Editor:</div>
+            <div style="font-family:monospace;font-size:9.5px;color:var(--text2);line-height:1.7;white-space:pre-wrap;word-break:break-all">CREATE TABLE IF NOT EXISTS app_settings (
+  key text PRIMARY KEY,
+  value text,
+  updated_at timestamptz DEFAULT now()
+);</div>
+          </div>
+        </div>
         <!-- FIX AUDIT #4: status existing/expand pelanggan ditentukan dari field
              pelanggan.tipe_recurring yang diisi MANUAL per pelanggan (default
              dropdown = "Existing"). Kalau field ini kosong/null (pelanggan lama,
@@ -5158,8 +5269,19 @@ ALTER TABLE dismantle_orders
             Bayar Semua (<span id="apvb-bulk-count">0</span> fee · <span id="apvb-bulk-total-lbl">Rp 0</span>)
           </button>
         </div>
+        <!-- Muncul kalau antrian tercampur >1 periode & belum pilih periode di filter -->
+        <div id="apvb-periode-hint" style="display:none;margin-bottom:10px;padding:10px 13px;border-radius:var(--rs);background:var(--yg);border:1.5px solid rgba(217,119,6,.25);font-size:11px;color:var(--yellow);line-height:1.6">
+          <i class="ti ti-alert-triangle"></i> Antrian pada filter ini berasal dari <strong id="apvb-periode-hint-n">0</strong> periode berbeda. Pilih 1 <strong>Periode</strong> di atas untuk membayar (per periode), agar pembayaran tidak tercampur antar bulan.
+        </div>
         <!-- Filter Cascade Approval -->
         <div class="card" style="margin-bottom:10px;padding:10px 12px">
+          <div class="sec-t c1" style="margin-bottom:8px"><i class="ti ti-calendar"></i> Filter Periode</div>
+          <div style="margin-bottom:10px">
+            <select class="sel inp" id="apvb-fil-periode" onchange="apvbSetFilter()" style="font-size:12px">
+              <option value="">— Semua Periode —</option>
+            </select>
+            <div style="font-size:9.5px;color:var(--text3);margin-top:5px;line-height:1.5"><i class="ti ti-info-circle"></i> Pembayaran tidak boleh menggabungkan lebih dari 1 periode. Pilih 1 periode untuk mengaktifkan Bayar Semua bila antrian berasal dari beberapa periode.</div>
+          </div>
           <div class="sec-t c1" style="margin-bottom:8px"><i class="ti ti-filter"></i> Filter Lokasi</div>
           <div style="display:flex;flex-direction:column;gap:7px">
             <select class="sel inp" id="apvb-fil-area" onchange="apvbCascadeArea()" style="font-size:12px">
@@ -8744,6 +8866,7 @@ function _fasSetPagi(pages){
 window.fasExport=function(){
   var d=_fasFiltered();
   if(!d.length){if(typeof toast==='function')toast('Tidak ada data untuk diekspor','err');return;}
+  if(window.ProgUI) ProgUI.open({title:'Export FASUM / Gratis', step:'Mengambil data pelanggan…'});
   var sc=window.SOT?SOT.cache():{};
   var areaById={};(sc.areas||_areaData||[]).forEach(function(a){areaById[a.id]=a.kode||a.nama||'';});
   var odpById={};(sc.odps||_pelOdpList||[]).forEach(function(o){odpById[o.id]=o.kode||o.nama||'';});
@@ -8763,12 +8886,15 @@ window.fasExport=function(){
       p.teknisi_pasang||'', p.lat||'', p.lng||'', p.keterangan||''
     ].map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');
   });
+  if(window.ProgUI) ProgUI.step('Menyusun '+d.length+' baris CSV…', 60);
   var csv=hdr.map(function(h){return '"'+h+'"';}).join(',')+'\n'+rows.join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download='fasum_gratis_export_'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  if(window.ProgUI) ProgUI.step('Mengunduh file…', 100);
   if(typeof toast==='function')toast('Export selesai — '+d.length+' data (format re-importable)','ok');
+  if(window.ProgUI) ProgUI.success(d.length+' data berhasil di-export');
 };
 
 /* ── Import CSV ── */
@@ -8777,14 +8903,16 @@ window.fasImport=function(input){
   var sb=(typeof getSB==='function')?getSB():null;
   if(!sb){if(typeof toast==='function')toast('Database tidak terhubung','err');return;}
   if(typeof toast==='function')toast('Membaca file CSV…','info');
+  if(window.ProgUI) ProgUI.open({title:'Import FASUM / Gratis', step:'Membaca file CSV…'});
   var reader=new FileReader();
   reader.onload=function(e){
+    if(window.ProgUI) ProgUI.step('Membaca file CSV…', 8);
     var text=e.target.result;
     /* Strip BOM */
     if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
     /* BOM handled by charCodeAt above */
     var lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(function(l){return l.trim();});
-    if(lines.length<2){if(typeof toast==='function')toast('File CSV kosong atau format salah','err');return;}
+    if(lines.length<2){if(typeof toast==='function')toast('File CSV kosong atau format salah','err');if(window.ProgUI)ProgUI.error('File CSV kosong atau format salah');return;}
 
     /* Auto-detect separator */
     var _sep=',';
@@ -8914,8 +9042,9 @@ window.fasImport=function(input){
       ops.push(payload);
     });
 
-    if(!ops.length){if(typeof toast==='function')toast('Tidak ada baris valid (skip: '+skip+')','err');input.value='';return;}
-    if(!confirm('Import '+ops.length+' baris FASUM/Gratis?\n\nData dengan CID yang sudah ada akan diperbarui (upsert by CID).')){{input.value='';return;}}
+    if(!ops.length){if(typeof toast==='function')toast('Tidak ada baris valid (skip: '+skip+')','err');if(window.ProgUI)ProgUI.error('Tidak ada baris valid (skip: '+skip+')');input.value='';return;}
+    if(window.ProgUI) ProgUI.step('Menunggu konfirmasi ('+ops.length+' baris)…', 15);
+    if(!confirm('Import '+ops.length+' baris FASUM/Gratis?\n\nData dengan CID yang sudah ada akan diperbarui (upsert by CID).')){{if(window.ProgUI)ProgUI.close();input.value='';return;}}
 
 
     var _needOdp=(ops.some(function(o){return !o.odp_id;}) && lines[0].toLowerCase().indexOf('odp')>=0);
@@ -8930,17 +9059,30 @@ window.fasImport=function(input){
         })
       : Promise.resolve();
 
+    if(window.ProgUI) ProgUI.step('Memuat referensi ODP…', 20);
     _pOdp.then(function(){
       var batchSize=50;var done=0;var errs=0;
+      var totalOps=ops.length;
+      if(window.ProgUI) ProgUI.step('Mengimport 0 / '+totalOps+' data…', 0, totalOps);
       function _batch(i){
         if(i>=ops.length){
           if(typeof toast==='function')toast('Import selesai: '+done+' berhasil'+(errs?' · '+errs+' gagal':'')+(skip?' · '+skip+' dilewati':''),'ok');
+          if(window.ProgUI){
+            if(errs) ProgUI.log(errs+' baris gagal disimpan', true);
+            ProgUI.step('Selesai — '+done+' berhasil'+(errs?', '+errs+' gagal':''), 100);
+            ProgUI.success(done+' data berhasil di-import'+(skip?' · '+skip+' dilewati':''));
+          }
           _fasLoaded=false;fasLoad(true);if(window.SOT)SOT.invalidate('general');input.value='';return;
         }
         var chunk=ops.slice(i,i+batchSize);
         sb.from('pelanggan').upsert(chunk,{onConflict:'cid',ignoreDuplicates:false})
-          .then(function(r){if(r&&r.error){console.error('[fasImport]',r.error);errs+=chunk.length;}else done+=chunk.length;_batch(i+batchSize);})
-          .catch(function(e){console.error('[fasImport]',e);errs+=chunk.length;_batch(i+batchSize);});
+          .then(function(r){
+            if(r&&r.error){console.error('[fasImport]',r.error);errs+=chunk.length;if(window.ProgUI)ProgUI.log('Batch '+(Math.floor(i/batchSize)+1)+' gagal: '+(r.error.message||''),true);}
+            else{done+=chunk.length;if(window.ProgUI)ProgUI.log('Batch '+(Math.floor(i/batchSize)+1)+' tersimpan ('+chunk.length+' data)');}
+            if(window.ProgUI) ProgUI.step('Mengimport '+(done+errs)+' / '+totalOps+' data…', done+errs, totalOps);
+            _batch(i+batchSize);
+          })
+          .catch(function(e){console.error('[fasImport]',e);errs+=chunk.length;if(window.ProgUI){ProgUI.log('Batch '+(Math.floor(i/batchSize)+1)+' error: '+(e.message||''),true);ProgUI.step('Mengimport '+(done+errs)+' / '+totalOps+' data…', done+errs, totalOps);}_batch(i+batchSize);});
       }
       _batch(0);
       if(typeof toast==='function')toast('Mengimport '+ops.length+' data…','info');
@@ -10616,6 +10758,7 @@ function recCekTipeKosong(){
 function recExportTipeKosong(){
   var kosong = window._recTipeKosongList || [];
   if(!kosong.length){ if(typeof toast==='function') toast('Tidak ada data untuk di-export','err'); return; }
+  if(window.ProgUI) ProgUI.open({title:'Export Tipe Recurring Kosong', step:'Menyusun '+kosong.length+' baris CSV…'});
 
   var header = ['cid','nama','kecamatan','kelurahan','rw','tipe_recurring'];
   var lines = [header.join(',')];
@@ -10633,9 +10776,11 @@ function recExportTipeKosong(){
   var a = document.createElement('a');
   a.href = url;
   a.download = 'pelanggan_tipe_recurring_kosong_'+(new Date().toISOString().slice(0,10))+'.csv';
+  if(window.ProgUI) ProgUI.step('Mengunduh file…', 90);
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   if(typeof toast==='function') toast('CSV terunduh — isi kolom tipe_recurring lalu import lagi di menu Import / Export','ok');
+  if(window.ProgUI) ProgUI.success(kosong.length+' baris berhasil di-export');
 }
 
 /* ── Render ── */
@@ -12352,7 +12497,39 @@ function finUpdateDashboard(){
 var _otfData = []; var _otfFil = []; var _otfPage = 1; var _otfPerPg = 15;
 var _otfDetId = null; var _otfLoaded = false; var _otfLoading = false;
 var _approvedPelList = [];
+/* MODUL LOOKUP PELANGGAN (terindeks)
+   _pelById adalah Map id->pelanggan yang dibangun SEKALI setiap kali
+   _approvedPelList dimuat ulang, lewat _setApprovedPelList() di bawah.
+   Semua kode yang sebelumnya memanggil _approvedPelList.find(x=>x.id===pid)
+   di dalam loop/render (O(jumlah baris fee × jumlah pelanggan) per render)
+   sekarang harus memakai _pelById[pid] (O(1)). Jangan menambah pemanggilan
+   .find()/.some() baru ke _approvedPelList untuk lookup by id — selalu
+   pakai _pelById. */
+var _pelById = {};
+function _setApprovedPelList(list){
+  _approvedPelList = list || [];
+  _pelById = {};
+  _approvedPelList.forEach(function(p){ if(p && p.id!=null) _pelById[p.id]=p; });
+}
 var _otfPaketMap = {};
+
+/* NORMALISASI RW/RT
+   Data pelanggan.rw / pelanggan.rt tersimpan tidak konsisten — kadang
+   dengan angka nol di depan ("029"), kadang tanpa ("29") — padahal itu
+   RW/RT yang SAMA. Kalau dibiarkan mentah, setiap dropdown filter &
+   pengelompokan (Fee OTF, Validasi Finance, Approval Pembayaran, Fee
+   Recurring, Kuitansi Kolektif) menganggapnya dua wilayah berbeda dan
+   memunculkan entri duplikat. _normRW() adalah SATU titik normalisasi
+   yang dipakai di semua tempat itu, supaya "029" dan "29" selalu
+   digabung jadi satu nilai kanonik ("29"). Perbaikan permanen yang
+   sebenarnya ada di database (samakan format kolom rw/rt), ini adalah
+   lapisan aman di sisi aplikasi selama data sumber belum dirapikan. */
+function _normRW(v){
+  v = (v==null?'':String(v)).trim();
+  if(!v) return '';
+  return /^\d+$/.test(v) ? String(parseInt(v,10)) : v;
+}
+var _normRT = _normRW;
 
 function otfLoad(){
 
@@ -12370,13 +12547,20 @@ function otfLoad(){
 
 
 
-  var p1 = sb.from('pelanggan').select('id,cid,nama,area_id,jenis_pelanggan,kecamatan,kelurahan,rw,rt,paket')
+  /* FIX: query pelanggan sebelumnya tanpa .range()/pagination, sehingga
+     diam-diam terpotong oleh batas default PostgREST (±1000 baris) begitu
+     jumlah pelanggan melebihi itu. Akibatnya pelanggan di area/kecamatan
+     tertentu bisa hilang total dari _approvedPelList, membuat filter
+     cascade (Validasi Finance, Fee OTF, Approval Pembayaran) tampak tidak
+     bisa memilih area tsb. Pakai _sbFetchAllRows yang sama seperti di
+     recLoad() supaya SEMUA baris selalu termuat berapa pun banyaknya. */
+  var p1 = _sbFetchAllRows(sb,'pelanggan','id,cid,nama,area_id,jenis_pelanggan,kecamatan,kelurahan,rw,rt,paket')
     .then(function(r){
       if(!r.error && r.data){
         var FREE_TYPES=JENIS_GRATIS;
-        _approvedPelList = r.data.filter(function(p){
+        _setApprovedPelList(r.data.filter(function(p){
           return p && FREE_TYPES.indexOf(p.jenis_pelanggan)===-1;
-        });
+        }));
       }
     });
 
@@ -12503,9 +12687,16 @@ function otfUpdateStats(){
 function otfFillAreaFilter(){
   var sel = document.getElementById('otf-fil-area'); if(!sel) return;
   var cur = sel.value;
+  /* FIX CASE 2: sebelumnya opsi Area diambil dari field o.area yang
+     tersimpan di tiap baris fee_otf — field ini snapshot bebas-teks yang
+     hanya terisi konsisten pada sebagian data lama, sehingga area lain
+     (mis. Cicurug) tidak pernah muncul di dropdown walau pelanggannya ada.
+     Sekarang diambil dari _areaData (master area, sumber yang sama
+     dipakai Validasi Finance & Approval Pembayaran) — semua area selalu
+     tampil, terlepas dari field o.area terisi atau tidak. */
   sel.innerHTML = '<option value="">Semua Area</option>';
-  var areas = []; _otfData.forEach(function(o){ if(o.area&&areas.indexOf(o.area)<0) areas.push(o.area); }); areas.sort();
-  areas.forEach(function(a){ var opt=document.createElement('option'); opt.value=a; opt.textContent=a; if(a===cur) opt.selected=true; sel.appendChild(opt); });
+  (_areaData||[]).slice().sort(function(a,b){ return (a.nama||'').localeCompare(b.nama||'','id'); })
+    .forEach(function(a){ var opt=document.createElement('option'); opt.value=a.id; opt.textContent=a.nama||(a.kode||''); if(a.id===cur) opt.selected=true; sel.appendChild(opt); });
 
 
   var selKec = document.getElementById('otf-fil-kecamatan'); if(!selKec) return;
@@ -12534,11 +12725,11 @@ function otfFillRWFilter(){
   selRW.innerHTML = '<option value="">Semua RW</option>';
   var rws = [];
   _otfData.forEach(function(o){
-    var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;}); if(!p) return;
+    var p=_pelById[o.pel_id]; if(!p) return;
     if(fKec && (p.kecamatan||'')!==fKec) return;
     if(fKel && (p.kelurahan||'')!==fKel) return;
-    var v=p.rw||''; if(v&&rws.indexOf(v)<0) rws.push(v);
-  }); rws.sort();
+    var v=_normRW(p.rw||''); if(v&&rws.indexOf(v)<0) rws.push(v);
+  }); rws.sort(function(a,b){ return a.localeCompare(b,'id',{numeric:true}); });
   rws.forEach(function(v){ var opt=document.createElement('option'); opt.value=v; opt.textContent='RW '+v; if(v===curRW) opt.selected=true; selRW.appendChild(opt); });
   otfFillRTFilter();
 }
@@ -12552,12 +12743,12 @@ function otfFillRTFilter(){
   selRT.innerHTML = '<option value="">Semua RT</option>';
   var rts = [];
   _otfData.forEach(function(o){
-    var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;}); if(!p) return;
+    var p=_pelById[o.pel_id]; if(!p) return;
     if(fKec && (p.kecamatan||'')!==fKec) return;
     if(fKel && (p.kelurahan||'')!==fKel) return;
-    if(fRW  && (p.rw||'')!==fRW) return;
-    var v=p.rt||''; if(v&&rts.indexOf(v)<0) rts.push(v);
-  }); rts.sort();
+    if(fRW  && _normRW(p.rw||'')!==fRW) return;
+    var v=_normRW(p.rt||''); if(v&&rts.indexOf(v)<0) rts.push(v);
+  }); rts.sort(function(a,b){ return a.localeCompare(b,'id',{numeric:true}); });
   rts.forEach(function(v){ var opt=document.createElement('option'); opt.value=v; opt.textContent='RT '+v; if(v===curRT) opt.selected=true; selRT.appendChild(opt); });
 }
 
@@ -12577,9 +12768,15 @@ function otfRender(){
   _otfFil = _otfData.filter(function(o){
     var cid=_otfPelCID(o.pel_id);
     var nama=_otfPelName(o.pel_id);
-    var matchQ = !q || (cid+'').toLowerCase().includes(q) || (nama+'').toLowerCase().includes(q) || (o.area||'').toLowerCase().includes(q);
+    var areaNama=_otfPelAreaName(o.pel_id);
+    var matchQ = !q || (cid+'').toLowerCase().includes(q) || (nama+'').toLowerCase().includes(q) || (areaNama||o.area||'').toLowerCase().includes(q);
     var matchSt = !fSt || o.status===fSt;
-    var matchAr = !fAr || o.area===fAr;
+    /* FIX CASE 2: fAr sekarang berisi area_id (opsi dropdown dibangun dari
+       _areaData), jadi dicocokkan ke area_id pelanggan yang sebenarnya —
+       bukan ke field o.area yang cuma snapshot teks bebas & tidak selalu
+       terisi. */
+    var pForAr=_pelById[o.pel_id];
+    var matchAr = !fAr || (pForAr && pForAr.area_id===fAr);
     var matchKec = !fKec || _otfPelKec(o.pel_id)===fKec;
     var matchKel = !fKel || _otfPelKel(o.pel_id)===fKel;
     var matchRW  = !fRW  || _otfPelRW(o.pel_id)===fRW;
@@ -12597,15 +12794,15 @@ function otfRender(){
   else pagi.style.display='none';
 }
 
-function _otfPelName(pid){ var p=_approvedPelList.find(function(x){return x&&x.id===pid;}); return p?(p.nama||'—'):'—'; }
-function _otfPelCID(pid){ var p=_approvedPelList.find(function(x){return x&&x.id===pid;}); return p?(p.cid||'—'):'—'; }
+function _otfPelName(pid){ var p=_pelById[pid]; return p?(p.nama||'—'):'—'; }
+function _otfPelCID(pid){ var p=_pelById[pid]; return p?(p.cid||'—'):'—'; }
 
-function _otfPelKec(pid){ var p=_approvedPelList.find(function(x){return x&&x.id===pid;}); return p?(p.kecamatan||''):''; }
-function _otfPelKel(pid){ var p=_approvedPelList.find(function(x){return x&&x.id===pid;}); return p?(p.kelurahan||''):''; }
-function _otfPelRW(pid){ var p=_approvedPelList.find(function(x){return x&&x.id===pid;}); return p?(p.rw||''):''; }
-function _otfPelRT(pid){ var p=_approvedPelList.find(function(x){return x&&x.id===pid;}); return p?(p.rt||''):''; }
+function _otfPelKec(pid){ var p=_pelById[pid]; return p?(p.kecamatan||''):''; }
+function _otfPelKel(pid){ var p=_pelById[pid]; return p?(p.kelurahan||''):''; }
+function _otfPelRW(pid){ var p=_pelById[pid]; return p?_normRW(p.rw||''):''; }
+function _otfPelRT(pid){ var p=_pelById[pid]; return p?_normRW(p.rt||''):''; }
 function _otfPelAreaName(pid){
-  var p=_approvedPelList.find(function(x){return x&&x.id===pid;});
+  var p=_pelById[pid];
   if(!p) return '';
   var a=_areaData.find(function(x){return x.id===p.area_id;});
   return a?(a.nama||a.kode||''):'';
@@ -12698,10 +12895,10 @@ function otfOpenForm(data){
     if(isEdit&&data.pel_id===p.id) opt.selected=true;
     sel.appendChild(opt);
   });
-  if(isEdit) {  var found=_approvedPelList.find(function(x){return x&&x.id===data.pel_id;}); if(found) document.getElementById('otff-area').value=found.area||data.area||''; }
+  if(isEdit) {  var found=_pelById[data.pel_id]; if(found) document.getElementById('otff-area').value=found.area||data.area||''; }
   document.getElementById('otff-pel').onchange=function(){
     var pid=this.value;
-    var p=_approvedPelList.find(function(x){return x&&x.id===pid;});
+    var p=_pelById[pid];
     document.getElementById('otff-area').value=p&&p.area_id?p.area_id:'';
 
     if(!isEdit) document.getElementById('otff-nominal').value=35000;  };
@@ -12798,8 +12995,9 @@ function otfImpCommit(){
   var sb=getSB(); if(!sb){ toast('Database tidak terhubung','err'); return; }
   var FREE_TYPES=JENIS_GRATIS;
   toast('Mencocokkan data pelanggan…','info');
+  if(window.ProgUI) ProgUI.open({title:'Import Fee OTF', step:'Mencocokkan '+rows.length+' baris dengan data pelanggan…'});
   sb.from('pelanggan').select('id,cid,area_coverage,jenis_pelanggan').then(function(r){
-    if(r.error){ toast('Gagal baca pelanggan: '+(r.error.message||''),'err'); return; }
+    if(r.error){ toast('Gagal baca pelanggan: '+(r.error.message||''),'err'); if(window.ProgUI)ProgUI.error('Gagal baca pelanggan: '+(r.error.message||'')); return; }
     var map={}; (r.data||[]).forEach(function(p){ if(p.cid) map[(''+p.cid).toLowerCase()]=p; });
 
     var _sudahOtfSet={}; _otfData.forEach(function(o){ if(o.pel_id) _sudahOtfSet[o.pel_id]=true; });
@@ -12815,15 +13013,21 @@ function otfImpCommit(){
         pel_id:p.id, area:p.area_coverage||null, nominal:row.nominal, status:row.status
       }]));
     });
-    if(!ops.length){ toast('Tidak ada CID baru yang valid untuk di-import (kemungkinan semua sudah punya Fee OTF / tidak cocok / pelanggan gratis)','err'); return; }
+    if(!ops.length){ toast('Tidak ada CID baru yang valid untuk di-import (kemungkinan semua sudah punya Fee OTF / tidak cocok / pelanggan gratis)','err'); if(window.ProgUI)ProgUI.error('Tidak ada CID baru yang valid untuk di-import'); return; }
+    if(window.ProgUI) ProgUI.step('Menyimpan '+ops.length+' Fee OTF ke database…', 55);
     Promise.all(ops.map(function(p){return p.then(function(x){return x;}).catch(function(e){return {error:e};});})).then(function(res){
       var err=res.filter(function(x){return x&&x.error;}).length;
       if(err) toast('Sebagian gagal ('+err+')','err');
       else toast(matched+' Fee OTF di-import'+(unmatched?(' · '+unmatched+' CID tak cocok'):'')+(skippedFree?(' · '+skippedFree+' pelanggan gratis dilewati'):'')+(skippedDup?(' · '+skippedDup+' dilewati karena sudah punya Fee OTF'):''),'ok');
+      if(window.ProgUI){
+        ProgUI.step('Selesai — '+matched+' berhasil'+(err?', '+err+' gagal':''), 100);
+        if(err && !matched) ProgUI.error(err+' data gagal disimpan');
+        else ProgUI.success(matched+' Fee OTF berhasil di-import'+(unmatched?' · '+unmatched+' tak cocok':'')+(skippedFree?' · '+skippedFree+' gratis dilewati':'')+(skippedDup?' · '+skippedDup+' duplikat dilewati':''));
+      }
       document.getElementById('otfimp-csv').value='';
       _otfLoaded=false;_otfLoading=false;otfLoad();
     });
-  }).catch(function(){ toast('Error koneksi','err'); });
+  }).catch(function(){ toast('Error koneksi','err'); if(window.ProgUI)ProgUI.error('Error koneksi ke database'); });
 }
 
 function _fdbCheckRecurringReminder(){
@@ -12848,7 +13052,7 @@ var FEE_RECURRING_NOMINAL = 10000;
 
 function _recGeo(r){
   var p=r.pel_id&&_recPelMap[r.pel_id];
-  if(p) return {kec:p.kecamatan||'',kel:p.kelurahan||'',rw:p.rw||'',rt:p.rt||''};
+  if(p) return {kec:p.kecamatan||'',kel:p.kelurahan||'',rw:_normRW(p.rw||''),rt:_normRW(p.rt||'')};
   return {kec:'',kel:'',rw:'',rt:''};
 }
 
@@ -12900,6 +13104,7 @@ function recLoad(){
     (rPel.data||[]).forEach(function(p){ _recPelMap[p.id]=p; });
     _recLoaded=true;
     recUpdateStats(); recRender(); finUpdateDashboard();
+    recAutoDismantleLoadSettings();
 
     _recAutoSinkron(sb, rPel.data||[]);
   }).catch(function(){if(list) list.innerHTML='<div class="olt-empty"><i class="ti ti-alert-triangle"></i><p>Error</p></div>';});
@@ -13052,7 +13257,7 @@ function recOpenGrpDet(idsStr){
   var g0=items[0];
   var p0=g0.pel_id&&_recPelMap[g0.pel_id];
   var area=p0?p0.area_coverage:'';
-  var rw=p0?p0.rw:'';
+  var rw=p0?_normRW(p0.rw||''):'';
   var periode=g0.periode;
   document.getElementById('rec-det-title').textContent='Recurring '+periode+(rw?' · RW '+rw:'');
   var total=items.reduce(function(a,r){return a+(r.nominal||0);},0);
@@ -13229,33 +13434,118 @@ function _recAutoSinkron(sb, pelData){
   });
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   PENGATURAN AUTO-DISMANTLE
+   Default AMAN: enabled=false (mati) sampai admin sengaja menyalakan.
+   Ini penting waktu baru import pelanggan lama (mis. aktif sejak
+   Januari) yang periode recurring-nya belum sempat divalidasi —
+   supaya mereka TIDAK langsung kena auto-dismantle massal.
+   cutoff (format 'YYYY-MM'): periode SEBELUM bulan ini diabaikan total
+   dari hitungan "4 periode berturut-turut menunggak", jadi backlog
+   lama tidak pernah dianggap tunggakan.
+   ═══════════════════════════════════════════════════════════════════ */
+var _autoDismantleSettings = {loaded:false, enabled:false, cutoff:''};
+
+function _adsTableMissing(msg){
+  msg=(msg||'').toLowerCase();
+  return msg.indexOf('could not find the table')>=0 || msg.indexOf('does not exist')>=0 || msg.indexOf('schema cache')>=0;
+}
+
+function _adsLoad(cb){
+  var sb=getSB(); if(!sb){ _autoDismantleSettings.loaded=true; cb&&cb(); return; }
+  sb.from('app_settings').select('key,value').in('key',['auto_dismantle_enabled','auto_dismantle_cutoff']).then(function(r){
+    var hint=document.getElementById('rec-auto-dismantle-sql-hint');
+    if(r.error){
+      if(hint) hint.style.display = _adsTableMissing(r.error.message) ? 'block' : 'none';
+    } else {
+      if(hint) hint.style.display='none';
+      (r.data||[]).forEach(function(row){
+        if(row.key==='auto_dismantle_enabled') _autoDismantleSettings.enabled = (row.value==='1'||row.value==='true');
+        if(row.key==='auto_dismantle_cutoff') _autoDismantleSettings.cutoff = row.value||'';
+      });
+    }
+    _autoDismantleSettings.loaded = true;
+    cb && cb();
+  }).catch(function(){ _autoDismantleSettings.loaded=true; cb&&cb(); });
+}
+
+function recAutoDismantleLoadSettings(){
+  _adsLoad(function(){
+    var chk=document.getElementById('rec-auto-dismantle-on');
+    var cut=document.getElementById('rec-auto-dismantle-cutoff');
+    if(chk) chk.checked = !!_autoDismantleSettings.enabled;
+    if(cut) cut.value = _autoDismantleSettings.cutoff||'';
+  });
+}
+
+function recAutoDismantleSetToday(){
+  var now=new Date();
+  var v = now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2);
+  var cut=document.getElementById('rec-auto-dismantle-cutoff'); if(cut) cut.value=v;
+  recAutoDismantleSaveSettings();
+}
+
+function recAutoDismantleSaveSettings(){
+  var chk=document.getElementById('rec-auto-dismantle-on');
+  var cut=document.getElementById('rec-auto-dismantle-cutoff');
+  var enabled = chk ? chk.checked : false;
+  var cutoff = cut ? (cut.value||'') : '';
+  _autoDismantleSettings.enabled = enabled;
+  _autoDismantleSettings.cutoff = cutoff;
+  var sb=getSB(); if(!sb) return;
+  var rows=[
+    {key:'auto_dismantle_enabled', value: enabled?'1':'0'},
+    {key:'auto_dismantle_cutoff', value: cutoff||''}
+  ];
+  sb.from('app_settings').upsert(rows,{onConflict:'key'}).then(function(r){
+    var hint=document.getElementById('rec-auto-dismantle-sql-hint');
+    if(r&&r.error){
+      if(_adsTableMissing(r.error.message)){
+        if(hint) hint.style.display='block';
+        if(typeof toast==='function') toast('Tabel app_settings belum ada — lihat petunjuk SQL di bawah tombol ini','err');
+      } else if(typeof toast==='function'){
+        toast('Gagal simpan pengaturan: '+(r.error.message||''),'err');
+      }
+      return;
+    }
+    if(hint) hint.style.display='none';
+    var sv=document.getElementById('rec-auto-dismantle-saved');
+    if(sv){ sv.style.display='block'; setTimeout(function(){ sv.style.display='none'; },1500); }
+  }).catch(function(){});
+}
+
 function _recCheckAutoDismantle(sb){
   if(!sb) sb=getSB(); if(!sb) return;
+
+  if(!_autoDismantleSettings.loaded){ _adsLoad(function(){ _recCheckAutoDismantle(sb); }); return; }
+  if(!_autoDismantleSettings.enabled) return; /* master switch mati — default aman */
+
   var FREE_TYPES=JENIS_GRATIS;
+  var cutoff=_autoDismantleSettings.cutoff||'';
 
   Promise.all([
     _sbFetchAllRows(sb,'fee_recurring','pel_id,periode,status', function(q){ return q.order('periode',{ascending:false}); }),
     _sbFetchAllRows(sb,'pelanggan','id,cid,nama,area_id,area_coverage,kecamatan,jenis_pelanggan,sn_ont,odp_id,nomor_port,ont_item_id,kabel_item_id', function(q){ return q.eq('status','aktif'); }),
     /* FIX AUDIT #5: dulu fungsi ini tidak cek apakah pelanggan SUDAH pernah
-       di-dismantle otomatis sebelumnya. Kalau update status pelanggan jadi
-       'cabut' gagal tersimpan (RLS, koneksi, dsb) — pelanggan tetap kebaca
-       'aktif' di query di atas, sehingga tiap kali sync jalan lagi (tiap
-       buka halaman), pelanggan yang sama dibuatkan dismantle_orders BARU
-       lagi dan lagi. Ini yang bikin jumlah dismantle_orders (mis. 1445
-       "bulan ini") jauh lebih besar dari jumlah pelanggan yang sungguh
-       nunggak. Query ini mengambil pel_id yang SUDAH punya dismantle_orders
-       'selesai' supaya tidak dibuat dobel. */
-    _sbFetchAllRows(sb,'dismantle_orders','pel_id', function(q){ return q.eq('status','selesai'); })
+       diajukan dismantle otomatis sebelumnya. Sekarang auto-dismantle TIDAK
+       langsung eksekusi — dibuat sebagai pengajuan berstatus 'menunggu_approval'
+       yang wajib di-approve/reject manual dulu (lihat _dmtAutoDoApprove /
+       _dmtAutoDoReject). Supaya tidak dibuatkan pengajuan dobel tiap kali sync
+       jalan, kita ambil SEMUA pel_id yang sudah pernah punya dismantle_orders
+       hasil auto-generate (apapun statusnya: menunggu_approval / selesai /
+       ditolak) — bukan cuma yang 'selesai' seperti sebelumnya. */
+    _sbFetchAllRows(sb,'dismantle_orders','pel_id,role_aktor', function(q){ return q; })
   ]).then(function(res){
     var rRec=res[0], rPel=res[1], rDmt=res[2];
     if(rRec.error||rPel.error) return;
 
     var alreadyDismantled={};
-    (rDmt.data||[]).forEach(function(d){ if(d.pel_id) alreadyDismantled[d.pel_id]=1; });
+    (rDmt.data||[]).forEach(function(d){ if(d.pel_id && d.role_aktor==='auto') alreadyDismantled[d.pel_id]=1; });
 
     var byPel={};
     (rRec.data||[]).forEach(function(r){
       if(!r.pel_id) return;
+      if(cutoff && (r.periode||'') < cutoff) return; /* abaikan backlog sebelum cutoff */
       if(!byPel[r.pel_id]) byPel[r.pel_id]=[];
       byPel[r.pel_id].push(r);
     });
@@ -13265,7 +13555,7 @@ function _recCheckAutoDismantle(sb){
     (rPel.data||[]).forEach(function(p){ aktivMap[p.id]=p; });
 
     Object.keys(byPel).forEach(function(pelId){
-      if(alreadyDismantled[pelId]) return; /* FIX AUDIT #5: sudah pernah, jangan dobel */
+      if(alreadyDismantled[pelId]) return; /* FIX AUDIT #5: sudah pernah diajukan, jangan dobel */
       var p=aktivMap[pelId]; if(!p) return;
       if(FREE_TYPES.indexOf(p.jenis_pelanggan)>=0) return;
       var rows=byPel[pelId].sort(function(a,b){return b.periode>a.periode?1:-1;});
@@ -13282,45 +13572,33 @@ function _recCheckAutoDismantle(sb){
     if(!akanDismantle.length) return;
 
     var tgl=new Date().toISOString().slice(0,10);
-    var gagalUpdateStatus=[];
+    /* Auto-dismantle sekarang HANYA membuat pengajuan berstatus
+       'menunggu_approval'. Tidak ada perubahan pada pelanggan/odp_ports/
+       fee_recurring di titik ini — semua efek (port dilepas, status cabut,
+       recurring dihentikan) baru dijalankan saat pengajuan di-APPROVE oleh
+       admin di menu Dismantle. Kalau di-REJECT, pelanggan otomatis tetap/
+       kembali aktif tanpa ada yang perlu di-undo karena belum disentuh. */
     var ops=akanDismantle.map(function(pel){
       var payload={
         pel_id:pel.id, cid_pelanggan:pel.cid||null,
         nama_pelanggan:pel.nama||null, area_id:pel.area_id||null,
         area_coverage:pel.area_coverage||null, kecamatan:pel.kecamatan||null,
-        tgl_cabut:tgl, tgl_selesai:tgl,
+        tgl_cabut:tgl,
         alasan:'menunggak',
-        catatan:'Auto-dismantle: 4 periode berturut-turut tidak divalidasi',
-        status:'selesai',
+        catatan:'Auto-dismantle: 4 periode berturut-turut tidak divalidasi — menunggu approval',
+        status:'menunggu_approval',
         ont_item_id:pel.ont_item_id||null,
         kabel_item_id:pel.kabel_item_id||null,
         dilakukan_oleh:'SYSTEM', role_aktor:'auto'
       };
-      return sb.from('dismantle_orders').insert([payload])
-        .then(function(rd){
-          if(rd&&rd.error) return;
-          var sbInner=getSB(); if(!sbInner) return;
-          /* FIX AUDIT #5: dulu .catch(function(){}) — kalau update ini gagal,
-             tidak ada yang tahu, dan pelanggan tetap 'aktif' selamanya sehingga
-             ikut dievaluasi ulang tiap sync berikutnya (loop tak berujung).
-             Sekarang kegagalannya dicatat supaya kelihatan di banner. */
-          return sbInner.from('pelanggan').update({status:'cabut',sn_ont:null,nomor_port:null,odp_id:null}).eq('id',pel.id)
-            .then(function(ru){ if(ru&&ru.error) gagalUpdateStatus.push(pel.nama||pel.cid||pel.id); });
-        }).then(function(){
-          var sbInner=getSB(); if(!sbInner) return;
-          if(pel.cid) sbInner.from('odp_ports').update({status:'kosong',cid_pelanggan:null,paket:null,tgl_pasang:null}).eq('cid_pelanggan',pel.cid).catch(function(){});
-          sbInner.from('fee_recurring').update({status:'stopped'}).eq('pel_id',pel.id).neq('status','paid').catch(function(){});
-        }).catch(function(){ gagalUpdateStatus.push(pel.nama||pel.cid||pel.id); });
+      return sb.from('dismantle_orders').insert([payload]).catch(function(){});
     });
 
     Promise.all(ops).then(function(){
       if(akanDismantle.length){
-        toast('⚠️ '+akanDismantle.length+' pelanggan menunggak 4 periode → otomatis di-dismantle','err');
-        if(gagalUpdateStatus.length){
-          _recSyncShowError((gagalUpdateStatus.length)+' pelanggan gagal diubah ke status "cabut" setelah auto-dismantle (kemungkinan RLS/izin database) — dismantle_orders sudah tercatat tapi pelanggan masih tampak "aktif": '+gagalUpdateStatus.slice(0,10).join(', ')+(gagalUpdateStatus.length>10?', …':'')+'. Cek permission UPDATE tabel pelanggan di Supabase.');
-        }
-        _pelLoaded=false; _dmtLoaded=false;
-        setTimeout(function(){ pelLoad(); if(typeof dmtLoad==='function') dmtLoad(); },300);
+        toast('⚠️ '+akanDismantle.length+' pelanggan menunggak 4 periode → menunggu approval Dismantle','err');
+        _dmtLoaded=false;
+        setTimeout(function(){ if(typeof dmtLoad==='function') dmtLoad(); },300);
       }
     });
   }).catch(function(){});
@@ -13489,7 +13767,7 @@ function invDelete(id){
   sb.from('invoice_isp').delete().eq('id',id).then(function(r){if(r.error){toast('Gagal hapus','err');return;}toast('Invoice dihapus','ok');invCloseDet();_invLoaded=false;invLoad();}).catch(function(){toast('Error','err');});
 }
 function _isSiapBayar(s){ return s==='siap_bayar'||s==='waiting_payment'; }
-function _isApproved(pid){ return _approvedPelList.some(function(p){return p&&p.id===pid;}); }
+function _isApproved(pid){ return !!_pelById[pid]; }
 function _finEnsure(needOtf, needRec, cb){
 
   if(needOtf && !_otfLoaded && !_otfLoading) otfLoad();
@@ -13621,12 +13899,12 @@ function valRender(){
   var fRw=(document.getElementById('val-fil-rw')||{}).value||'';
   var fRt=(document.getElementById('val-fil-rt')||{}).value||'';
   var pend=allPend.filter(function(o){
-    var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;});
+    var p=_pelById[o.pel_id];
     if(fArea){ if(!p||p.area_id!==fArea) return false; }
     if(fKec){ if(!p||(p.kecamatan||'')!==fKec) return false; }
     if(fKel){ if(!p||(p.kelurahan||'')!==fKel) return false; }
-    if(fRw){ if(!p||(p.rw||'')!==fRw) return false; }
-    if(fRt){ if(!p||(p.rt||'')!==fRt) return false; }
+    if(fRw){ if(!p||_normRW(p.rw||'')!==fRw) return false; }
+    if(fRt){ if(!p||_normRW(p.rt||'')!==fRt) return false; }
     if(_valSearchQ){
       var cid=(_otfPelCID(o.pel_id)||'').toLowerCase();
       var nama=(_otfPelName(o.pel_id)||'').toLowerCase();
@@ -13643,7 +13921,7 @@ function valRender(){
   var start=(_valPage-1)*_valPageSize;
   var pageItems=pend.slice(start,start+_valPageSize);
   var cardsHtml=pageItems.map(function(o){
-    var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;});
+    var p=_pelById[o.pel_id];
     var nomOk=(o.nominal||0)>0; var ok=nomOk;
     var areaN=_otfPelAreaName(o.pel_id); var kec=p&&p.kecamatan||''; var kel=p&&p.kelurahan||''; var rw=p&&p.rw||''; var rt=p&&p.rt||'';
     var loks=[]; if(areaN) loks.push(areaN); if(kec) loks.push('Kec. '+kec); if(kel) loks.push(kel); if(rw) loks.push('RW '+rw); if(rt) loks.push('RT '+rt);
@@ -13857,8 +14135,8 @@ function valCascadeKel(){
   var selRw=document.getElementById('val-fil-rw');
   selRw.innerHTML='<option value="">— Semua RW —</option>'; selRw.disabled=!kel;
   if(kel){
-    var rws=[]; _approvedPelList.forEach(function(p){if(p&&(!aId||p.area_id===aId)&&(!kec||p.kecamatan===kec)&&p.kelurahan===kel&&p.rw&&rws.indexOf(p.rw)<0)rws.push(p.rw);});
-    rws.sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent='RW '+r;selRw.appendChild(o);});
+    var rws=[]; _approvedPelList.forEach(function(p){if(p&&(!aId||p.area_id===aId)&&(!kec||p.kecamatan===kec)&&p.kelurahan===kel&&p.rw){var v=_normRW(p.rw);if(v&&rws.indexOf(v)<0)rws.push(v);}});
+    rws.sort(function(a,b){return a.localeCompare(b,'id',{numeric:true});}).forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent='RW '+r;selRw.appendChild(o);});
   }
   var selRt=document.getElementById('val-fil-rt'); if(selRt){selRt.innerHTML='<option value="">— Semua RT —</option>';selRt.disabled=true;}
   _valPage=1; valRender();
@@ -13871,8 +14149,8 @@ function valCascadeRw(){
   var selRt=document.getElementById('val-fil-rt');
   selRt.innerHTML='<option value="">— Semua RT —</option>'; selRt.disabled=!rw;
   if(rw){
-    var rts=[]; _approvedPelList.forEach(function(p){if(p&&(!aId||p.area_id===aId)&&(!kec||p.kecamatan===kec)&&(!kel||p.kelurahan===kel)&&p.rw===rw&&p.rt&&rts.indexOf(p.rt)<0)rts.push(p.rt);});
-    rts.sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent='RT '+r;selRt.appendChild(o);});
+    var rts=[]; _approvedPelList.forEach(function(p){if(p&&(!aId||p.area_id===aId)&&(!kec||p.kecamatan===kec)&&(!kel||p.kelurahan===kel)&&_normRW(p.rw||'')===rw&&p.rt){var v=_normRW(p.rt);if(v&&rts.indexOf(v)<0)rts.push(v);}});
+    rts.sort(function(a,b){return a.localeCompare(b,'id',{numeric:true});}).forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent='RT '+r;selRt.appendChild(o);});
   }
   _valPage=1; valRender();
 }
@@ -13913,6 +14191,22 @@ function apvbFillFilter(){
   var sel=document.getElementById('apvb-fil-area'); if(!sel) return;
   sel.innerHTML='<option value="">— Semua Area —</option>';
   _areaData.forEach(function(a){ var o=document.createElement('option'); o.value=a.id; o.textContent=a.nama||(a.kode||''); sel.appendChild(o); });
+  apvbFillPeriodeFilter();
+}
+/* Kunci periode: recurring pakai kolom periode (YYYY-MM); OTF (one-time) tidak
+   punya kolom periode, jadi periodenya diturunkan dari bulan tgl/created_at. */
+function _apvbPeriodeOf(o){
+  if(_valJenis==='rec') return o.periode||'';
+  return ((o.tgl||o.created_at||'')+'').slice(0,7);
+}
+function apvbFillPeriodeFilter(){
+  var sel=document.getElementById('apvb-fil-periode'); if(!sel) return;
+  var cur=sel.value;
+  var pers=[];
+  _valData().forEach(function(o){ if(!_isSiapBayar(o.status)) return; var v=_apvbPeriodeOf(o); if(v && pers.indexOf(v)<0) pers.push(v); });
+  pers.sort().reverse();
+  sel.innerHTML='<option value="">— Semua Periode —</option>'+pers.map(function(v){return '<option value="'+v+'">'+v+'</option>';}).join('');
+  sel.value=(pers.indexOf(cur)>=0)?cur:'';
 }
 function apvbCascadeArea(){
   var aId=(document.getElementById('apvb-fil-area')||{}).value||'';
@@ -13944,8 +14238,8 @@ function apvbCascadeKel(){
   var selRw=document.getElementById('apvb-fil-rw');
   selRw.innerHTML='<option value="">— Semua RW —</option>'; selRw.disabled=!kel;
   if(kel){
-    var rws=[]; _approvedPelList.forEach(function(p){if(p&&(!aId||p.area_id===aId)&&(!kec||p.kecamatan===kec)&&p.kelurahan===kel&&p.rw&&rws.indexOf(p.rw)<0)rws.push(p.rw);});
-    rws.sort().forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent='RW '+r;selRw.appendChild(o);});
+    var rws=[]; _approvedPelList.forEach(function(p){if(p&&(!aId||p.area_id===aId)&&(!kec||p.kecamatan===kec)&&p.kelurahan===kel&&p.rw){var v=_normRW(p.rw);if(v&&rws.indexOf(v)<0)rws.push(v);}});
+    rws.sort(function(a,b){return a.localeCompare(b,'id',{numeric:true});}).forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent='RW '+r;selRw.appendChild(o);});
     var selRt=document.getElementById('apvb-fil-rt'); selRt.innerHTML='<option value="">— Semua RT —</option>'; selRt.disabled=true;
   }
   apvbSetFilter();
@@ -13954,26 +14248,33 @@ function apvbResetFilter(){
   ['apvb-fil-area','apvb-fil-kec','apvb-fil-kel','apvb-fil-rw','apvb-fil-rt'].forEach(function(id){
     var s=document.getElementById(id); if(!s) return; s.value=''; s.disabled=(id!=='apvb-fil-area');
   });
+  var selPer=document.getElementById('apvb-fil-periode'); if(selPer) selPer.value='';
   _apvbPage=1; apvbRender();
 }
 function apvbRender(){
   var list=document.getElementById('apvb-list'); if(!list) return;
+  var fPeriode=(document.getElementById('apvb-fil-periode')||{}).value||'';
   var fArea=(document.getElementById('apvb-fil-area')||{}).value||'';
   var fKec=(document.getElementById('apvb-fil-kec')||{}).value||'';
   var fKel=(document.getElementById('apvb-fil-kel')||{}).value||'';
   var fRw=(document.getElementById('apvb-fil-rw')||{}).value||'';
   var fRt=(document.getElementById('apvb-fil-rt')||{}).value||'';
-  var antri=_valData().filter(function(o){
+  var antriLok=_valData().filter(function(o){
     if(!_isSiapBayar(o.status)) return false;
 
     if(fArea||fKec||fKel||fRw||fRt){
-      var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;});
+      var p=_pelById[o.pel_id];
       if(fArea && (!p||p.area_id!==fArea)) return false;
       if(fKec && (!p||(p.kecamatan||'')!==fKec)) return false;
       if(fKel && (!p||(p.kelurahan||'')!==fKel)) return false;
-      if(fRw && (!p||(p.rw||'')!==fRw)) return false;
-      if(fRt && (!p||(p.rt||'')!==fRt)) return false;
+      if(fRw && (!p||_normRW(p.rw||'')!==fRw)) return false;
+      if(fRt && (!p||_normRW(p.rt||'')!==fRt)) return false;
     }
+    return true;
+  });
+  // antrian yang benar-benar ditampilkan/dibayar — per periode, tidak digabung antar bulan
+  var antri=antriLok.filter(function(o){
+    if(fPeriode && _apvbPeriodeOf(o)!==fPeriode) return false;
     return true;
   });
   var e=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
@@ -13981,14 +14282,25 @@ function apvbRender(){
   e('apvbst-nominal','Rp '+_fmt(_valData().filter(function(o){return _isSiapBayar(o.status);}).reduce(function(a,o){return a+(o.nominal||0);},0)));
   e('apvbst-paid',_valData().filter(function(o){return o.status==='paid';}).length);
 
+  // Berapa periode berbeda yang ada di cakupan filter lokasi saat ini (sebelum filter periode)
+  var periodeSet={}; antriLok.forEach(function(o){ var v=_apvbPeriodeOf(o); if(v) periodeSet[v]=1; });
+  var periodeCount=Object.keys(periodeSet).length;
 
   var bWrap=document.getElementById('apvb-bulk-btn-wrap');
-  if(bWrap){
-    if(antri.length>1){
-      bWrap.style.display='block';
-      e('apvb-bulk-count', antri.length);
-      e('apvb-bulk-total-lbl','Rp '+_fmt(antri.reduce(function(a,o){return a+(o.nominal||0);},0)));
-    } else { bWrap.style.display='none'; }
+  var hWrap=document.getElementById('apvb-periode-hint');
+  if(!fPeriode && periodeCount>1){
+    // Antrian tercampur >1 periode & belum pilih periode -> jangan tampilkan tombol gabung bayar
+    if(bWrap) bWrap.style.display='none';
+    if(hWrap){ hWrap.style.display='block'; e('apvb-periode-hint-n', periodeCount); }
+  } else {
+    if(hWrap) hWrap.style.display='none';
+    if(bWrap){
+      if(antri.length>1){
+        bWrap.style.display='block';
+        e('apvb-bulk-count', antri.length);
+        e('apvb-bulk-total-lbl','Rp '+_fmt(antri.reduce(function(a,o){return a+(o.nominal||0);},0)));
+      } else { bWrap.style.display='none'; }
+    }
   }
 
   if(!antri.length){ list.innerHTML='<div class="olt-empty"><i class="ti ti-wallet-off"></i><p>Tidak ada fee di antrian bayar</p></div>'; return; }
@@ -14002,15 +14314,17 @@ function apvbRender(){
   var pageData = antri.slice(start, start+_apvbPerPage);
 
   var rows = pageData.map(function(o){
-    var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;});
+    var p=_pelById[o.pel_id];
     var areaN=_otfPelAreaName(o.pel_id); var kec=p&&p.kecamatan||''; var rw=p&&p.rw||''; var rt=p&&p.rt||'';
     var loks=[]; if(areaN) loks.push(areaN); if(kec) loks.push('Kec. '+kec); if(rw) loks.push('RW '+rw); if(rt) loks.push('RT '+rt);
+    var perLbl=_apvbPeriodeOf(o);
     return '<div class="fin-rekap-card">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'+
         '<div><div style="font-size:13px;font-weight:800">'+_esc(_otfPelCID(o.pel_id))+'</div><div style="font-size:11px;color:var(--text3)">'+_esc(_otfPelName(o.pel_id))+'</div></div>'+
         '<div style="font-family:\'JetBrains Mono\',monospace;font-weight:800;color:var(--green)">Rp '+_fmt(o.nominal||0)+'</div>'+
       '</div>'+
-      (loks.length?'<div style="font-size:10px;color:var(--text3);margin-bottom:8px"><i class="ti ti-map-pin" style="font-size:9px"></i> '+_esc(loks.join(' · '))+'</div>':'')+
+      (loks.length?'<div style="font-size:10px;color:var(--text3);margin-bottom:4px"><i class="ti ti-map-pin" style="font-size:9px"></i> '+_esc(loks.join(' · '))+'</div>':'')+
+      (perLbl?'<div style="font-size:10px;color:var(--c1);margin-bottom:8px"><i class="ti ti-calendar" style="font-size:9px"></i> Periode '+_esc(perLbl)+'</div>':'')+
       '<div style="display:flex;gap:8px;align-items:center">'+
         '<span class="tag tg"><i class="ti ti-circle-check"></i> Tervalidasi</span>'+
         '<button class="btn" style="flex:1;background:var(--green)" onclick="otfpayOpen(\''+o.id+'\')"><i class="ti ti-cash"></i> Bayar</button>'+
@@ -14120,6 +14434,7 @@ var _apvbBulkRtMap = {};
 
 function apvbBulkOpen(){
 
+  var fPeriode=(document.getElementById('apvb-fil-periode')||{}).value||'';
   var fArea=(document.getElementById('apvb-fil-area')||{}).value||'';
   var fKec =(document.getElementById('apvb-fil-kec') ||{}).value||'';
   var fKel =(document.getElementById('apvb-fil-kel') ||{}).value||'';
@@ -14129,28 +14444,40 @@ function apvbBulkOpen(){
   _apvbBulkItems = _valData().filter(function(o){
     if(!_isSiapBayar(o.status)) return false;
     if(fArea||fKec||fKel||fRw||fRt){
-      var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;});
+      var p=_pelById[o.pel_id];
       if(fArea && (!p||p.area_id!==fArea)) return false;
       if(fKec  && (!p||(p.kecamatan||'')!==fKec)) return false;
       if(fKel  && (!p||(p.kelurahan||'')!==fKel)) return false;
-      if(fRw   && (!p||(p.rw||'')!==fRw)) return false;
-      if(fRt   && (!p||(p.rt||'')!==fRt)) return false;
+      if(fRw   && (!p||_normRW(p.rw||'')!==fRw)) return false;
+      if(fRt   && (!p||_normRW(p.rt||'')!==fRt)) return false;
     }
     return true;
   });
+
+  // KUNCI: jangan pernah menggabungkan >1 periode dalam satu pembayaran.
+  if(fPeriode){
+    _apvbBulkItems = _apvbBulkItems.filter(function(o){ return _apvbPeriodeOf(o)===fPeriode; });
+  } else {
+    var perSet={}; _apvbBulkItems.forEach(function(o){ var v=_apvbPeriodeOf(o); if(v) perSet[v]=1; });
+    if(Object.keys(perSet).length>1){
+      toast('Antrian di filter ini berasal dari lebih dari 1 periode. Pilih 1 Periode dulu di Filter Periode sebelum Bayar Semua.','err');
+      return;
+    }
+  }
+
   if(!_apvbBulkItems.length){ toast('Tidak ada antrian di filter ini','err'); return; }
 
   var totalNom = _apvbBulkItems.reduce(function(a,o){return a+(o.nominal||0);},0);
 
-
-  var scopeLabel = fRt?'RT '+fRt:(fRw?'RW '+fRw:(fKel?fKel:(fKec?'Kec. '+fKec:(fArea?'Area ini':'Semua'))));
+  var periodeLabel = fPeriode || _apvbPeriodeOf(_apvbBulkItems[0]) || '';
+  var scopeLabel = (fRt?'RT '+fRt:(fRw?'RW '+fRw:(fKel?fKel:(fKec?'Kec. '+fKec:(fArea?'Area ini':'Semua')))))+(periodeLabel?' · Periode '+periodeLabel:'');
   document.getElementById('apvb-bulk-title').textContent = 'Bayar per '+scopeLabel;
   document.getElementById('apvb-bulk-scope').textContent = _apvbBulkItems.length+' fee · Total Rp '+_fmt(totalNom);
 
 
   _apvbBulkRtMap = {};
   _apvbBulkItems.forEach(function(o){
-    var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;});
+    var p=_pelById[o.pel_id];
     var rt=(p&&p.rt)?'RT '+(p.rt):'RT ?';
     if(!_apvbBulkRtMap[rt]) _apvbBulkRtMap[rt]={count:0,total:0};
     _apvbBulkRtMap[rt].count++; _apvbBulkRtMap[rt].total+=(o.nominal||0);
@@ -14232,7 +14559,7 @@ function apvbBulkSave(){
   if(_apvbBulkMode==='rt'){
 
     _apvbBulkItems.forEach(function(o){
-      var p=_approvedPelList.find(function(x){return x&&x.id===o.pel_id;});
+      var p=_pelById[o.pel_id];
       var rt=(p&&p.rt)?'RT '+(p.rt):'RT ?';
       var inpId='apvb-rt-inp-'+rt.replace(/\s+/g,'_');
       var inpEl=document.getElementById(inpId);
@@ -14290,12 +14617,14 @@ function apvbBulkSave(){
 function exportOtfCsv(){
   var sb=getSB(); if(!sb){toast('Koneksi belum siap','err');return;}
   toast('Menyiapkan export OTF…','ok');
+  if(window.ProgUI) ProgUI.open({title:'Export Fee OTF', step:'Mengambil data pelanggan & Fee OTF…'});
   Promise.all([
     sb.from('pelanggan').select('id,cid,nama,status,kecamatan,kelurahan,rw,rt,jenis_pelanggan,paket,tgl_pasang,area_coverage'),
     sb.from('fee_otf').select('id,status,nominal,pel_id,tgl,keterangan').order('tgl',{ascending:false})
   ]).then(function(res){
     var pels=res[0].data||[]; var otfAll=res[1].data||[];
     var pelMap={}; pels.forEach(function(p){pelMap[p.id]=p;});
+    if(window.ProgUI) ProgUI.step('Menyusun '+otfAll.length+' baris CSV…', 60);
     var rows=[['CID','Nama Pelanggan','Status Pelanggan','Area','Kecamatan','Kelurahan','RW','RT','Paket','Tgl Pasang','Tgl OTF','Nominal (Rp)','Status OTF','Keterangan']];
     otfAll.forEach(function(o){
       var p=pelMap[o.pel_id]||{};
@@ -14306,9 +14635,11 @@ function exportOtfCsv(){
         o.tgl||'',o.nominal||0,o.status||'',o.keterangan||''
       ]);
     });
+    if(window.ProgUI) ProgUI.step('Mengunduh file…', 92);
     _csvDownload(rows,'laporan_fee_otf_'+new Date().toISOString().slice(0,10)+'.csv');
     toast('Export OTF '+otfAll.length+' baris berhasil','ok');
-  }).catch(function(e){toast('Gagal export OTF: '+(e.message||e),'err');});
+    if(window.ProgUI) ProgUI.success(otfAll.length+' baris Fee OTF berhasil di-export');
+  }).catch(function(e){toast('Gagal export OTF: '+(e.message||e),'err');if(window.ProgUI)ProgUI.error('Gagal export OTF: '+(e.message||e));});
 }
 function exportRecurringCsv(){
   
@@ -14327,7 +14658,7 @@ function exportRecurringCsv(){
   });
   if(!filtered.length){ toast('Tidak ada data recurring pada cakupan/filter yang sedang dibuka','err'); return; }
 
-
+  if(window.ProgUI) ProgUI.open({title:'Export Fee Recurring', step:'Menyusun '+filtered.length+' baris sesuai cakupan wilayah…'});
   var allLevels=['kec','kel','rw','rt'];
   var startIdx = _recDrill.rw ? 3 : _recDrill.kel ? 2 : _recDrill.kec ? 1 : 0;
   var activeLevels=allLevels.slice(startIdx);
@@ -14373,8 +14704,10 @@ function exportRecurringCsv(){
 
   var scopeFileTag = _recDrill.rw ? ('RW-'+_recDrill.rw) : _recDrill.kel ? _recDrill.kel : _recDrill.kec ? ('Kec-'+_recDrill.kec) : 'Semua';
   var safeTag = scopeFileTag.replace(/[^a-zA-Z0-9_-]+/g,'_');
+  if(window.ProgUI) ProgUI.step('Mengunduh file…', 90);
   _csvDownload(rows,'laporan_fee_recurring_'+safeTag+'_'+new Date().toISOString().slice(0,10)+'.csv');
   toast('Export Recurring berhasil ('+(rows.length-1)+' baris)','ok');
+  if(window.ProgUI) ProgUI.success((rows.length-1)+' baris Fee Recurring berhasil di-export');
 }
 
 function _csvDownload(rows,filename){
@@ -20761,6 +21094,7 @@ function dmtLoad(){
     dmtRender();
     dmtWilRender();
     dmtBuildAreaChips();
+    if(typeof window.dmtAutoRenderPending==='function') window.dmtAutoRenderPending();
   }).catch(function(e){
     if(list) list.innerHTML='<div class="olt-empty"><i class="ti ti-alert-triangle"></i><p>Error: '+_esc((e&&e.message)||'coba lagi')+'</p></div>';
   });
@@ -22372,6 +22706,7 @@ function frRunReset(sb){
        '_portData','_approvedPelList'].forEach(function(v){
         if (typeof window[v] !== 'undefined') window[v] = [];
       });
+      window._pelById = {};
       window._pelOdcList = [];
       ['_pelLoaded','_areaLoaded','_oltLoaded','_odcLoaded','_odpLoaded','_portLoaded',
        '_otfLoaded','_recLoaded','_appLoaded','_dmtLoaded','_dashLoaded','_monLoaded',
@@ -23670,14 +24005,27 @@ function _executeBatchChunk(sb, modul, chunkRows, conflictKey){
 
   var result = {ok: [], fail: [], portOps: []};
 
-  /* [FIX] Kumpulkan portOps SEBELUM strip, lalu bersihkan __portMeta dari
-     setiap row agar tidak ikut masuk ke payload DB (kolom tidak ada di schema). */
+  /* Simpan portMeta per-row di Map (bukan langsung dorong ke result.portOps),
+     lalu bersihkan __portMeta dari payload agar tidak ikut terkirim ke DB
+     (kolom tidak ada di schema). Port HANYA akan di-assign untuk baris yang
+     benar-benar berhasil disimpan — dicek lewat _collectPortOps di bawah,
+     setelah hasil upsert/insert diketahui. Ini mencegah import yang gagal total
+     tetap mencoba ratusan panggilan assign-port sia-sia untuk pelanggan yang
+     sebenarnya tidak pernah masuk database (penyebab progress "macet" di 96%). */
+  var _metaByRow = typeof Map !== 'undefined' ? new Map() : null;
   chunkRows.forEach(function(row){
     if(row.__portMeta && row.__portMeta.odpId){
-      result.portOps.push({row: row, meta: row.__portMeta});
+      if(_metaByRow) _metaByRow.set(row, row.__portMeta);
+      else row.__savedPortMeta = row.__portMeta;
     }
     delete row.__portMeta;
   });
+  function _collectPortOps(rows){
+    rows.forEach(function(row){
+      var meta = _metaByRow ? _metaByRow.get(row) : row.__savedPortMeta;
+      if(meta) result.portOps.push({row: row, meta: meta});
+    });
+  }
 
   // Step 1: Try batch upsert
   return sb.from(modul).upsert(chunkRows, {onConflict: conflictKey})
@@ -23685,6 +24033,7 @@ function _executeBatchChunk(sb, modul, chunkRows, conflictKey){
       if(!upsertRes.error){
         // Upsert success — all rows accepted
         result.ok = chunkRows;
+        _collectPortOps(chunkRows);
         return result;
       }
 
@@ -23694,10 +24043,11 @@ function _executeBatchChunk(sb, modul, chunkRows, conflictKey){
         .then(function(insertRes){
           if(!insertRes.error){
             result.ok = failedChunk;
+            _collectPortOps(failedChunk);
             return result;
           }
 
-          // Insert still failed — mark all as fail
+          // Insert still failed — mark all as fail, JANGAN assign port
           failedChunk.forEach(function(row){
             result.fail.push({row: row, err: insertRes.error.message || 'Insert gagal'});
           });
@@ -23711,7 +24061,7 @@ function _executeBatchChunk(sb, modul, chunkRows, conflictKey){
         });
     })
     .catch(function(upsertErr){
-      // Upsert network error — mark all as fail
+      // Upsert network error — mark all as fail, JANGAN assign port
       chunkRows.forEach(function(row){
         result.fail.push({row: row, err: upsertErr.message || 'Upsert error'});
       });
@@ -23755,16 +24105,84 @@ function _batchAssignPorts(sb, portOps){
     : Promise.resolve();
 
   return _pPel.then(function(){
-    /* [P30] Eksekusi SATU PER SATU (sequential, bukan parallel) agar tidak ada race condition
-       saat 2 CID berbeda claim port yang sama dalam 1 batch — yang pertama menang,
-       yang kedua masuk ke portConflict. Parallel Promise.all() tidak memberi jaminan urutan. */
-    var ops = portOps.slice();
-    function _next(){
-      if(!ops.length) return Promise.resolve();
-      var op = ops.shift();
-      return _assignOnePort(sb, op, _pelLookup).then(_next);
+    /* FIX: dulu dieksekusi SATU PER SATU murni sequential (1 request → tunggu
+       selesai → request berikutnya) supaya tidak ada 2 CID berbeda berebut
+       port yang sama. Untuk import ratusan/ribuan baris ini jadi SANGAT
+       lambat (tiap baris = beberapa round-trip network berurutan) — di
+       koneksi lemot bisa terlihat seperti "macet" di 96% padahal sebenarnya
+       masih jalan, cuma pelan sekali.
+       Sekarang: ops dikelompokkan per KUNCI PORT (odp_id+nomor_port).
+       - Ops dengan kunci port yang SAMA tetap diproses berurutan (jaga-jaga
+         ada 2 CID rebutan port yang persis sama — kasus ini yang perlu
+         urutan pasti).
+       - Ops dengan kunci port BERBEDA dijalankan PARALEL (beberapa lane
+         sekaligus) — ini yang bikin cepat, karena mayoritas baris pasti
+         menuju port yang berbeda-beda.
+       - Tiap operasi dibungkus timeout supaya 1 request yang macet/hang
+         tidak mengunci seluruh proses selamanya — kalau lewat batas waktu,
+         dianggap gagal untuk baris itu saja, proses lain tetap lanjut.
+       - Progress dilaporkan tiap beberapa baris selesai supaya tidak
+         terlihat diam di 96% tanpa kabar. */
+    var groups = {};
+    var groupOrder = [];
+    portOps.forEach(function(op){
+      var m = op.meta||{};
+      var key = (m.odpId||'?') + '|' + (m.nomorPort||'?');
+      if(!groups[key]){ groups[key]=[]; groupOrder.push(key); }
+      groups[key].push(op);
+    });
+    var lanes = groupOrder.map(function(key){ return groups[key]; });
+
+    var total = portOps.length;
+    var doneCount = 0;
+    var TIMEOUT_MS = 20000;
+    var CONCURRENCY = 6;
+
+    function _updateProgress(){
+      if(window.ProgUI){
+        var pct = 96 + Math.min(3, Math.round((doneCount/total)*3));
+        window.ProgUI.step('Menetapkan port ODP untuk pelanggan… ('+doneCount+'/'+total+')', pct);
+      }
     }
-    return _next();
+
+    function _withTimeout(promise){
+      return new Promise(function(resolve){
+        var settled=false;
+        var t=setTimeout(function(){
+          if(!settled){ settled=true; console.warn('[Port Assign] Timeout — lanjut ke baris berikutnya'); resolve(); }
+        }, TIMEOUT_MS);
+        Promise.resolve(promise).then(
+          function(v){ if(!settled){ settled=true; clearTimeout(t); resolve(v); } },
+          function(e){ if(!settled){ settled=true; clearTimeout(t); console.warn('[Port Assign] Error:', e&&e.message); resolve(); } }
+        );
+      });
+    }
+
+    /* Satu lane = daftar ops yang berbagi kunci port sama → dieksekusi urut di dalam lane-nya */
+    function _runLane(laneOps){
+      var q = laneOps.slice();
+      function _next(){
+        if(!q.length) return Promise.resolve();
+        var op = q.shift();
+        return _withTimeout(_assignOnePort(sb, op, _pelLookup)).then(function(){
+          doneCount++; _updateProgress();
+          return _next();
+        });
+      }
+      return _next();
+    }
+
+    /* Worker pool: tiap worker ambil 1 lane dari antrian dan jalankan lane itu urut,
+       beberapa lane berjalan bersamaan (paralel) sampai semua lane habis. */
+    var laneQueue = lanes.slice();
+    function _worker(){
+      if(!laneQueue.length) return Promise.resolve();
+      var lane = laneQueue.shift();
+      return _runLane(lane).then(_worker);
+    }
+    var workers=[];
+    for(var i=0;i<Math.min(CONCURRENCY, laneQueue.length||1);i++) workers.push(_worker());
+    return Promise.all(workers);
   });
 }
 
@@ -23898,8 +24316,15 @@ function ieDoImport(){
   var validRows = _ieParsedData.filter(function(r){ return r._valid; });
   if(!validRows.length){ toast('Semua baris memiliki error','err'); return; }
 
+  /* [FIX] Reset diagnostik import sebelumnya — mencegah hasil lama (ODP tidak
+     ketemu, koordinat rusak, dll) ikut tercampur/nyangkut di hasil import ini. */
+  window._ieImportDiag = {};
+  var _oldDiagBoxes = ['ie-port-diag-box','ie-latlng-diag-box'];
+  _oldDiagBoxes.forEach(function(id){ var el=document.getElementById(id); if(el) el.remove(); });
+
   var btn = document.getElementById('ie-import-btn');
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Menyimpan…'; }
+  if(window.ProgUI) ProgUI.open({title:'Import '+((_ieSchemas[_ieCurrentModul]||{}).label||_ieCurrentModul), step:'Memuat data referensi (Area/ODP/ODC/OLT)…'});
 
   /* ── Pre-load referensi FK jika belum ada di cache ── */
   var _needArea = (_ieCurrentModul==='odcs'||_ieCurrentModul==='odps'||_ieCurrentModul==='olts');
@@ -23941,9 +24366,11 @@ function ieDoImport(){
     if(_needOlt && _oltData.length===0){
       toast('⚠️ Data OLT tidak ditemukan di cache — pastikan tabel olts tidak kosong','err');
     }
+    if(window.ProgUI) ProgUI.step('Memvalidasi & mencocokkan '+validRows.length+' baris…', 15);
     _ieDoImportCore(sb, btn, validRows);
   }).catch(function(e){
     toast('Gagal memuat data referensi: '+(e.message||'coba lagi'),'err');
+    if(window.ProgUI) ProgUI.error('Gagal memuat data referensi: '+(e.message||'coba lagi'));
     if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-import"></i> Simpan ke Database'; }
   });
 }
@@ -24017,6 +24444,26 @@ function _ieDoImportCoreRun(sb, btn, validRows, _existingCidSet){
     if(obj.nik && (obj.nik.indexOf('E+')>=0 || obj.nik.indexOf('e+')>=0)){
       try{ obj.nik = String(Math.round(parseFloat(obj.nik))); }catch(e){}
     }
+    /* [FIX] Validasi lat/lng sebagai angka desimal yang valid.
+       Kadang Excel/Sheets merusak format angka saat export/re-open — titik
+       desimal hilang lalu ditambah pemisah ribuan, mis. -6.8519608 berubah
+       jadi "-68,519,608". Nilai seperti ini BUKAN angka desimal yang valid
+       untuk kolom double precision — jika dikirim apa adanya, SELURUH batch
+       insert (bukan cuma baris ini) akan gagal karena insert multi-baris di
+       Postgres bersifat atomic. Solusinya: kosongkan (null) koordinat yang
+       tidak valid & catat sebagai diagnostik — JANGAN ditebak posisi titik
+       desimalnya karena berisiko menempatkan pelanggan di lokasi peta yang salah. */
+    ['lat','lng'].forEach(function(f){
+      if(obj[f] === undefined || obj[f] === null) return;
+      var raw = String(obj[f]).trim();
+      if(raw === '') return;
+      if(!/^-?\d+(\.\d+)?$/.test(raw)){
+        window._ieImportDiag = window._ieImportDiag || {};
+        window._ieImportDiag.badLatLng = window._ieImportDiag.badLatLng || [];
+        window._ieImportDiag.badLatLng.push({cid: obj.cid || r.kode || '(tanpa cid)', field: f, value: raw});
+        obj[f] = null;
+      }
+    });
     /* Baca resolve_cols dari CSV ke obj sementara (akan dihapus setelah resolve) */
     _resolveCols.forEach(function(k){ obj[k] = (r[k]||'').trim() || null; });
 
@@ -24077,8 +24524,19 @@ function _ieDoImportCoreRun(sb, btn, validRows, _existingCidSet){
       if(_odc) obj.odc_id = _odc.id;
       delete obj.odc_kode;
     }
-    /* ── [FIX v23] Resolve odp_kode → odp_id (untuk Pelanggan) ── */
+    /* ── [FIX] Resolve odp_kode → odp_id (untuk Pelanggan) ── */
     if(_ieCurrentModul === 'pelanggan'){
+      /* [FIX] Normalisasi placeholder '0' pada nik & hp menjadi null.
+         Banyak sistem/CSV export memakai '0' sebagai placeholder untuk data
+         yang belum diisi. Jika kolom nik/hp punya UNIQUE constraint di DB,
+         ratusan baris dengan nilai '0' yang identik akan bentrok satu sama
+         lain — dan karena insert multi-baris di Postgres bersifat atomic,
+         SATU baris bentrok membuat SELURUH batch gagal (bukan cuma baris
+         itu saja). NULL tidak dianggap bentrok oleh UNIQUE constraint,
+         beda dengan string '0' yang identik. */
+      if(obj.nik === '0') obj.nik = null;
+      if(obj.hp  === '0') obj.hp  = null;
+
       /* Normalisasi jenis_pelanggan — sesuai CHECK constraint DB */
       var _JP_MAP = {
         'reguler':'Reguler','reg':'Reguler','regular':'Reguler',
@@ -24259,10 +24717,13 @@ function _ieDoImportCoreRun(sb, btn, validRows, _existingCidSet){
   var _fail = [];
   var _allPortOps = [];
   var _chunkIndex = 0;
+  var _totalChunks = _chunks.length;
+  if(window.ProgUI) ProgUI.step('Menyimpan 0 / '+_uniquePayload.length+' baris ke database…', 20);
 
   function _processNextChunk(){
     if(_chunkIndex >= _chunks.length){
       if(_allPortOps.length){
+        if(window.ProgUI) ProgUI.step('Menetapkan port ODP untuk pelanggan…', 96);
         _batchAssignPorts(sb, _allPortOps).then(function(){
           _finishImport();
         }).catch(function(portErr){
@@ -24283,6 +24744,12 @@ function _ieDoImportCoreRun(sb, btn, validRows, _existingCidSet){
         _ok = _ok.concat(chunkResult.ok);
         _fail = _fail.concat(chunkResult.fail);
         _allPortOps = _allPortOps.concat(chunkResult.portOps);
+        if(window.ProgUI){
+          var done = Math.min(_uniquePayload.length, _chunkIndex*_chunkSize);
+          var pct = 20 + Math.round((_chunkIndex/_totalChunks)*70); /* 20%-90% range utk chunk upload */
+          ProgUI.step('Menyimpan '+Math.min(done,_uniquePayload.length)+' / '+_uniquePayload.length+' baris ke database…', Math.min(pct,90));
+          ProgUI.log('Batch '+_chunkIndex+'/'+_totalChunks+' selesai ('+chunkResult.ok.length+' berhasil'+(chunkResult.fail.length?', '+chunkResult.fail.length+' gagal':'')+')', chunkResult.fail.length>0);
+        }
         _processNextChunk();
       })
       .catch(function(chunkErr){
@@ -24290,6 +24757,7 @@ function _ieDoImportCoreRun(sb, btn, validRows, _existingCidSet){
         chunk.forEach(function(row){
           _fail.push({row: row, err: chunkErr.message || 'Chunk error'});
         });
+        if(window.ProgUI) ProgUI.log('Batch '+_chunkIndex+'/'+_totalChunks+' error: '+(chunkErr.message||''), true);
         _processNextChunk();
       });
   }
@@ -24309,6 +24777,12 @@ function _ieDoImportCoreRun(sb, btn, validRows, _existingCidSet){
       if(_patchWrap) _patchWrap.style.display = 'block';
       /* [DIAG] Tampilkan ringkasan ODP/Port yang gagal di-assign — biar tidak diam-diam hilang */
       _ieShowPortDiag();
+      _ieShowLatLngDiag();
+    }
+    if(window.ProgUI){
+      ProgUI.step('Selesai — '+_ok.length+' berhasil'+(_fail.length?', '+_fail.length+' gagal':''), 100);
+      if(_fail.length && !_ok.length) ProgUI.error(_fail.length+' baris gagal disimpan — lihat detail di halaman');
+      else ProgUI.success(_ok.length+' baris berhasil di-import'+(_fail.length?' · '+_fail.length+' gagal':''));
     }
   }
 
@@ -24319,6 +24793,27 @@ function _ieDoImportCoreRun(sb, btn, validRows, _existingCidSet){
 /* [DIAG] Tampilkan ringkasan baris pelanggan yang ODP/Port-nya gagal di-assign saat import.
    Tujuan: agar masalah "X terpakai tidak sesuai jumlah pelanggan" langsung kelihatan
    akar penyebabnya per-baris, bukan cuma diam-diam masuk console log yang jarang dibuka. */
+function _ieShowLatLngDiag(){
+  var diag = window._ieImportDiag || {};
+  var badLatLng = diag.badLatLng || [];
+  if(!badLatLng.length) return;
+
+  var wrap = document.getElementById('ie-result-wrap') || document.body;
+  var box = document.createElement('div');
+  box.id = 'ie-latlng-diag-box';
+  box.style.cssText = 'margin-top:12px;padding:12px 13px;border-radius:var(--r);background:rgba(217,119,6,.07);border:1px solid rgba(217,119,6,.25);font-size:11px;line-height:1.7;color:var(--yellow)';
+  var html = '<div style="font-weight:800;margin-bottom:6px"><i class="ti ti-map-pin-off"></i> '+
+    badLatLng.length+' koordinat (lat/lng) tidak valid — dikosongkan agar tidak menggagalkan import</div>'+
+    '<div style="margin-bottom:4px;font-size:10px;opacity:.85">Kemungkinan rusak saat dibuka/di-export ulang lewat Excel/Sheets (titik desimal hilang). '+
+    'Perbaiki manual di Master Pelanggan lalu isi ulang koordinatnya.</div>';
+  html += badLatLng.slice(0,15).map(function(x){
+    return '• CID <b>'+_esc(x.cid)+'</b> — '+_esc(x.field)+' = "'+_esc(x.value)+'"';
+  }).join('<br>');
+  if(badLatLng.length>15) html += '<br>... dan '+(badLatLng.length-15)+' lainnya';
+  box.innerHTML = html;
+  wrap.appendChild(box);
+}
+
 function _ieShowPortDiag(){
   var diag = window._ieImportDiag || {};
   var notFound      = diag.odpNotFound    || [];
@@ -24442,6 +24937,7 @@ function iePatchTeknis(){
 
   var resEl = document.getElementById('ie-patch-teknis-result');
   if(resEl) resEl.innerHTML = '<i class="ti ti-loader" style="animation:rot 1s linear infinite"></i> Memuat referensi ODP & Area…';
+  if(window.ProgUI) ProgUI.open({title:'Update Data Teknis Pelanggan', step:'Memuat referensi ODP & Area…'});
 
   /* Selalu reload ODP & Area agar kode tersedia */
   var pOdp   = sb.from('odps').select('id,kode,nama,area_id').order('kode').then(function(r){ if(!r.error) window._odpData=r.data||[]; });
@@ -24459,6 +24955,8 @@ function iePatchTeknis(){
     }
     var rows = _ieParsedData;
     var total = 0, ok = 0, fail = 0, skip = 0;
+    if(window.ProgUI) ProgUI.step('Memproses '+rows.length+' baris data teknis…', 30);
+    var _patchDone = 0;
 
     var promises = rows.map(function(r){
       var cid       = (r.cid||'').trim();
@@ -24554,7 +25052,11 @@ function iePatchTeknis(){
             if(portMeta) _ieAssignPort(sb, portMeta, cid);
           }
         })
-        .catch(function(e){ fail++; console.warn('[PatchTeknis] Error '+cid+':', e.message); });
+        .catch(function(e){ fail++; console.warn('[PatchTeknis] Error '+cid+':', e.message); })
+        .then(function(){
+          _patchDone++;
+          if(window.ProgUI && rows.length) ProgUI.step('Memproses '+_patchDone+' / '+rows.length+' baris…', 30+Math.round(_patchDone/rows.length*60));
+        });
     });
 
     Promise.all(promises).then(function(){
@@ -24565,9 +25067,15 @@ function iePatchTeknis(){
       /* Invalidate SOT cache */
       if(window.SOT && typeof SOT.invalidate === 'function' ) SOT.invalidate('general');
       toast('Update data teknis selesai: '+ok+' berhasil','ok');
+      if(window.ProgUI){
+        ProgUI.step('Selesai — '+ok+' berhasil'+(fail?', '+fail+' gagal':''), 100);
+        if(fail && !ok) ProgUI.error(fail+' baris gagal diupdate');
+        else ProgUI.success(ok+' pelanggan berhasil diupdate'+(fail?' · '+fail+' gagal':'')+(skip?' · '+skip+' dilewati':''));
+      }
     });
   }).catch(function(e){
     if(resEl) resEl.innerHTML = '<span style="color:var(--red)">Gagal memuat referensi: '+(e.message||'coba lagi')+'</span>';
+    if(window.ProgUI) ProgUI.error('Gagal memuat referensi: '+(e.message||'coba lagi'));
   });
 }
 
@@ -24676,6 +25184,7 @@ function ieDoExport(table, label){
   var sb = getSB();
   if(!sb){ toast('Database tidak terhubung','err'); return; }
   toast('Mengambil data '+label+'…','info');
+  if(window.ProgUI) ProgUI.open({title:'Export '+label, step:'Memuat data referensi (Area/OLT/ODC/ODP/Material)…'});
 
   /* Header ramah untuk kolom FK */
   var _fkHeader = {
@@ -24723,12 +25232,14 @@ function ieDoExport(table, label){
     }
 
     /* Fetch data utama */
+    if(window.ProgUI) ProgUI.step('Mengambil data '+label+' dari database…', 45);
     var orderCol = (table==='material_items') ? 'kode' : 'created_at';
     sb.from(table).select('*').order(orderCol, {ascending: table==='material_items'})
       .then(function(r){
-        if(r.error){ toast('Gagal export: '+(r.error.message||'coba lagi'),'err'); return; }
+        if(r.error){ toast('Gagal export: '+(r.error.message||'coba lagi'),'err'); if(window.ProgUI)ProgUI.error('Gagal export: '+(r.error.message||'coba lagi')); return; }
         var data = r.data||[];
-        if(!data.length){ toast('Tidak ada data untuk diekspor','err'); return; }
+        if(!data.length){ toast('Tidak ada data untuk diekspor','err'); if(window.ProgUI)ProgUI.error('Tidak ada data untuk diekspor'); return; }
+        if(window.ProgUI) ProgUI.step('Menyusun '+data.length+' baris menjadi CSV…', 75);
 
         /* ── Pelanggan: export dalam format re-importable (sesuai schema import) ── */
         if(table === 'pelanggan'){
@@ -24758,9 +25269,11 @@ function ieDoExport(table, label){
             })).join(',');
             csv += line + '\n';
           });
+          if(window.ProgUI) ProgUI.step('Mengunduh file…', 95);
           _ieDownloadBlob(csv, 'pelanggan_export_'+new Date().toISOString().slice(0,10)+'.csv', 'text/csv');
           toast('Pelanggan · '+data.length+' baris diekspor (format re-importable)','ok');
           _ieAddLog('Export', label, data.length+' baris');
+          if(window.ProgUI) ProgUI.success(data.length+' baris pelanggan berhasil di-export');
           return;
         }
 
@@ -24784,13 +25297,15 @@ function ieDoExport(table, label){
           csv += line + '\n';
         });
 
+        if(window.ProgUI) ProgUI.step('Mengunduh file…', 95);
         _ieDownloadBlob(csv, table+'_export_'+new Date().toISOString().slice(0,10)+'.csv', 'text/csv');
         toast(label+' · '+data.length+' baris diekspor','ok');
         _ieAddLog('Export', label, data.length+' baris');
+        if(window.ProgUI) ProgUI.success(data.length+' baris '+label+' berhasil di-export');
       })
-      .catch(function(e){ toast('Error: '+(e.message||'coba lagi'),'err'); });
+      .catch(function(e){ toast('Error: '+(e.message||'coba lagi'),'err'); if(window.ProgUI)ProgUI.error('Error: '+(e.message||'coba lagi')); });
 
-  }).catch(function(e){ toast('Gagal muat referensi: '+(e.message||'coba lagi'),'err'); });
+  }).catch(function(e){ toast('Gagal muat referensi: '+(e.message||'coba lagi'),'err'); if(window.ProgUI)ProgUI.error('Gagal muat referensi: '+(e.message||'coba lagi')); });
 }
 
 /* ── Download blob helper ── */
@@ -27895,6 +28410,7 @@ function fdbResetSimple(){
 function fdbExportAll(){
   var sb=getSB(); if(!sb){ toast('Koneksi belum siap','err'); return; }
   toast('Menyiapkan export…','ok');
+  if(window.ProgUI) ProgUI.open({title:'Export Keuangan (Semua Area)', step:'Mengambil data pelanggan & fee…'});
   var per=_fdbPeriode();
   Promise.all([
     sb.from('pelanggan').select('id,cid,nama,status,kecamatan,kelurahan,rw,rt,jenis_pelanggan,paket,tgl_pasang'),
@@ -27939,6 +28455,7 @@ function fdbExportAll(){
     }).join('\r\n');
 
     /* Download */
+    if(window.ProgUI) ProgUI.step('Mengunduh file ('+(rows.length-1)+' baris)…', 90);
     var bom='\uFEFF';
     var blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
     var url=URL.createObjectURL(blob);
@@ -27947,7 +28464,8 @@ function fdbExportAll(){
     document.body.appendChild(a);a.click();
     setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
     toast('Export '+rows.length+' baris berhasil','ok');
-  }).catch(function(e){ toast('Gagal export: '+(e.message||e),'err'); });
+    if(window.ProgUI) ProgUI.success((rows.length-1)+' baris data keuangan berhasil di-export');
+  }).catch(function(e){ toast('Gagal export: '+(e.message||e),'err'); if(window.ProgUI)ProgUI.error('Gagal export: '+(e.message||e)); });
 }
 
 /* ══ AREA DETAIL SHEET ══ */
@@ -28212,6 +28730,7 @@ function fdbsClose(){
 function fdbsExportArea(areaName,areaId){
   var sb=getSB();if(!sb){toast('Koneksi belum siap','err');return;}
   toast('Menyiapkan export '+areaName+'…','ok');
+  if(window.ProgUI) ProgUI.open({title:'Export Keuangan — '+areaName, step:'Mengambil data pelanggan & fee area ini…'});
   var per=_fdbPeriode();
   var FREE=JENIS_GRATIS||['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
   var inPer=function(d){if(!d)return false;var s=d.slice(0,10);return s>=per.from&&s<=per.to;};
@@ -28254,6 +28773,7 @@ function fdbsExportArea(areaName,areaId){
     });
     var csv=rows.map(function(row){return row.map(function(cell){var s=String(cell).replace(/"/g,'""');return(s.indexOf(',')>=0||s.indexOf('"')>=0)?'"'+s+'"':s;}).join(',');}).join('\r\n');
     /* BOM UTF-8 agar Google Sheets Android baca encoding dengan benar */
+    if(window.ProgUI) ProgUI.step('Mengunduh file ('+(rows.length-1)+' baris)…', 90);
     var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');
@@ -28261,7 +28781,8 @@ function fdbsExportArea(areaName,areaId){
     document.body.appendChild(a);a.click();
     setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
     toast('Export '+areaName+' — '+rows.length+' baris','ok');
-  }).catch(function(e){toast('Gagal: '+(e.message||e),'err');});
+    if(window.ProgUI) ProgUI.success((rows.length-1)+' baris data '+areaName+' berhasil di-export');
+  }).catch(function(e){toast('Gagal: '+(e.message||e),'err');if(window.ProgUI)ProgUI.error('Gagal: '+(e.message||e));});
 }
 
 /* ══ FDP KALENDER — single view, centered popup ══ */
@@ -33587,27 +34108,30 @@ if(typeof _origPelSaveFormRules === 'function' && !_origPelSaveFormRules._formRu
 'use strict';
 
 window.DMT_FLOW = [
-  { key:'selesai', label:'Selesai', ico:'ti-circle-check', color:'var(--green)' }
+  { key:'selesai', label:'Selesai', ico:'ti-circle-check', color:'var(--green)' },
+  { key:'menunggu_approval', label:'Menunggu Approval', ico:'ti-clock', color:'var(--yellow)' },
+  { key:'ditolak', label:'Ditolak', ico:'ti-x', color:'var(--red)' }
 ];
 
 window.dmtUpdateStats = function(){
   var d = window._dmtData || [];
   var e = function(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; };
+  var selesai = d.filter(function(x){return x.status==='selesai';});
   e('dmt-stat-total',   d.length);
-  e('dmt-stat-open',    0);
+  e('dmt-stat-open',    d.filter(function(x){return x.status==='menunggu_approval';}).length);
   e('dmt-stat-proses',  0);
-  e('dmt-stat-selesai', d.length);
+  e('dmt-stat-selesai', selesai.length);
 
 
   var now   = new Date();
   var mon   = now.getFullYear()+'-'+(String(now.getMonth()+1).padStart(2,'0'));
-  var blnIni= d.filter(function(x){
+  var blnIni= selesai.filter(function(x){
     return (x.tgl_cabut||x.tgl_selesai||x.created_at||'').slice(0,7)===mon;
   }).length;
   e('dmt-bln-ini',      blnIni);
-  e('dmt-mat-kembali',  d.filter(function(x){return x.ont_kembali;}).length);
-  e('dmt-ont-hilang',   d.filter(function(x){return !x.ont_kembali&&x.ont_item_id;}).length);
-  e('dmt-port-released',d.filter(function(x){return x.odp_id||x.nomor_port;}).length);
+  e('dmt-mat-kembali',  selesai.filter(function(x){return x.ont_kembali;}).length);
+  e('dmt-ont-hilang',   selesai.filter(function(x){return !x.ont_kembali&&x.ont_item_id;}).length);
+  e('dmt-port-released',selesai.filter(function(x){return x.odp_id||x.nomor_port;}).length);
 };
 
 window.dmtUpdateCtxStats = function(){
@@ -33616,9 +34140,9 @@ window.dmtUpdateCtxStats = function(){
     : (window._dmtData||[]);
   var e=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
   e('dmt-ctx-total',   src.length);
-  e('dmt-ctx-open',    0);
+  e('dmt-ctx-open',    src.filter(function(x){return x.status==='menunggu_approval';}).length);
   e('dmt-ctx-proses',  0);
-  e('dmt-ctx-selesai', src.length);
+  e('dmt-ctx-selesai', src.filter(function(x){return x.status==='selesai';}).length);
 };
 
 window.dmtBuildAreaChips = function(){
@@ -33677,44 +34201,215 @@ window.dmtOpenDet = function(id){
     '</div>';
   }
 
+  var isPending = x.status==='menunggu_approval';
+  var isDitolak = x.status==='ditolak';
+  var statusTag = isPending
+    ? '<span class="tag ty"><i class="ti ti-clock"></i> Menunggu Approval</span>'
+    : isDitolak
+      ? '<span class="tag tr"><i class="ti ti-x"></i> Ditolak</span>'
+      : '<span class="tag tg"><i class="ti ti-circle-check"></i> Selesai</span>';
+  var statusSecLbl = isPending ? 'Status: Menunggu Approval' : (isDitolak ? 'Status: Ditolak' : 'Status: Selesai');
+
   var body=document.getElementById('dmt-det-body');
   if(body) body.innerHTML=
     aktorInfo+
-    sec('circle-check','Status: Selesai')+
+    sec('circle-check',statusSecLbl)+
     dr('Pelanggan','<strong>'+((typeof _esc==='function'?_esc(x.nama_pelanggan||'—'):x.nama_pelanggan||'—'))+'</strong> <span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--pu)">'+(typeof _esc==='function'?_esc(x.cid_pelanggan||''):x.cid_pelanggan||'')+'</span>')+
-    dr('Status','<span class="tag tg"><i class="ti ti-circle-check"></i> Selesai</span>')+
+    dr('Status',statusTag)+
     dr('Tgl Cabut',(typeof _esc==='function'?_esc(x.tgl_cabut||'—'):x.tgl_cabut||'—'))+
-    dr('Tgl Selesai',(typeof _esc==='function'?_esc(x.tgl_selesai||x.tgl_cabut||'—'):x.tgl_selesai||x.tgl_cabut||'—'))+
+    (isPending?'':dr('Tgl Selesai',(typeof _esc==='function'?_esc(x.tgl_selesai||x.tgl_cabut||'—'):x.tgl_selesai||x.tgl_cabut||'—')))+
     dr('Alasan','<span class="tag tgr">'+(typeof _esc==='function'?_esc(alasanLbl):alasanLbl)+'</span>')+
     dr('Area',(typeof _esc==='function'?_esc(arNm):arNm))+
     (x.kecamatan?dr('Kecamatan',(typeof _esc==='function'?_esc(x.kecamatan):x.kecamatan)):'')+
     (x.kelurahan?dr('Kelurahan',(typeof _esc==='function'?_esc(x.kelurahan):x.kelurahan)):'')+
     (x.catatan?dr('Catatan',(typeof _esc==='function'?_esc(x.catatan):x.catatan)):'')+
-    sec('user-cog','Penugasan')+
-    dr('Teknisi',(typeof _esc==='function'?_esc(x.teknisi||'—'):x.teknisi||'—'))+
-    sec('package-import','Recovery Material')+
-    dr('ONT',x.ont_kembali
-      ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'+(x.sn_ont?' <span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--text3)">'+(typeof _esc==='function'?_esc(x.sn_ont):x.sn_ont)+'</span>':'')
-      : '<span class="tag tr"><i class="ti ti-x"></i> Hilang</span>'+(x.sn_ont?' SN: '+(typeof _esc==='function'?_esc(x.sn_ont):x.sn_ont):''))+
-    dr('Precon/Kabel',x.precon_kembali
-      ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'+(x.panjang_kabel?' '+x.panjang_kabel+' roll':'')
-      : '<span class="tag tr"><i class="ti ti-x"></i> Hilang</span>')+
-    dr('Adapter',x.adapter_kembali
-      ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'
-      : '<span class="tag tr"><i class="ti ti-x"></i> Hilang</span>')+
+    (isPending?'':(
+      sec('user-cog','Penugasan')+
+      dr('Teknisi',(typeof _esc==='function'?_esc(x.teknisi||'—'):x.teknisi||'—'))+
+      sec('package-import','Recovery Material')+
+      dr('ONT',x.ont_kembali
+        ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'+(x.sn_ont?' <span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--text3)">'+(typeof _esc==='function'?_esc(x.sn_ont):x.sn_ont)+'</span>':'')
+        : '<span class="tag tr"><i class="ti ti-x"></i> Hilang</span>'+(x.sn_ont?' SN: '+(typeof _esc==='function'?_esc(x.sn_ont):x.sn_ont):''))+
+      dr('Precon/Kabel',x.precon_kembali
+        ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'+(x.panjang_kabel?' '+x.panjang_kabel+' roll':'')
+        : '<span class="tag tr"><i class="ti ti-x"></i> Hilang</span>')+
+      dr('Adapter',x.adapter_kembali
+        ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'
+        : '<span class="tag tr"><i class="ti ti-x"></i> Hilang</span>')
+    ))+
     dr('Dibuat',x.created_at ? new Date(x.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—');
 
   var foot=document.getElementById('dmt-det-foot');
   var isAdmin = (typeof CR !== 'undefined') && (CR === 'super_admin' || CR === 'owner');
-  if(foot) foot.innerHTML=
-    '<button class="btn btn-ghost" style="flex:1" onclick="dmtCloseDet()">Tutup</button>'+
-    (isAdmin
-      ? '<button class="btn" style="flex:1;background:var(--red);color:#fff;gap:6px" onclick="dmtHapusSatu(\''+id+'\')">'
-        + '<i class="ti ti-trash"></i> Hapus</button>'
-      : '');
+  if(foot){
+    if(isPending){
+      foot.innerHTML=
+        '<button class="btn btn-ghost" style="flex:1" onclick="dmtCloseDet()">Tutup</button>'+
+        '<button class="btn" style="flex:1;background:var(--red);color:#fff;gap:6px" onclick="dmtAutoReject(\''+id+'\')"><i class="ti ti-x"></i> Reject</button>'+
+        '<button class="btn" style="flex:1;background:var(--green);color:#fff;gap:6px" onclick="dmtAutoApprove(\''+id+'\')"><i class="ti ti-check"></i> Approve</button>';
+    } else {
+      foot.innerHTML=
+        '<button class="btn btn-ghost" style="flex:1" onclick="dmtCloseDet()">Tutup</button>'+
+        (isAdmin
+          ? '<button class="btn" style="flex:1;background:var(--red);color:#fff;gap:6px" onclick="dmtHapusSatu(\''+id+'\')">'
+            + '<i class="ti ti-trash"></i> Hapus</button>'
+          : '');
+    }
+  }
 
   var overlay=document.getElementById('dmt-det-overlay');
   if(overlay) overlay.classList.add('on');
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   AUTO-DISMANTLE: APPROVAL / REJECT (satu-satu atau pilih semua)
+   - Approve → pelanggan status 'cabut', port ODP dikosongkan,
+     fee_recurring yang belum paid dihentikan (efek sama seperti
+     dismantle manual, dijalankan sekarang bukan saat pengajuan dibuat).
+   - Reject  → pelanggan dipastikan/kembalikan ke status 'aktif'.
+   ═══════════════════════════════════════════════════════════════════ */
+window._dmtAutoSelected = window._dmtAutoSelected || {};
+
+window._dmtAutoPendingList = function(){
+  return (window._dmtData||[]).filter(function(x){ return x.status==='menunggu_approval'; });
+};
+
+window.dmtAutoRenderPending = function(){
+  var wrap=document.getElementById('dmt-auto-wrap'); if(!wrap) return;
+  var pending=window._dmtAutoPendingList();
+  var cEl=document.getElementById('dmt-auto-count'); if(cEl) cEl.textContent=pending.length;
+
+  if(!pending.length){
+    wrap.style.display='none';
+    window._dmtAutoSelected={};
+    return;
+  }
+  wrap.style.display='block';
+
+  // buang seleksi untuk id yang sudah tidak pending lagi
+  var stillPending={}; pending.forEach(function(x){ if(window._dmtAutoSelected[x.id]) stillPending[x.id]=1; });
+  window._dmtAutoSelected=stillPending;
+
+  var list=document.getElementById('dmt-auto-list'); if(!list) return;
+  list.innerHTML = pending.map(function(x){
+    var checked = window._dmtAutoSelected[x.id] ? 'checked' : '';
+    return '<div style="display:flex;align-items:flex-start;gap:9px;background:#fff;border:1px solid rgba(217,119,6,.2);border-radius:var(--rs);padding:9px 10px;margin-bottom:7px">'+
+      '<input type="checkbox" '+checked+' onchange="dmtAutoToggle(\''+x.id+'\',this.checked)" style="width:16px;height:16px;margin-top:2px;flex-shrink:0">'+
+      '<div style="flex:1;min-width:0" onclick="dmtOpenDet(\''+x.id+'\')">'+
+        '<div style="font-size:12.5px;font-weight:800;color:var(--text)">'+_esc(x.nama_pelanggan||'Pelanggan')+'</div>'+
+        '<div style="font-size:10px;font-family:\'JetBrains Mono\',monospace;color:var(--text3)">'+_esc(x.cid_pelanggan||'')+'</div>'+
+        '<div style="font-size:9.5px;color:var(--text3);margin-top:3px"><i class="ti ti-calendar" style="font-size:9px"></i> '+_esc(x.tgl_cabut||'')+'</div>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">'+
+        '<button onclick="dmtAutoApprove(\''+x.id+'\')" style="padding:6px 10px;border:none;border-radius:7px;background:var(--green);color:#fff;font-size:10px;font-weight:800;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;gap:4px"><i class="ti ti-check" style="font-size:11px"></i> Approve</button>'+
+        '<button onclick="dmtAutoReject(\''+x.id+'\')" style="padding:6px 10px;border:1.5px solid rgba(220,38,38,.3);border-radius:7px;background:#fff;color:var(--red);font-size:10px;font-weight:800;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;gap:4px"><i class="ti ti-x" style="font-size:11px"></i> Reject</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  var selAll=document.getElementById('dmt-auto-selall');
+  if(selAll) selAll.checked = pending.length>0 && pending.every(function(x){ return !!window._dmtAutoSelected[x.id]; });
+};
+
+window.dmtAutoToggle = function(id, checked){
+  if(checked) window._dmtAutoSelected[id]=1; else delete window._dmtAutoSelected[id];
+  var selAll=document.getElementById('dmt-auto-selall');
+  var pending=window._dmtAutoPendingList();
+  if(selAll) selAll.checked = pending.length>0 && pending.every(function(x){ return !!window._dmtAutoSelected[x.id]; });
+};
+
+window.dmtAutoToggleAll = function(checked){
+  var pending=window._dmtAutoPendingList();
+  window._dmtAutoSelected = {};
+  if(checked) pending.forEach(function(x){ window._dmtAutoSelected[x.id]=1; });
+  window.dmtAutoRenderPending();
+};
+
+/* Efek Approve: sama dengan dismantle manual — pelanggan cabut, port
+   kosong, recurring belum-paid dihentikan — dijalankan sekarang. */
+window._dmtAutoDoApprove = function(x){
+  var sb=getSB(); if(!sb) return Promise.reject(new Error('Database tidak terhubung'));
+  var today=new Date().toISOString().slice(0,10);
+  return sb.from('dismantle_orders').update({status:'selesai', tgl_selesai:today}).eq('id',x.id).then(function(r){
+    if(r&&r.error) throw new Error(r.error.message||'Gagal update dismantle_orders');
+    var ops=[];
+    if(x.pel_id){
+      ops.push(sb.from('pelanggan').update({status:'cabut', sn_ont:null, nomor_port:null, odp_id:null}).eq('id',x.pel_id)
+        .then(undefined, function(){ return sb.from('pelanggan').update({status:'cabut'}).eq('id',x.pel_id); }));
+      ops.push(sb.from('fee_recurring').update({status:'stopped'}).eq('pel_id',x.pel_id).neq('status','paid').then(undefined,function(){}));
+    }
+    if(x.cid_pelanggan){
+      ops.push(sb.from('odp_ports').update({status:'kosong', cid_pelanggan:null, paket:null, tgl_pasang:null}).eq('cid_pelanggan',x.cid_pelanggan).then(undefined,function(){}));
+    }
+    return Promise.all(ops);
+  });
+};
+
+/* Efek Reject: pastikan pelanggan aktif kembali (belum pernah disentuh
+   saat pengajuan dibuat, jadi ini eksplisit reaktivasi/pengaman). */
+window._dmtAutoDoReject = function(x){
+  var sb=getSB(); if(!sb) return Promise.reject(new Error('Database tidak terhubung'));
+  return sb.from('dismantle_orders').update({status:'ditolak'}).eq('id',x.id).then(function(r){
+    if(r&&r.error) throw new Error(r.error.message||'Gagal update dismantle_orders');
+    if(!x.pel_id) return;
+    return sb.from('pelanggan').update({status:'aktif'}).eq('id',x.pel_id).then(undefined,function(){});
+  });
+};
+
+function _dmtAutoRefreshAfter(){
+  if(typeof window._pelLoaded!=='undefined') window._pelLoaded=false;
+  if(typeof window._recLoaded!=='undefined') window._recLoaded=false;
+  if(typeof window._portLoaded!=='undefined') window._portLoaded=false;
+  if(typeof window._odpLoaded!=='undefined') window._odpLoaded=false;
+  window._dmtLoaded=false;
+  if(typeof dmtCloseDet==='function') dmtCloseDet();
+  setTimeout(function(){ if(typeof dmtLoad==='function') dmtLoad(); },300);
+}
+
+window.dmtAutoApprove = function(id){
+  var x=(window._dmtData||[]).find(function(d){return d.id===id;}); if(!x) return;
+  if(!confirm('Approve dismantle untuk '+(x.nama_pelanggan||x.cid_pelanggan||'pelanggan ini')+'? Port ODP akan dikosongkan dan pelanggan berstatus cabut.')) return;
+  window._dmtAutoDoApprove(x).then(function(){
+    if(typeof toast==='function') toast('✅ Dismantle disetujui · port dilepas & pelanggan cabut','ok');
+    delete window._dmtAutoSelected[id];
+    _dmtAutoRefreshAfter();
+  }).catch(function(e){ if(typeof toast==='function') toast('Gagal approve: '+(e&&e.message||''),'err'); });
+};
+
+window.dmtAutoReject = function(id){
+  var x=(window._dmtData||[]).find(function(d){return d.id===id;}); if(!x) return;
+  if(!confirm('Reject pengajuan dismantle untuk '+(x.nama_pelanggan||x.cid_pelanggan||'pelanggan ini')+'? Pelanggan akan tetap/kembali aktif.')) return;
+  window._dmtAutoDoReject(x).then(function(){
+    if(typeof toast==='function') toast('Pengajuan ditolak · pelanggan aktif kembali','ok');
+    delete window._dmtAutoSelected[id];
+    _dmtAutoRefreshAfter();
+  }).catch(function(e){ if(typeof toast==='function') toast('Gagal reject: '+(e&&e.message||''),'err'); });
+};
+
+window.dmtAutoApproveBulk = function(){
+  var ids=Object.keys(window._dmtAutoSelected||{});
+  var pending=window._dmtAutoPendingList();
+  var items = ids.length ? pending.filter(function(x){ return window._dmtAutoSelected[x.id]; }) : pending;
+  if(!items.length){ if(typeof toast==='function') toast('Pilih minimal 1 pelanggan (atau centang Pilih Semua)','err'); return; }
+  if(!confirm('Approve '+items.length+' pengajuan dismantle terpilih? Semua port ODP terkait akan dikosongkan dan pelanggan berstatus cabut.')) return;
+  Promise.all(items.map(function(x){ return window._dmtAutoDoApprove(x).catch(function(){ return null; }); })).then(function(){
+    if(typeof toast==='function') toast('✅ '+items.length+' dismantle disetujui','ok');
+    window._dmtAutoSelected={};
+    _dmtAutoRefreshAfter();
+  });
+};
+
+window.dmtAutoRejectBulk = function(){
+  var ids=Object.keys(window._dmtAutoSelected||{});
+  var pending=window._dmtAutoPendingList();
+  var items = ids.length ? pending.filter(function(x){ return window._dmtAutoSelected[x.id]; }) : pending;
+  if(!items.length){ if(typeof toast==='function') toast('Pilih minimal 1 pelanggan (atau centang Pilih Semua)','err'); return; }
+  if(!confirm('Reject '+items.length+' pengajuan dismantle terpilih? Pelanggan-pelanggan ini akan tetap/kembali aktif.')) return;
+  Promise.all(items.map(function(x){ return window._dmtAutoDoReject(x).catch(function(){ return null; }); })).then(function(){
+    if(typeof toast==='function') toast(items.length+' pengajuan ditolak · pelanggan aktif kembali','ok');
+    window._dmtAutoSelected={};
+    _dmtAutoRefreshAfter();
+  });
 };
 
 window.dmtSave = function(){
@@ -34587,6 +35282,7 @@ window._ieDoImportCore = function(sb, btn, validRows){
 
 
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Mengecek data existing…'; }
+  if(window.ProgUI) ProgUI.step('Mengecek data pelanggan yang sudah ada di database…', 25);
 
   return sb.from('pelanggan')
     .select('id,cid,nama,hp,area_id,odp_id,nomor_port,paket,status,sn_ont,mac_ont,nik,kecamatan,kelurahan,rw,rt,teknisi_pasang,tgl_pasang,alamat,lat,lng,keterangan,jenis_pelanggan,tipe_recurring')
@@ -34651,6 +35347,7 @@ window._ieDoImportCore = function(sb, btn, validRows){
       window._v31ImportStats.skipped = toSkip.length;
 
       if(btn){ btn.innerHTML='<span class="spin"></span> Memproses '+toInsert.length+' baru, '+toComplete.length+' dilengkapi…'; }
+      if(window.ProgUI) ProgUI.step('Melengkapi '+toComplete.length+' data yang kosong…', 35);
 
 
       var completionPromises = toComplete.map(function(item){
@@ -34702,6 +35399,7 @@ function _v31FinishImport(sb, btn, toInsert, toComplete, toOverwrite, toSkip, ex
   if(typeof window !== 'undefined') window._pelLoaded = false;
   if(typeof toast === 'function'){
     toast(toInsert.length+' baru · '+toComplete.length+' dilengkapi · '+(toOverwrite||[]).length+' diperbarui · '+toSkip.length+' sama','ok');
+  if(window.ProgUI) ProgUI.success(toInsert.length+' baru · '+toComplete.length+' dilengkapi · '+(toOverwrite||[]).length+' diperbarui · '+toSkip.length+' sama (tidak berubah)');
   }
 }
 
@@ -36117,6 +36815,108 @@ if(window.SOT && SOT.onUpdate) SOT.onUpdate(function(){ setTimeout(_stUpdateKPI,
 setTimeout(_stUpdateKPI, 1000);
 
 // === END FIX GPS + REALTIME ===
+</script>
+
+<!-- ══ PROGRESS UI CONTROLLER — dipakai semua fitur Import/Export di app ini ══ -->
+<script>
+(function(){
+  var _els = {};
+  function el(id){ return _els[id] || (_els[id]=document.getElementById(id)); }
+
+  var _autoCloseTimer = null;
+  var _state = 'idle';
+
+  var ProgUI = {
+    /* Buka modal & mulai proses. opts: {title, step, total} */
+    open: function(opts){
+      opts = opts || {};
+      _state = 'running';
+      clearTimeout(_autoCloseTimer);
+      if(el('progui-title')) el('progui-title').textContent = opts.title || 'Memproses…';
+      this.setIco('spin');
+      this.step(opts.step || 'Mempersiapkan…', 0, opts.total || 0);
+      var logEl = el('progui-log'); if(logEl){ logEl.innerHTML=''; logEl.classList.remove('on'); }
+      var closeBtn = el('progui-close-btn'); if(closeBtn) closeBtn.classList.remove('on');
+      var bar = el('progui-bar'); if(bar){ bar.classList.remove('ok','err'); }
+      var ov = el('progui-overlay'); if(ov) ov.classList.add('on');
+      return this;
+    },
+    /* Update step label + persentase. pct 0-100, atau berikan done/total agar dihitung otomatis */
+    step: function(label, pct, doneOverTotal){
+      if(el('progui-step') && label!=null) el('progui-step').textContent = label;
+      var pctVal = pct;
+      var countTxt = '';
+      if(typeof doneOverTotal === 'number' && doneOverTotal > 0){
+        /* pct param di sini dipakai sbg "done", doneOverTotal sbg "total" */
+        var done = pct, total = doneOverTotal;
+        pctVal = total>0 ? Math.min(100, Math.round(done/total*100)) : 0;
+        countTxt = done+' / '+total;
+      }
+      if(typeof pctVal === 'number'){
+        pctVal = Math.max(0, Math.min(100, pctVal));
+        if(el('progui-bar')) el('progui-bar').style.width = pctVal+'%';
+        if(el('progui-pct')) el('progui-pct').textContent = pctVal+'%';
+      }
+      if(el('progui-count')) el('progui-count').textContent = countTxt;
+      return this;
+    },
+    /* Tambah baris log kecil (mis. "Batch 2/5 tersimpan") */
+    log: function(msg, isErr){
+      var logEl = el('progui-log'); if(!logEl) return this;
+      logEl.classList.add('on');
+      var row = document.createElement('div');
+      row.className = 'progui-log-item'+(isErr?' err':'');
+      row.innerHTML = '<i class="ti ti-'+(isErr?'alert-circle':'circle-check')+'"></i><span></span>';
+      row.querySelector('span').textContent = msg;
+      logEl.appendChild(row);
+      logEl.scrollTop = logEl.scrollHeight;
+      return this;
+    },
+    setIco: function(kind){
+      var ico = el('progui-ico'); if(!ico) return this;
+      ico.className = 'progui-ico '+kind;
+      var i = ico.querySelector('i'); if(!i) return this;
+      i.className = kind==='ok' ? 'ti ti-circle-check' : (kind==='err' ? 'ti ti-alert-triangle' : 'ti ti-loader-2');
+      return this;
+    },
+    /* Tandai selesai sukses. autoCloseMs=0 berarti tidak auto-close (tunggu user klik Tutup) */
+    success: function(msg, autoCloseMs){
+      _state = 'done';
+      this.setIco('ok');
+      if(el('progui-title')) el('progui-title').textContent = msg || 'Selesai';
+      if(el('progui-step')) el('progui-step').textContent = 'Proses berhasil diselesaikan';
+      if(el('progui-bar')){ el('progui-bar').classList.add('ok'); el('progui-bar').style.width='100%'; }
+      if(el('progui-pct')) el('progui-pct').textContent = '100%';
+      var closeBtn = el('progui-close-btn'); if(closeBtn) closeBtn.classList.add('on');
+      clearTimeout(_autoCloseTimer);
+      if(autoCloseMs !== 0){
+        var self=this;
+        _autoCloseTimer = setTimeout(function(){ self.close(); }, autoCloseMs || 1400);
+      }
+      return this;
+    },
+    /* Tandai gagal — modal tetap terbuka sampai user menutup manual */
+    error: function(msg){
+      _state = 'error';
+      this.setIco('err');
+      if(el('progui-title')) el('progui-title').textContent = 'Gagal';
+      if(el('progui-step')) el('progui-step').textContent = msg || 'Terjadi kesalahan';
+      if(el('progui-bar')) el('progui-bar').classList.add('err');
+      var closeBtn = el('progui-close-btn'); if(closeBtn) closeBtn.classList.add('on');
+      clearTimeout(_autoCloseTimer);
+      return this;
+    },
+    close: function(){
+      _state = 'idle';
+      clearTimeout(_autoCloseTimer);
+      var ov = el('progui-overlay'); if(ov) ov.classList.remove('on');
+      return this;
+    },
+    isOpen: function(){ return _state==='running' || _state==='done' || _state==='error'; }
+  };
+
+  window.ProgUI = ProgUI;
+})();
 </script>
 </body>
 </html>
