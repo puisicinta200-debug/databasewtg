@@ -760,6 +760,14 @@ function sbToggle(grpId, btn){
   }
 }
 
+/* Satu-satunya sumber daftar "jenis keluar gudang" — dipakai di semua
+   tempat (stat cards, halaman Pengeluaran Gudang, Laporan Ringkas) supaya
+   tidak lagi ada 3 salinan terpisah yang bisa berbeda-beda sendiri.
+   'instalasi_lama' = instalasi historis hasil backfill data import lama
+   (lihat supabase_fixes.sql BAGIAN 6), dibedakan dari 'instalasi' baru
+   yang diproses langsung lewat form aplikasi. */
+var JENIS_KELUAR_GUDANG = ['instalasi','instalasi_lama','keluar','distribusi','maintenance','maintenance_ont','maintenance_kabel','odp_maintenance','odc_maintenance'];
+
 var PANES = {
   'dash':         ['p-dash',         'Dashboard'],
   'monitoring':   ['p-monitoring',   'Monitoring Jaringan'],
@@ -8373,8 +8381,7 @@ function invDashLoad(){
     var dismantle = (!results[2].error && results[2].data) ? results[2].data : [];
 
     var JENIS_MASUK  = ['masuk','koreksi','dismantle_kembali','return_dismantle','recovery_dismantle'];
-    var JENIS_KELUAR = ['instalasi','keluar','distribusi','maintenance','maintenance_ont',
-                        'maintenance_kabel','odp_maintenance','odc_maintenance'];
+    var JENIS_KELUAR = JENIS_KELUAR_GUDANG;
     var JENIS_RUSAK  = ['rusak'];
 
     var masukById = {}, keluarById = {}, keluarJenisById = {};
@@ -8597,7 +8604,7 @@ function invKeluarLoad(){
   var jenis = jenisFil ? jenisFil.value : '';
   if(list) list.innerHTML = '<div class="inv-ld"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite"></i> Memuat…</div>';
 
-  var jenisKeluar = ['instalasi','keluar','distribusi','maintenance','maintenance_ont','maintenance_kabel','odp_maintenance','odc_maintenance'];
+  var jenisKeluar = JENIS_KELUAR_GUDANG;
   var q = sb.from('material_mutasi').select('*,material_items(kode,nama,satuan)')
     .in('jenis', jenisKeluar)
     .order('created_at', {ascending:false}).limit(500);
@@ -8615,7 +8622,7 @@ function invKeluarRender(data){
   var list = document.getElementById('inv-keluar-list');
   if(!list) return;
   if(!data.length){ list.innerHTML='<div class="inv-empty"><i class="ti ti-inbox"></i>Belum ada barang keluar</div>'; return; }
-  var jenisLbl = {instalasi:'Instalasi Baru',keluar:'Pengeluaran',distribusi:'Distribusi',maintenance:'Maintenance',maintenance_ont:'Ganti ONT',maintenance_kabel:'Ganti Kabel',odp_maintenance:'Maintenance ODP',odc_maintenance:'Maintenance ODC'};
+  var jenisLbl = {instalasi:'Instalasi Baru',instalasi_lama:'Instalasi Lama (Backfill)',keluar:'Pengeluaran',distribusi:'Distribusi',maintenance:'Maintenance',maintenance_ont:'Ganti ONT',maintenance_kabel:'Ganti Kabel',odp_maintenance:'Maintenance ODP',odc_maintenance:'Maintenance ODC'};
   var pg = document.getElementById('inv-keluar-pg');
   var perPage = 20;
   var totalPages = Math.max(1, Math.ceil(data.length / perPage));
@@ -8672,7 +8679,7 @@ function invDismantleLoad(){
   var jenis = jenisFil ? jenisFil.value : '';
   if(list) list.innerHTML = '<div class="inv-ld"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite"></i> Memuat…</div>';
 
-  sb.from('dismantle_orders').select('*,pelanggan(cid,nama,alamat)')
+  sb.from('dismantle_orders').select('*,pelanggan(cid,nama,alamat,ont_model,ont_item_id,kabel_item_id)')
     .eq('status','selesai').order('tgl_selesai', {ascending:false}).limit(200)
     .then(function(r){
       if(r.error){ if(list) list.innerHTML='<div class="inv-empty"><i class="ti ti-alert-triangle"></i>Error memuat data</div>'; return; }
@@ -8698,15 +8705,22 @@ function invDismOpenDet(id){
   var sec = _secDmt;
 
   var kabelNama = '';
-  if(x.kabel_item_id && typeof _invMatiData!=='undefined'){
-    var kItem = _invMatiData.find(function(m){ return m.id===x.kabel_item_id; });
+  var kabelId = x.kabel_item_id || pel.kabel_item_id || null;
+  if(kabelId && typeof _invMatiData!=='undefined'){
+    var kItem = _invMatiData.find(function(m){ return m.id===kabelId; });
     if(kItem) kabelNama = kItem.nama + (kItem.merk ? ' ('+kItem.merk+')' : '');
   }
   var ontNama = '';
-  if(x.ont_item_id && typeof _invMatiData!=='undefined'){
-    var oItem = _invMatiData.find(function(m){ return m.id===x.ont_item_id; });
+  var ontId = x.ont_item_id || pel.ont_item_id || null;
+  if(ontId && typeof _invMatiData!=='undefined'){
+    var oItem = _invMatiData.find(function(m){ return m.id===ontId; });
     if(oItem) ontNama = oItem.nama + (oItem.merk ? ' ('+oItem.merk+')' : '');
   }
+  /* Fallback: kalau tidak ada referensi ke katalog material sama sekali,
+     tapi data pelanggan masih menyimpan nama model ONT sebagai teks bebas
+     (umum untuk data hasil import), tampilkan itu — sekadar info, bukan
+     rujukan stok. */
+  var ontModelText = !ontId ? (pel.ont_model || '') : '';
 
   var titleEl=document.getElementById('dmt-det-title');
   if(titleEl) titleEl.textContent = 'Barang Kembali · '+(pel.cid||x.cid_pelanggan||x.id.slice(0,8));
@@ -8725,12 +8739,13 @@ function invDismOpenDet(id){
       ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'
         +(x.sn_ont?' <span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;background:var(--c1b);color:var(--c1);padding:2px 8px;border-radius:6px">'+_esc(x.sn_ont)+'</span>':' <span style="color:var(--text3);font-size:10px">(SN tidak dicatat)</span>')
         +(ontNama?'<div style="font-size:10px;color:var(--text3);margin-top:3px">'+_esc(ontNama)+'</div>':'')
-        +(!x.ont_item_id?'<div style="font-size:10px;color:var(--red);margin-top:3px"><i class="ti ti-alert-triangle"></i> Belum masuk stok — data pelanggan tidak punya referensi tipe ONT</div>':'')
+        +(!ontId && ontModelText?'<div style="font-size:10px;color:var(--text3);margin-top:3px">Model (catatan): '+_esc(ontModelText)+'</div>':'')
+        +(!ontId?'<div style="font-size:10px;color:var(--red);margin-top:3px"><i class="ti ti-alert-triangle"></i> Belum masuk stok — data pelanggan tidak punya referensi tipe ONT ke katalog material</div>':'')
       : '<span class="tag tr"><i class="ti ti-x"></i> Tidak kembali / hilang</span>'+(x.sn_ont?' SN: '+_esc(x.sn_ont):''))+
     dr('Precon / Kabel', x.precon_kembali
       ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'+(x.panjang_kabel?' '+_esc(String(x.panjang_kabel))+' roll':'')
         +(kabelNama?'<div style="font-size:10px;color:var(--text3);margin-top:3px">'+_esc(kabelNama)+'</div>':'')
-        +(!x.kabel_item_id?'<div style="font-size:10px;color:var(--red);margin-top:3px"><i class="ti ti-alert-triangle"></i> Belum masuk stok — data pelanggan tidak punya referensi tipe kabel</div>':'')
+        +(!kabelId?'<div style="font-size:10px;color:var(--red);margin-top:3px"><i class="ti ti-alert-triangle"></i> Belum masuk stok — data pelanggan tidak punya referensi tipe kabel ke katalog material</div>':'')
       : '<span class="tag tr"><i class="ti ti-x"></i> Tidak kembali / hilang</span>')+
     dr('Adapter', x.adapter_kembali
       ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'
@@ -14164,15 +14179,18 @@ function dmtLoad(){
   p1.then(function(){
     _dmtFillFilters();
     dmtBuildAreaChips(); /* Render area chips segera setelah _areaData siap */
-    /* Kolom eksplisit — hindari * agar tidak error jika ada kolom baru/beda */
-    var cols = 'id,pel_id,cid_pelanggan,nama_pelanggan,tgl_cabut,alasan,catatan,teknisi,ont_kembali,sn_ont,precon_kembali,panjang_kabel,adapter_kembali,status,area_id,kecamatan,kelurahan,created_at,ont_item_id,kabel_item_id';
+    /* Kolom eksplisit — hindari * agar tidak error jika ada kolom baru/beda.
+       JOIN ke pelanggan(cid,nama) sebagai fallback kalau cid_pelanggan/
+       nama_pelanggan di baris dismantle_orders kosong (data lama). */
+    var cols = 'id,pel_id,cid_pelanggan,nama_pelanggan,tgl_cabut,alasan,catatan,teknisi,ont_kembali,sn_ont,precon_kembali,panjang_kabel,adapter_kembali,status,area_id,kecamatan,kelurahan,created_at,ont_item_id,kabel_item_id,pelanggan(cid,nama,alamat)';
     var qDmt = sb.from('dismantle_orders').select(cols).order('created_at',{ascending:false});
     if(typeof _applyAreaFilter==='function') qDmt = _applyAreaFilter(qDmt, 'area_id');
     return qDmt;
   }).then(function(r){
     if(r && r.error){
-      /* Coba fallback minimal columns jika ada error */
-      var qDmtFb = sb.from('dismantle_orders').select('id,pel_id,cid_pelanggan,tgl_cabut,alasan,status,ont_kembali,ont_item_id,kabel_item_id,created_at,area_id').order('created_at',{ascending:false});
+      /* Coba fallback minimal columns jika ada error (mis. relasi FK pelanggan
+         belum ada / nama beda) — tanpa join, tetap bisa tampil walau tanpa fallback nama */
+      var qDmtFb = sb.from('dismantle_orders').select('id,pel_id,cid_pelanggan,nama_pelanggan,tgl_cabut,alasan,status,ont_kembali,ont_item_id,kabel_item_id,created_at,area_id').order('created_at',{ascending:false});
       if(typeof _applyAreaFilter==='function') qDmtFb = _applyAreaFilter(qDmtFb, 'area_id');
       return qDmtFb;
     }
@@ -14240,7 +14258,10 @@ function dmtRender(){
   var fAl = (document.getElementById('dmt-fil-alasan')||{}).value||'';
 
   _dmtFil = _dmtData.filter(function(x){
-    var matchQ  = !q || (x.cid_pelanggan||'').toLowerCase().includes(q) || (x.nama_pelanggan||'').toLowerCase().includes(q);
+    var pj = x.pelanggan || {};
+    var xNama = x.nama_pelanggan || pj.nama || '';
+    var xCid  = x.cid_pelanggan  || pj.cid  || '';
+    var matchQ  = !q || xCid.toLowerCase().includes(q) || xNama.toLowerCase().includes(q);
     var matchSt = !fSt || x.status===fSt;
     var effArea = _dmtSelArea || fAr;
     var matchAr = !effArea || x.area_id===effArea;
@@ -14264,6 +14285,9 @@ function dmtRender(){
     var ar = _areaData.find(function(a){return a.id===x.area_id;}); var arNm=ar?ar.nama:(x.area_coverage||'');
     var isSelesai = x.status==='selesai';
     var accentStyle = isSelesai ? 'background:var(--green)' : 'background:var(--c1)';
+    var pj = x.pelanggan || {};
+    var xNama = x.nama_pelanggan || pj.nama || '';
+    var xCid  = x.cid_pelanggan  || pj.cid  || '';
     var ontkmbStr = x.ont_kembali
       ? '<span class="tag tg" style="font-size:9px"><i class="ti ti-check" style="font-size:9px"></i> ONT Kembali</span>'
       : '<span class="tag tr" style="font-size:9px"><i class="ti ti-x" style="font-size:9px"></i> ONT Hilang</span>';
@@ -14273,8 +14297,8 @@ function dmtRender(){
         '<div class="dmt-row-top">'+
           '<div class="dmt-row-ico" style="background:'+stFlow.color+'20;"><i class="ti '+stFlow.ico+'" style="color:'+stFlow.color+';font-size:18px"></i></div>'+
           '<div style="flex:1;min-width:0">'+
-            '<div class="dmt-row-name">'+_esc(x.nama_pelanggan||'Pelanggan')+'</div>'+
-            '<div class="dmt-row-cid">'+_esc(x.cid_pelanggan||'')+'</div>'+
+            '<div class="dmt-row-name">'+_esc(xNama||'(nama tidak tercatat)')+'</div>'+
+            '<div class="dmt-row-cid">'+_esc(xCid||'')+'</div>'+
           '</div>'+
           '<i class="ti ti-chevron-right" style="font-size:14px;color:var(--text4);flex-shrink:0;margin-left:4px;margin-top:2px"></i>'+
         '</div>'+
@@ -14593,7 +14617,10 @@ function dmtCloseDet(){
 function dmtOpenDet(id){
   var x=_dmtData.find(function(d){return d.id===id;}); if(!x) return;
   _dmtDetId=id;
-  document.getElementById('dmt-det-title').textContent='Detail · '+(x.cid_pelanggan||x.id.slice(0,8));
+  var pelJoin = x.pelanggan || {};
+  var namaPel = x.nama_pelanggan || pelJoin.nama || '';
+  var cidPel  = x.cid_pelanggan  || pelJoin.cid  || '';
+  document.getElementById('dmt-det-title').textContent='Detail · '+(cidPel||x.id.slice(0,8));
 
   var alasanLbl=DMT_ALASAN[x.alasan]||x.alasan||'—';
   var ar=_areaData.find(function(a){return a.id===x.area_id;}); var arNm=ar?ar.nama:(x.area_coverage||'—');
@@ -14622,7 +14649,7 @@ function dmtOpenDet(id){
   document.getElementById('dmt-det-body').innerHTML =
     aktorInfo+
     sec('info-circle','Informasi Cabut')+
-    dr('Pelanggan','<strong>'+_esc(x.nama_pelanggan||'—')+'</strong> <span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--pu)">'+_esc(x.cid_pelanggan||'')+'</span>')+
+    dr('Pelanggan','<strong>'+_esc(namaPel||'—')+'</strong> <span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--pu)">'+_esc(cidPel||'')+'</span>')+
     dr('Status','<span class="tag" style="background:'+stColor+'22;color:'+stColor+'">'+stLabel+'</span>')+
     dr('Tgl Cabut', _esc(x.tgl_cabut||'—'))+
     dr('Tgl Selesai', _esc(x.tgl_selesai||x.tgl_cabut||'—'))+

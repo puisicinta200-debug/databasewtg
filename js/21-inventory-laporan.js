@@ -76,7 +76,7 @@ function invLapLoad(force){
   Promise.all([
     sb.from('material_items').select('id,kode,nama,kategori,merk,satuan,stok,min_stok,status').order('kode'),
     sb.from('material_mutasi').select('id,item_id,jenis,jumlah,area_id,odp_id,odc_id,pel_id,pel_cid,teknisi,tgl,sn_ont,stok_sebelum,stok_sesudah,created_at').order('tgl',{ascending:false}).limit(5000),
-    sb.from('pelanggan').select('id,cid,nama,area_id,ont_item_id,kabel_item_id,status,sn_ont,teknisi_pasang,tgl_pasang,alamat'),
+    sb.from('pelanggan').select('id,cid,nama,area_id,ont_item_id,kabel_item_id,status,sn_ont,ont_model,teknisi_pasang,tgl_pasang,alamat'),
     sb.from('dismantle_orders').select('id,pel_id,cid_pelanggan,area_id,ont_item_id,ont_kembali,ont_kondisi,status,teknisi,tgl_selesai').eq('status','selesai').limit(2000),
     sb.from('areas').select('id,nama,kode')
   ]).then(function(res){
@@ -171,7 +171,7 @@ function _invLapRender(d){
 
   /* ── Per-item stats from mutasi ── */
   var MASUK  = ['masuk','koreksi','dismantle_kembali','return_dismantle','recovery_dismantle'];
-  var KELUAR = ['instalasi','keluar','distribusi','maintenance','maintenance_ont','maintenance_kabel','odp_maintenance','odc_maintenance'];
+  var KELUAR = (typeof JENIS_KELUAR_GUDANG!=='undefined') ? JENIS_KELUAR_GUDANG : ['instalasi','instalasi_lama','keluar','distribusi','maintenance','maintenance_ont','maintenance_kabel','odp_maintenance','odc_maintenance'];
   var RUSAK  = ['rusak'];
   var HILANG = ['hilang'];
 
@@ -249,6 +249,61 @@ function _invLapRender(d){
       _lapKpiCard(totalRusak,  'Barang Rusak',  'var(--yellow)', 'ti-alert-triangle') +
       _lapKpiCard(totalHilang, 'Barang Hilang', 'var(--red)',   'ti-x-circle') +
     '</div>';
+
+  /* ── Distribusi ONT Pelanggan ──
+     Menjawab pertanyaan "2000+ pelanggan tapi ONT di inventory cuma
+     terpakai sedikit, sisanya pakai ONT siapa?" — sebagian besar pelanggan
+     hasil import punya nama model ONT sebagai teks bebas (ont_model) tapi
+     tidak tertaut ke katalog material (ont_item_id). Laporan ini
+     menghitung SEMUA pelanggan aktif berdasarkan data yang benar-benar
+     ada, bukan cuma yang sudah tertaut ke katalog. */
+  (function(){
+    var pelAktif = pelanggan.filter(function(p){ return p.status==='aktif'||p.status==='maintenance'; });
+    var groups = {};
+    pelAktif.forEach(function(p){
+      var key, label;
+      if(p.ont_item_id && itemById[p.ont_item_id]){
+        key = 'item:'+p.ont_item_id;
+        label = itemById[p.ont_item_id].nama + (itemById[p.ont_item_id].merk?' ('+itemById[p.ont_item_id].merk+')':'');
+      } else if(p.ont_model && String(p.ont_model).trim()){
+        key = 'text:'+String(p.ont_model).trim().toUpperCase();
+        label = String(p.ont_model).trim() + ' (catatan teks, belum tertaut katalog)';
+      } else if(p.sn_ont && String(p.sn_ont).trim()){
+        key = 'sn_only';
+        label = 'Ada SN ONT, tapi model tidak dicatat';
+      } else {
+        key = 'none';
+        label = 'Tidak ada data ONT sama sekali';
+      }
+      if(!groups[key]) groups[key] = {label:label, count:0, linked:!!(p.ont_item_id&&itemById[p.ont_item_id])};
+      groups[key].count++;
+    });
+    var groupList = Object.keys(groups).map(function(k){ return groups[k]; }).sort(function(a,b){ return b.count-a.count; });
+    var totalPel = pelAktif.length;
+
+    html += '<div style="background:var(--bg2);border-radius:14px;border:1.5px solid var(--border);padding:14px;margin-bottom:14px">' +
+      '<div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:2px"><i class="ti ti-router" style="color:var(--cyan)"></i> Distribusi ONT Pelanggan Aktif</div>' +
+      '<div style="font-size:10px;color:var(--text3);margin-bottom:10px">Dari ' + totalPel + ' pelanggan aktif — menjawab "sisanya pakai ONT apa"</div>';
+
+    groupList.forEach(function(g){
+      var pct = totalPel ? Math.round(g.count/totalPel*100) : 0;
+      var col = g.linked ? 'var(--green)' : (g.count && g.label.indexOf('Tidak ada data')>=0 ? 'var(--red)' : 'var(--yellow)');
+      html += '<div style="margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">' +
+          '<span style="color:var(--text2)">' + _lapEsc(g.label) + '</span>' +
+          '<span style="font-weight:800;color:'+col+'">' + g.count + ' <span style="font-weight:400;color:var(--text3)">(' + pct + '%)</span></span>' +
+        '</div>' +
+        '<div style="height:6px;background:var(--bg3);border-radius:4px;overflow:hidden">' +
+          '<div style="height:100%;width:' + pct + '%;background:' + col + '"></div>' +
+        '</div>' +
+      '</div>';
+    });
+
+    html += '<div style="margin-top:10px;padding:10px;background:var(--c1b);border-radius:10px;font-size:10px;color:var(--text2);line-height:1.5">' +
+      '<i class="ti ti-info-circle" style="color:var(--c1)"></i> Baris <strong>hijau</strong> = sudah tertaut katalog material (ikut dihitung di stok/laporan per-item). Baris <strong>kuning</strong> = modelnya tercatat sebagai teks (biasanya dari data import) tapi belum tertaut, jadi tidak ikut terhitung di kartu material manapun di bawah. Baris <strong>merah</strong> = benar-benar tidak ada catatan ONT sama sekali.' +
+    '</div>' +
+    '</div>';
+  })();
 
   /* ── Pagination ── */
   var ITEM_PAGE_SIZE = 5;
