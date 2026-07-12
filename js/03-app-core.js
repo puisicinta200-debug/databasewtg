@@ -798,18 +798,18 @@ var PANES = {
   'material':     ['p-material',     'Inventory Material'],
 
   'sales-dash':     ['p-sales-dash',     'Dashboard Sales'],
-  'sales-wilayah':  ['p-sales-wilayah',  'Master Territory'],
-  'sales-pel':      ['p-sales-pel',      'Pelanggan per Wilayah'],
-  'sales-finance':  ['p-sales-finance',  'Finance per Wilayah'],
-  'sales-laporan':  ['p-sales-laporan',  'Laporan Territory'],
+  /* 'sales-wilayah', 'sales-pel', 'sales-finance', 'sales-laporan' DIHAPUS —
+     tidak pernah punya pane sungguhan di HTML. Modul Sales/Territory yang
+     nyata dipakai lewat navSalesNew() + tab internal stGoTab(), bukan
+     lewat key-key ini (sisa rencana lama yang tidak jadi dibangun terpisah). */
 
   'dismantle':      ['p-dismantle',      'Dismantle / Cabut Pelanggan'],
   'maintenance':    ['p-maintenance',    'Maintenance & Perbaikan'],
 
-  'factoryreset':   ['p-factoryreset',   'Factory Reset — Hapus Semua Data'],
-
-  'owner-dash':     ['p-owner-dash',     'Dashboard Owner'],
-  'port-cek':       ['p-port-cek',       'Cek Port Area']
+  'factoryreset':   ['p-factoryreset',   'Factory Reset — Hapus Semua Data']
+  /* 'owner-dash' DIHAPUS — duplikat dari 'insight' (Ringkasan Owner) yang
+     memang dipakai & berfungsi; halaman 'owner-dash' sendiri tidak pernah ada.
+     'port-cek' DIHAPUS — tidak ada pane maupun tombol sidebar yang menuju ke sana. */
 };
 
 var _cur = 'dash';
@@ -8725,6 +8725,18 @@ function invDismOpenDet(id){
   var titleEl=document.getElementById('dmt-det-title');
   if(titleEl) titleEl.textContent = 'Barang Kembali · '+(pel.cid||x.cid_pelanggan||x.id.slice(0,8));
 
+  var ontTypePicker = (!ontId && x.ont_kembali) ?
+    '<div id="inv-dism-ont-assign" style="margin-top:6px">'+
+      '<select id="inv-dism-ont-sel" style="width:100%;padding:7px 9px;border:1.5px solid var(--border2);border-radius:8px;font-family:Sora,sans-serif;font-size:11px;background:var(--bg2);color:var(--text)">'+
+        '<option value="">— Pilih tipe ONT yang sebenarnya —</option>'+
+        (typeof _invMatiData!=='undefined' ? _invMatiData.filter(function(m){ return m.kategori==='ONT'; }).map(function(m){
+          return '<option value="'+m.id+'">'+_esc(m.nama)+(m.merk?' ('+_esc(m.merk)+')':'')+'</option>';
+        }).join('') : '')+
+      '</select>'+
+      '<button onclick="invDismAssignOntType(\''+x.id+'\',\''+(x.pel_id||pel.id||'')+'\')" style="margin-top:6px;width:100%;padding:7px;border:none;border-radius:8px;background:var(--c1);color:#fff;font-family:Sora,sans-serif;font-size:11px;font-weight:700;cursor:pointer">Tetapkan & Catat Masuk Stok</button>'+
+    '</div>'
+    : '';
+
   var bodyEl=document.getElementById('dmt-det-body');
   if(bodyEl) bodyEl.innerHTML =
     sec('info-circle','Informasi Cabut')+
@@ -8741,6 +8753,7 @@ function invDismOpenDet(id){
         +(ontNama?'<div style="font-size:10px;color:var(--text3);margin-top:3px">'+_esc(ontNama)+'</div>':'')
         +(!ontId && ontModelText?'<div style="font-size:10px;color:var(--text3);margin-top:3px">Model (catatan): '+_esc(ontModelText)+'</div>':'')
         +(!ontId?'<div style="font-size:10px;color:var(--red);margin-top:3px"><i class="ti ti-alert-triangle"></i> Belum masuk stok — data pelanggan tidak punya referensi tipe ONT ke katalog material</div>':'')
+        +ontTypePicker
       : '<span class="tag tr"><i class="ti ti-x"></i> Tidak kembali / hilang</span>'+(x.sn_ont?' SN: '+_esc(x.sn_ont):''))+
     dr('Precon / Kabel', x.precon_kembali
       ? '<span class="tag tg"><i class="ti ti-check"></i> Kembali</span>'+(x.panjang_kabel?' '+_esc(String(x.panjang_kabel))+' roll':'')
@@ -8756,6 +8769,64 @@ function invDismOpenDet(id){
   if(footEl) footEl.innerHTML='<button class="dmtf-btn-cancel" style="flex:1" onclick="dmtCloseDet()">Tutup</button>';
   var ov=document.getElementById('dmt-det-overlay');
   if(ov) ov.classList.add('on');
+}
+function invDismAssignOntType(dismantleId, pelId){
+  var sel = document.getElementById('inv-dism-ont-sel');
+  var itemId = sel ? sel.value : '';
+  if(!itemId){ toast('Pilih tipe ONT dulu','err'); return; }
+  if(!pelId){ toast('Data pelanggan untuk dismantle ini tidak ditemukan','err'); return; }
+  var sb = (typeof getSB==='function') ? getSB() : null;
+  if(!sb){ toast('Database tidak terhubung','err'); return; }
+
+  var btn = document.querySelector('#inv-dism-ont-assign button');
+  if(btn){ btn.disabled=true; btn.textContent='Menyimpan…'; }
+
+  sb.from('pelanggan').update({ont_item_id:itemId}).eq('id',pelId).eq('ont_item_id',null)
+    .then(function(rUpd){
+      if(rUpd.error){ toast('Gagal menautkan: '+(rUpd.error.message||''),'err'); if(btn){btn.disabled=false;btn.textContent='Tetapkan & Catat Masuk Stok';} return; }
+      /* Pakai _matMutasi (satu-satunya jalur resmi perubahan stok) supaya
+         ledger, stok, dan riwayat semuanya konsisten — bukan UPDATE manual. */
+      /* Catat DUA transaksi supaya jejak audit lengkap:
+         (1) histori "instalasi lama" — mengakui unit ini memang pernah
+             keluar ke pelanggan tsb (belum pernah tercatat sebelumnya)
+         (2) "kembali dari dismantle" — mengakui fisiknya sudah balik ke
+             gudang sekarang. Net perubahan stok = 0, karena stok awal
+             sistem memang belum dikurangi pemakaian lama (unit ini sudah
+             terhitung ada di baseline), dan sekarang terbukti fisiknya
+             memang di gudang — bukan ditambah atau dikurangi lagi. */
+      if(typeof _matMutasiSequence === 'function'){
+        _matMutasiSequence([
+          {itemId:itemId, delta:-1, jenis:'instalasi_lama', payload:{
+            pel_id: pelId,
+            keterangan: 'Ditetapkan manual dari layar Dismantle & Kembali — histori instalasi lama, tipe baru diketahui belakangan'
+          }},
+          {itemId:itemId, delta:+1, jenis:'return_dismantle', payload:{
+            pel_id: pelId,
+            keterangan: 'Fisik sudah kembali ke gudang (dismantle '+dismantleId.slice(0,8)+')'
+          }}
+        ]).then(function(results){
+          var failed = results.find(function(r){ return !r || !r.ok; });
+          if(failed){
+            toast('Tertaut, tapi ada masalah catat stok: '+(failed.error||'coba lagi'),'err');
+            if(btn){btn.disabled=false;btn.textContent='Tetapkan & Catat Masuk Stok';}
+            return;
+          }
+          toast('Tipe ONT ditetapkan, riwayat & stok sudah disinkronkan','ok');
+          _invMatiLoaded = false;
+          invDismantleLoad();
+          dmtCloseDet();
+        }).catch(function(e){
+          toast('Tertaut, tapi gagal catat stok: '+(e.message||''),'err');
+          if(btn){btn.disabled=false;btn.textContent='Tetapkan & Catat Masuk Stok';}
+        });
+      } else {
+        toast('Tertaut ke katalog, tapi modul stok tidak tersedia untuk mencatat mutasi','err');
+        if(btn){btn.disabled=false;btn.textContent='Tetapkan & Catat Masuk Stok';}
+      }
+    }).catch(function(e){
+      toast('Error: '+(e.message||''),'err');
+      if(btn){btn.disabled=false;btn.textContent='Tetapkan & Catat Masuk Stok';}
+    });
 }
 function invDismantleRender(data){
   var list = document.getElementById('inv-dismantle-list');
@@ -13523,6 +13594,7 @@ function mntMatRender(){
   el.innerHTML=html;
 }
 
+var _mntHistData = [];
 function mntHistLoad(){
   var el=document.getElementById('mnt-hist-list'); if(!el) return;
   var sb=getSB(); if(!sb) return;
@@ -13531,7 +13603,7 @@ function mntHistLoad(){
   var since=new Date(Date.now()-hari*86400000).toISOString().slice(0,10);
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)"><i class="ti ti-loader-2" style="animation:rot 1s linear infinite;font-size:24px;display:block;margin-bottom:8px;opacity:.4"></i></div>';
   var mntJenis=['ont_replace','kabel_replace','odp_maintenance','odc_maintenance','signal_check','maintenance_ont','maintenance_kabel','odp_port_move'];
-  var q=sb.from('material_mutasi').select('id,jenis,jumlah,keterangan,tgl,teknisi,sn_ont,pel_cid,item_id').gte('tgl',since).order('tgl',{ascending:false}).limit(200);
+  var q=sb.from('material_mutasi').select('id,jenis,jumlah,keterangan,tgl,teknisi,sn_ont,pel_cid,pel_id,odp_id,odc_id,area_id,item_id').gte('tgl',since).order('tgl',{ascending:false}).limit(200);
   if(jenis) q=q.eq('jenis',jenis); else q=q.in('jenis',mntJenis);
   q.then(function(r){
     if(r.error||!r.data||!r.data.length){ el.innerHTML='<div class="mnt-empty"><i class="ti ti-history"></i><p>Belum ada riwayat</p></div>'; return; }
@@ -13551,6 +13623,7 @@ function mntHistLoad(){
 
     rows = rows.slice(0,60);
     if(!rows.length){ el.innerHTML='<div class="mnt-empty"><i class="ti ti-history"></i><p>Belum ada riwayat</p></div>'; return; }
+    _mntHistData = rows;
 
     var matMap={}; _mntWs.material.forEach(function(m){matMap[m.id]=m;});
     var jLbl={maintenance_ont:'Ganti ONT',ont_replace:'Ganti ONT',maintenance_kabel:'Ganti Kabel',kabel_replace:'Ganti Kabel',odp_maintenance:'Maint. ODP',odc_maintenance:'Maint. ODC',odp_port_move:'Pindah Port',signal_check:'Cek Sinyal'};
@@ -13558,19 +13631,75 @@ function mntHistLoad(){
     var html='<div style="padding-bottom:8px">';
     rows.forEach(function(h){
       var mat=matMap[h.item_id]||{}; var lbl=jLbl[h.jenis]||_esc(h.jenis||''); var ico=jIco[h.jenis]||'ti-tool';
-      html+='<div class="mnt-hist-item">'+
+      html+='<div class="mnt-hist-item" style="cursor:pointer" onclick="mntHistOpenDet(\''+h.id+'\')">'+
         '<div style="width:30px;height:30px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti '+ico+'" style="font-size:14px;color:var(--cyan)"></i></div>'+
         '<div class="mnt-hist-body">'+
           '<div class="mnt-hist-title">'+lbl+(mat.nama?' - '+_esc(mat.nama):'')+'</div>'+
           '<div class="mnt-hist-sub">'+(h.pel_cid?_esc(h.pel_cid)+' · ':'')+_esc(h.teknisi||'')+(h.jumlah?' · '+h.jumlah+(mat.satuan?' '+_esc(mat.satuan):''):'')+'</div>'+
           (h.keterangan?'<div style="font-size:9px;color:var(--text3);margin-top:2px">'+_esc((h.keterangan||'').slice(0,80))+'</div>':'')+
         '</div>'+
+        '<i class="ti ti-chevron-right" style="font-size:14px;color:var(--text4);flex-shrink:0;align-self:center"></i>'+
         '<div class="mnt-hist-time">'+(h.tgl?h.tgl.slice(0,10):'—')+'</div>'+
       '</div>';
     });
     html+='</div>';
     el.innerHTML=html;
   }).catch(function(){ el.innerHTML='<div class="mnt-empty"><i class="ti ti-alert-circle"></i><p>Gagal muat history</p></div>'; });
+}
+
+function mntHistOpenDet(id){
+  var h = _mntHistData.find(function(x){ return x.id===id; });
+  if(!h) return;
+
+  var matMap={}; (_mntWs.material||[]).forEach(function(m){matMap[m.id]=m;});
+  var mat = matMap[h.item_id]||null;
+  var jLbl={maintenance_ont:'Ganti ONT',ont_replace:'Ganti ONT',maintenance_kabel:'Ganti Kabel',kabel_replace:'Ganti Kabel',odp_maintenance:'Maintenance ODP',odc_maintenance:'Maintenance ODC',odp_port_move:'Pindah Port',signal_check:'Cek Sinyal'};
+  var jIco={maintenance_ont:'ti-device-desktop',ont_replace:'ti-device-desktop',maintenance_kabel:'ti-cable',kabel_replace:'ti-cable',odp_maintenance:'ti-plug',odc_maintenance:'ti-box',odp_port_move:'ti-arrows-exchange',signal_check:'ti-signal'};
+  var lbl = jLbl[h.jenis]||_esc(h.jenis||'Maintenance');
+  var ico = jIco[h.jenis]||'ti-tool';
+
+  var odp = h.odp_id ? (_mntWs.odps||[]).find(function(o){return o.id===h.odp_id;}) : null;
+  var odc = h.odc_id ? (_mntWs.odcs||[]).find(function(o){return o.id===h.odc_id;}) : null;
+  var pel = h.pel_id ? (_mntWs.pel||[]).find(function(p){return p.id===h.pel_id;}) : null;
+  var area = h.area_id ? (_mntWs.areas||[]).find(function(a){return a.id===h.area_id;}) : null;
+
+  function row(l,v){ return v ? '<div class="mnt-info-row"><div class="mnt-info-lbl">'+l+'</div><div class="mnt-info-val">'+v+'</div></div>' : ''; }
+
+  document.getElementById('mnt-ws-sheet-hd-area').innerHTML=
+    '<div class="mnt-sheet-hero odp">'+
+      '<div class="mnt-sheet-hero-ico"><i class="ti '+ico+'"></i></div>'+
+      '<div><div class="mnt-sheet-hero-title">'+lbl+'</div>'+
+      '<div class="mnt-sheet-hero-sub">'+_esc(h.tgl?h.tgl.slice(0,10):'—')+'</div></div>'+
+      '<button class="mnt-sheet-close" onclick="mntWsCloseSheet()"><i class="ti ti-x"></i></button>'+
+    '</div>';
+
+  document.getElementById('mnt-ws-sheet-body').innerHTML=
+    '<div class="mnt-sec-hd or"><i class="ti ti-clipboard-text"></i> Apa Yang Dikerjakan</div>'+
+    row('Jenis Pekerjaan', '<strong>'+lbl+'</strong>')+
+    row('Catatan', h.keterangan ? _esc(h.keterangan) : '<span style="color:var(--text3)">—</span>')+
+    ((odp||odc)?
+      '<div class="mnt-sec-hd"><i class="ti ti-map-pin"></i> Lokasi</div>'+
+      row('Area', area?_esc(area.nama):'') +
+      row('ODP', odp?('<span style="font-family:\'JetBrains Mono\',monospace">'+_esc(odp.kode)+'</span>'):'') +
+      row('ODC', odc?('<span style="font-family:\'JetBrains Mono\',monospace">'+_esc(odc.kode)+'</span>'):'')
+    : '')+
+    (pel || h.pel_cid ?
+      '<div class="mnt-sec-hd"><i class="ti ti-user"></i> Pelanggan Terkait</div>'+
+      row('Nama', pel?_esc(pel.nama):'') +
+      row('CID', '<span style="font-family:\'JetBrains Mono\',monospace;color:var(--pu);font-weight:700">'+_esc(h.pel_cid||(pel&&pel.cid)||'')+'</span>') +
+      row('SN ONT', h.sn_ont?('<span style="font-family:\'JetBrains Mono\',monospace;background:var(--c1b);color:var(--c1);padding:2px 8px;border-radius:6px">'+_esc(h.sn_ont)+'</span>'):'')
+    : '')+
+    '<div class="mnt-sec-hd"><i class="ti ti-package"></i> Material Digunakan</div>'+
+    (mat ?
+      row('Material', '<strong>'+_esc(mat.nama)+'</strong>'+(mat.kode?' <span style="color:var(--text3);font-family:\'JetBrains Mono\',monospace;font-size:10px">('+_esc(mat.kode)+')</span>':'')) +
+      row('Jumlah Dipakai', '<span style="font-weight:800;color:var(--cyan)">'+_esc(String(h.jumlah||1))+'</span> '+_esc(mat.satuan||'pcs'))
+      : '<div style="font-size:11px;color:var(--text3);padding:8px 0">Tidak ada material dicatat untuk pekerjaan ini</div>')+
+    '<div class="mnt-sec-hd"><i class="ti ti-user-cog"></i> Teknisi</div>'+
+    row('Dikerjakan oleh', h.teknisi ? ('<strong>'+_esc(h.teknisi)+'</strong>') : '<span style="color:var(--text3)">Tidak dicatat</span>');
+
+  document.getElementById('mnt-ws-sheet-foot').innerHTML=
+    '<button class="mnt-btn-cancel" style="flex:1" onclick="mntWsCloseSheet()">Tutup</button>';
+  document.getElementById('mnt-ws-overlay').classList.add('on');
 }
 
 function mntWsOpenOdp(odpId){
@@ -14183,14 +14312,14 @@ function dmtLoad(){
        JOIN ke pelanggan(cid,nama) sebagai fallback kalau cid_pelanggan/
        nama_pelanggan di baris dismantle_orders kosong (data lama). */
     var cols = 'id,pel_id,cid_pelanggan,nama_pelanggan,tgl_cabut,alasan,catatan,teknisi,ont_kembali,sn_ont,precon_kembali,panjang_kabel,adapter_kembali,status,area_id,kecamatan,kelurahan,created_at,ont_item_id,kabel_item_id,pelanggan(cid,nama,alamat)';
-    var qDmt = sb.from('dismantle_orders').select(cols).order('created_at',{ascending:false});
+    var qDmt = sb.from('dismantle_orders').select(cols).order('created_at',{ascending:false}).limit(500);
     if(typeof _applyAreaFilter==='function') qDmt = _applyAreaFilter(qDmt, 'area_id');
     return qDmt;
   }).then(function(r){
     if(r && r.error){
       /* Coba fallback minimal columns jika ada error (mis. relasi FK pelanggan
          belum ada / nama beda) — tanpa join, tetap bisa tampil walau tanpa fallback nama */
-      var qDmtFb = sb.from('dismantle_orders').select('id,pel_id,cid_pelanggan,nama_pelanggan,tgl_cabut,alasan,status,ont_kembali,ont_item_id,kabel_item_id,created_at,area_id').order('created_at',{ascending:false});
+      var qDmtFb = sb.from('dismantle_orders').select('id,pel_id,cid_pelanggan,nama_pelanggan,tgl_cabut,alasan,status,ont_kembali,ont_item_id,kabel_item_id,created_at,area_id').order('created_at',{ascending:false}).limit(500);
       if(typeof _applyAreaFilter==='function') qDmtFb = _applyAreaFilter(qDmtFb, 'area_id');
       return qDmtFb;
     }
@@ -15692,6 +15821,42 @@ function frExecuteReset(){
   var btn=document.getElementById('fr-next-btn');
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Verifikasi…'; }
   var username=(CU&&CU.username)||'';
+
+  /* Verifikasi PIN lewat RPC (dijalankan di server/database), BUKAN dengan
+     mengambil PIN ke browser lalu dibandingkan di JavaScript. Dengan cara
+     lama, PIN sungguhan ikut terkirim ke browser di response (bisa dilihat
+     lewat Network tab) dan pengecekannya bisa dilewati dengan memanggil
+     frRunReset(sb) langsung dari console. Lewat RPC, database hanya
+     mengembalikan true/false — PIN aslinya tidak pernah sampai ke client,
+     dan tidak ada jalan pintas melewati pengecekan ini dari sisi browser.
+     Lihat supabase_fixes.sql BAGIAN 7 untuk fungsi verify_reset_pin(). */
+  sb.rpc('verify_reset_pin', {input_username: username, input_pin: pin})
+    .then(function(r){
+      if(r.error){
+        /* Fallback kalau RPC belum dipasang di database (migrasi belum
+           dijalankan) — tetap coba jalur lama supaya fitur tidak macet
+           total, tapi beri tahu jelas bahwa ini mode kurang aman. */
+        if(String(r.error.message||'').indexOf('Could not find the function')>=0 || String(r.error.message||'').indexOf('does not exist')>=0){
+          console.warn('[Factory Reset] RPC verify_reset_pin belum ada di database — jalankan BAGIAN 7 di supabase_fixes.sql. Sementara pakai verifikasi lama (kurang aman).');
+          _frExecuteResetLegacyFallback(sb, username, pin, btn);
+          return;
+        }
+        frPinErr('Gagal verifikasi: '+(r.error.message||'coba lagi'));
+        if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-trash-x"></i> HAPUS SEKARANG'; }
+        return;
+      }
+      if(r.data !== true){
+        frPinErr('PIN salah. Gunakan PIN yang sama saat login.');
+        if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-trash-x"></i> HAPUS SEKARANG'; }
+        return;
+      }
+      frCloseConfirm(); _frRunning=true; frRunReset(sb);
+    }).catch(function(e){
+      frPinErr('Gagal: '+(e&&e.message||'cek koneksi'));
+      if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-trash-x"></i> HAPUS SEKARANG'; }
+    });
+}
+function _frExecuteResetLegacyFallback(sb, username, pin, btn){
   sb.from('app_users').select('*').ilike('username',username).limit(1)
     .then(function(r){
       if(r.error||!r.data||!r.data.length){
@@ -15699,7 +15864,6 @@ function frExecuteReset(){
         if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-trash-x"></i> HAPUS SEKARANG'; } return;
       }
       var usr=r.data[0];
-
       var stored=String(usr.pin||usr.pin_hash||'').trim();
       var input=String(pin).trim();
       if(!stored||stored!==input){
@@ -19730,6 +19894,8 @@ function urToggleStatus(id){
     u.status = newStatus; u.is_active = newIsActive;
     toast('Status diubah menjadi '+newStatus,'ok');
     urUpdateStats(); urRender();
+  }).catch(function(e){
+    toast('Error jaringan: '+(e&&e.message||'coba lagi'),'err');
   });
 }
 

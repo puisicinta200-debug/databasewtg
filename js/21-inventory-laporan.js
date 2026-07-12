@@ -175,24 +175,32 @@ function _invLapRender(d){
   var RUSAK  = ['rusak'];
   var HILANG = ['hilang'];
 
+  /* SATU-SATUNYA fungsi penentu arah mutasi (masuk/keluar/rusak/hilang).
+     Dipakai baik untuk total agregat MAUPUN untuk render tiap baris
+     aktivitas — sebelumnya ada 2 logika terpisah yang bisa saling tidak
+     sinkron (total bisa beda dari yang ditampilkan per-baris). */
+  function _lapMutasiArah(m){
+    var qty = m.jumlah || 0;
+    if(m.jenis === 'koreksi'){
+      /* Koreksi opname: tanda jumlah menentukan arah (positif=masuk, negatif=keluar) */
+      return qty > 0 ? {arah:'masuk', qty:qty} : (qty < 0 ? {arah:'keluar', qty:Math.abs(qty)} : {arah:null, qty:0});
+    }
+    if(RUSAK.indexOf(m.jenis)>=0)  return {arah:'rusak',  qty:(qty>0?qty:1)};
+    if(HILANG.indexOf(m.jenis)>=0) return {arah:'hilang', qty:(qty>0?qty:1)};
+    if(MASUK.indexOf(m.jenis)>=0)  return {arah:'masuk',  qty:Math.abs(qty)||1};
+    if(KELUAR.indexOf(m.jenis)>=0) return {arah:'keluar', qty:Math.abs(qty)||1};
+    /* jenis tidak dikenali di kedua daftar — jangan diam-diam diabaikan,
+       tandai supaya kelihatan di UI daripada hilang tanpa jejak */
+    return {arah:'unknown', qty:Math.abs(qty)||1};
+  }
+
   var byItem = {};
-  items.forEach(function(m){ byItem[m.id]={masuk:0,keluar:0,rusak:0,hilang:0,mutasiList:[]}; });
+  items.forEach(function(m){ byItem[m.id]={masuk:0,keluar:0,rusak:0,hilang:0,unknown:0,mutasiList:[]}; });
 
   mutasi.forEach(function(m){
     if(!byItem[m.item_id]) return;
-    var qty = m.jumlah || 0;
-    /* Koreksi opname: jumlah positif = stok bertambah (masuk), jumlah negatif = stok berkurang (keluar).
-       Sebelumnya koreksi selalu dianggap masuk, sehingga opname yang menurunkan stok tidak pernah
-       tercatat sebagai aktivitas keluar. */
-    if(m.jenis === 'koreksi'){
-      if(qty > 0) byItem[m.item_id].masuk += qty;
-      else if(qty < 0) byItem[m.item_id].keluar += Math.abs(qty);
-    } else {
-      if(MASUK.indexOf(m.jenis)>=0 && qty>0)  byItem[m.item_id].masuk  += qty;
-      if(KELUAR.indexOf(m.jenis)>=0 && qty>0) byItem[m.item_id].keluar += qty;
-    }
-    if(RUSAK.indexOf(m.jenis)>=0){  var rq=(qty>0?qty:1); byItem[m.item_id].rusak += rq; }
-    if(HILANG.indexOf(m.jenis)>=0){ var hq=(qty>0?qty:1); byItem[m.item_id].hilang += hq; }
+    var a = _lapMutasiArah(m);
+    if(a.arah && byItem[m.item_id][a.arah]!==undefined) byItem[m.item_id][a.arah] += a.qty;
     byItem[m.item_id].mutasiList.push(m);
   });
 
@@ -361,9 +369,10 @@ function _invLapRender(d){
 
     /* Status badge */
     html +=
-      '<div style="padding:8px 14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border)">' +
+      '<div style="padding:8px 14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);flex-wrap:wrap">' +
         '<span style="font-size:8px;font-weight:800;padding:2px 8px;border-radius:20px;background:' + sc + '18;color:' + sc + '">' + sl + '</span>' +
         '<span style="font-size:8px;color:var(--text4)">Stok ' + (stok<=0?'habis':(m.min_stok&&stok<=m.min_stok?'di bawah minimum ('+m.min_stok+')':'normal')) + '</span>' +
+        (b.unknown>0 ? '<span style="font-size:8px;font-weight:800;padding:2px 8px;border-radius:20px;background:rgba(217,119,6,.12);color:var(--yellow)"><i class="ti ti-alert-triangle" style="font-size:8px"></i> ' + b.unknown + ' aktivitas jenis tidak dikenali</span>' : '') +
       '</div>';
 
     /* Aktivitas terbaru — dengan pagination per-card (5 per halaman), terpisah dari pagination halaman ringkasan */
@@ -378,26 +387,24 @@ function _invLapRender(d){
       html += '<div style="border-bottom:1px solid var(--border)">' +
         '<div style="padding:6px 14px;font-size:8px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;background:var(--bg3)">Aktivitas Terbaru</div>' +
         pagedAct.map(function(mut){
-          /* Arah +/- mengikuti nilai jumlah sebenarnya (bisa negatif untuk koreksi pengurangan),
-             bukan hanya kategori jenis, supaya tidak terjadi tanda ganda seperti "+-285" */
-          var rawJumlah = mut.jumlah;
-          var isNegatifAsli = (typeof rawJumlah === 'number' && rawJumlah < 0);
-          var isMasuk = isNegatifAsli ? false : (MASUK.indexOf(mut.jenis)>=0);
-          var mc = isMasuk?'var(--green)':'var(--c2)';
+          var arahInfo = _lapMutasiArah(mut);
+          var isMasuk = arahInfo.arah==='masuk';
+          var isUnknown = arahInfo.arah==='unknown';
+          var mc = isUnknown ? 'var(--yellow)' : (isMasuk?'var(--green)':'var(--c2)');
           var jenisLabel = _lapEsc((mut.jenis||'').replace(/_/g,' '));
           var pelRec = mut.pel_cid ? (pelByCid[mut.pel_cid]||null) : null;
           var pelNama = pelRec ? (pelRec.nama||'') : '';
           var isDupCid = (mut.jenis === 'instalasi' && mut.pel_cid && !!cidDupSet[mut.pel_cid]);
           return '<div style="padding:6px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:flex-start;gap:8px' + (isDupCid?';background:rgba(239,68,68,.05)':'') + '">' +
-            '<i class="ti ' + (isMasuk?'ti-arrow-down-left':'ti-arrow-up-right') + '" style="font-size:12px;color:' + mc + ';flex-shrink:0;margin-top:2px"></i>' +
+            '<i class="ti ' + (isUnknown?'ti-help-circle':(isMasuk?'ti-arrow-down-left':'ti-arrow-up-right')) + '" style="font-size:12px;color:' + mc + ';flex-shrink:0;margin-top:2px"></i>' +
             '<div style="flex:1;min-width:0">' +
-              '<span style="font-size:9px;font-weight:700;color:' + mc + '">' + jenisLabel + '</span>' +
+              '<span style="font-size:9px;font-weight:700;color:' + mc + '">' + jenisLabel + (isUnknown?' (jenis tidak dikenali)':'') + '</span>' +
               (mut.teknisi?' <span style="font-size:8px;color:var(--text4)">· <i class="ti ti-user" style="font-size:8px"></i> ' + _lapEsc(mut.teknisi) + '</span>':'') +
               (isDupCid?'<span style="font-size:8px;font-weight:800;color:var(--red);background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:20px;padding:1px 6px;margin-left:4px"><i class="ti ti-alert-triangle" style="font-size:8px"></i> CID duplikat</span>':'') +
               (mut.pel_cid?'<div style="font-size:8px;color:var(--c1);margin-top:2px"><i class="ti ti-id" style="font-size:8px"></i> CID: ' + _lapEsc(mut.pel_cid) + (pelNama?' · '+_lapEsc(pelNama):'') + '</div>':'') +
             '</div>' +
             '<div style="text-align:right;flex-shrink:0">' +
-              '<div style="font-size:12px;font-weight:800;color:' + mc + '">' + (isMasuk?'+':'−') + Math.abs(rawJumlah||0) + '</div>' +
+              '<div style="font-size:12px;font-weight:800;color:' + mc + '">' + (isMasuk?'+':'−') + arahInfo.qty + '</div>' +
               '<div style="font-size:8px;color:var(--text4)">' + _lapEsc((mut.tgl||mut.created_at||'').slice(0,10)) + '</div>' +
             '</div>' +
           '</div>';
