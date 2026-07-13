@@ -325,8 +325,11 @@ function _invLapRender(d){
   pagedItems.forEach(function(m){
     var b    = byItem[m.id] || {masuk:0,keluar:0,rusak:0,hilang:0,mutasiList:[]};
     var stok = m.stok || 0;
-    var sc   = stok<=0?'var(--red)':(m.min_stok&&stok<=m.min_stok?'var(--yellow)':'var(--green)');
-    var sl   = stok<=0?'Habis':(m.min_stok&&stok<=m.min_stok?'Rendah':'Aman');
+    var stInfo = (typeof _matiStokLabel==='function' && typeof _matiStokStatus==='function')
+      ? _matiStokLabel(_matiStokStatus(stok, m.min_stok))
+      : {color: stok<=0?'var(--red)':(m.min_stok&&stok<=m.min_stok?'var(--yellow)':'var(--green)'), short: stok<=0?'Habis':(m.min_stok&&stok<=m.min_stok?'Rendah':'Aman')};
+    var sc   = stInfo.color;
+    var sl   = stInfo.short;
     var isOpen = !!_invLapOpenItem[m.id];
 
     html += '<div style="background:var(--bg2);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;margin-bottom:12px;box-shadow:var(--sh-sm)">';
