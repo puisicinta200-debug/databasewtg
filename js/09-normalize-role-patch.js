@@ -146,10 +146,7 @@ window.urLoad = function(){
     if(!sb) return;
 
 
-    sb.from('app_users')
-      .select('id,username,role')
-      .in('role', _LEGACY_ROLES_DB)
-      .limit(10)
+    sb.rpc('list_legacy_role_users')
       .then(function(r){
         if(r.error || !r.data || !r.data.length) return;
 
@@ -197,16 +194,14 @@ window.p2MigrateLegacyRoles = function(){
   var btn = document.querySelector('#p2-legacy-role-banner button');
   if(btn){ btn.disabled=true; btn.innerHTML='<span style="animation:rot .6s linear infinite;display:inline-block">↻</span> Memproses…'; }
 
-  sb.from('app_users')
-    .update({ role: 'area_manager' })
-    .in('role', _LEGACY_ROLES_DB)
+  sb.rpc('migrate_legacy_roles')
     .then(function(r){
       if(r.error){
         if(typeof toast==='function') toast('Gagal migrasi: '+(r.error.message||''),'err');
         if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-database-cog"></i> Migrasi Sekarang'; }
         return;
       }
-      if(typeof toast==='function') toast('Migrasi role berhasil! Memuat ulang data…','ok');
+      if(typeof toast==='function') toast('Migrasi role berhasil ('+(r.data||0)+' user)! Memuat ulang data…','ok');
       var banner = document.getElementById('p2-legacy-role-banner');
       if(banner) banner.remove();
 

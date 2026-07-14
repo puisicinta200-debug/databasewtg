@@ -131,7 +131,7 @@ function sbStatus(s){
     var sb=getSB();
     if(!sb){ sbStatus('off'); return; }
     sbStatus('load');
-    sb.from('app_users').select('id',{count:'exact',head:true})
+    sb.from('areas').select('id',{count:'exact',head:true})
       .then(function(r){ sbStatus(r.error?'err':'ok'); })
       .catch(function(){ sbStatus('err'); });
   }
@@ -337,7 +337,7 @@ function _pelIncompleteStartRealtime(){
 }
 function loadUsers(cb){
   var sb=getSB(); if(!sb){ if(cb) cb([]); return; }
-  sb.from('app_users').select('*')
+  sb.rpc('list_users_admin')
     .then(function(r){
       _users=(r.data||[]).filter(function(u){ return u.is_active!==false; });
       var el=document.getElementById('l-noact');
@@ -706,12 +706,14 @@ function _wwGoDashDirect(){
   setTimeout(_renderAreaBadge, 100);
   _initDebounceWrappers();
 
-  var _restoreKey = (window.location.hash||'').replace('#','');
-  if(_restoreKey && PANES[_restoreKey]){
-    nav(_restoreKey, document.getElementById('sbt-'+_restoreKey));
-  } else {
-    nav('dash', document.getElementById('sbt-dash'));
-  }
+  /* App ini tidak punya sesi tersimpan (tidak ada localStorage) — artinya
+     SETIAP kali fungsi ini jalan, itu selalu login baru yang interaktif,
+     bukan "melanjutkan sesi lama". Makanya selalu ke Dashboard, jangan
+     ikut hash URL yang mungkin cuma sisa dari tab/riwayat browser
+     sebelumnya (itu sempat bikin login baru nyasar ke halaman lain,
+     mis. User & Role, bukan Dashboard). */
+  window.history.replaceState({navKey:'dash'}, '', '#dash');
+  nav('dash', document.getElementById('sbt-dash'));
   toast('Selamat datang, '+(CU&&(CU.nama||CU.username)||'')+'!','ok');
 
 
@@ -2700,7 +2702,7 @@ function retryNet(){
     document.getElementById('wall').style.display='none';
     toast('Koneksi aktif kembali','ok');
     _sbc=null; var sb=getSB();
-    if(sb) sb.from('app_users').select('id',{count:'exact',head:true})
+    if(sb) sb.from('areas').select('id',{count:'exact',head:true})
       .then(function(r){ sbStatus(r.error?'err':'ok'); })
       .catch(function(){ sbStatus('err'); });
   } else { toast('Masih belum ada koneksi','err'); }
@@ -2709,7 +2711,7 @@ if(!window._bndNetStatus){
 window.addEventListener('online', function(){
   var w=document.getElementById('wall'); if(w) w.style.display='none';
   toast('Koneksi aktif','ok');
-  setTimeout(function(){ _sbc=null; var sb=getSB(); if(sb) sb.from('app_users').select('id',{count:'exact',head:true}).then(function(r){ sbStatus(r.error?'err':'ok'); }).catch(function(){ sbStatus('err'); }); }, 400);
+  setTimeout(function(){ _sbc=null; var sb=getSB(); if(sb) sb.from('areas').select('id',{count:'exact',head:true}).then(function(r){ sbStatus(r.error?'err':'ok'); }).catch(function(){ sbStatus('err'); }); }, 400);
 });
 window.addEventListener('offline', function(){
   var w=document.getElementById('wall'); if(w) w.style.display='flex';
@@ -9264,10 +9266,10 @@ function _invFillAllDropdowns(areaId){
   var tkSel = document.getElementById('inv-k-teknisi');
   if(tkSel && tkSel.options.length <= 1){
     var sb=(typeof getSB==='function')?getSB():null;
-    if(sb) sb.from('app_users').select('id,nama,username').in('role',['teknisi','area_manager','super_admin']).eq('is_active',true).order('nama')
+    if(sb) sb.rpc('list_users_by_roles', {p_roles: ['teknisi','area_manager','super_admin']})
       .then(function(r){
         if(r.error||!r.data) return;
-        r.data.forEach(function(u){ var o=document.createElement('option'); o.value=u.nama||u.username; o.textContent=u.nama||(u.username||'—'); tkSel.appendChild(o); });
+        r.data.filter(function(u){return u.is_active;}).forEach(function(u){ var o=document.createElement('option'); o.value=u.nama||u.username; o.textContent=u.nama||(u.username||'—'); tkSel.appendChild(o); });
       }).catch(function(){});
   }
 
@@ -14082,7 +14084,7 @@ function _buildTeknisiOpts(selectedVal, teknisiOnly){
 function _ensureTeknisiLoaded(cb){
   if(_users && _users.length>0){ cb(); return; }
   var sb=getSB(); if(!sb){ cb(); return; }
-  sb.from('app_users').select('id,nama,username,role,status,is_active').order('nama')
+  sb.rpc('list_users_admin')
     .then(function(r){ if(!r.error) _users=r.data||[]; cb(); })
     .catch(function(){ cb(); });
 }
@@ -15959,19 +15961,11 @@ function frRunReset(sb){
     if(!needNull){ cb(); return; }
     if(lbl) lbl.textContent='Melepas foreign key di app_users…';
 
-    sb.from('app_users').update({
-      area_coverage_id : null,
-      area_id          : null,
-      kecamatan_id     : null,
-      kelurahan_id     : null,
-      rw               : null
-    }).neq('id','00000000-0000-0000-0000-000000000000')
+    sb.rpc('clear_all_user_area_fks')
     .then(function(r){
       if(r && r.error){
-
-        sb.from('app_users').update({ area_coverage_id: null })
-          .neq('id','00000000-0000-0000-0000-000000000000')
-          .then(function(){ cb(); }).catch(function(){ cb(); });
+        console.warn('[factory reset] clear_all_user_area_fks gagal:', r.error);
+        cb();
       } else {
         cb();
       }
@@ -19441,8 +19435,7 @@ function urDiagArea(){
   if(res) res.innerHTML = '<i class="ti ti-loader-2" style="animation:rot 1s linear infinite"></i> Memeriksa…';
   if(!sb){ if(res) res.textContent='Database tidak terhubung.'; return; }
   var AREA_ROLES = ['area_manager','sales','teknisi','viewer'];
-  sb.from('app_users').select('id,nama,username,role,area_coverage_id,area_id,is_active')
-    .in('role', AREA_ROLES)
+  sb.rpc('list_users_by_roles', {p_roles: AREA_ROLES})
     .then(function(r){
       if(r.error){ if(res) res.textContent='Error: '+(r.error.message||'coba lagi'); return; }
       var all = r.data||[];
@@ -19493,7 +19486,7 @@ function urLoad(){
   if(list) list.innerHTML = '<div class="olt-empty"><span class="skel" style="width:80%;height:14px;display:inline-block"></span></div>';
   var sb = getSB();
   if(!sb){ urLoadFallback(); return; }
-  sb.from('app_users').select('*').order('username', {ascending:true})
+  sb.rpc('list_users_admin')
     .then(function(r){
       if(r.error){ urLoadFallback(); return; }
 
@@ -19811,29 +19804,40 @@ function urSave(){
     return;
   }
 
-  var _T20_COLS = ['area_id','area_coverage_id','kecamatan_id','kelurahan_id','rw','rt'];
-  function _doSave(pl){
-    var p = id ? sb.from('app_users').update(pl).eq('id',id) : sb.from('app_users').insert([pl]);
-    p.then(function(r){
-      if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i> Simpan'; }
-      if(r.error){
+  var _pinToSet = pin || null;
+  delete payload.pin; // PIN disimpan lewat RPC terpisah (set_user_pin), bukan di payload profil
 
-        var msg = r.error.message||'';
-        var isColErr = msg.indexOf('Could not find') !== -1 || msg.indexOf('column') !== -1 || msg.indexOf('does not exist') !== -1;
-        var hasT20 = _T20_COLS.some(function(k){ return pl.hasOwnProperty(k); });
-        if(isColErr && hasT20){
-          var pl2 = {};
-          Object.keys(pl).forEach(function(k){ if(_T20_COLS.indexOf(k)===-1) pl2[k]=pl[k]; });
-          toast('⚠ Kolom T20 belum ada di DB. Menyimpan tanpa area hierarchy…','info');
-          _doSave(pl2);
-          return;
-        }
-        toast('Gagal: '+msg,'err'); return;
-      }
+  function _afterProfileSaved(){
+    if(!_pinToSet){
       toast(id?'User diperbarui':'User ditambahkan','ok');
       urCloseForm();
       _urLoaded = false;
       urLoad();
+      return;
+    }
+    // id bisa null untuk user baru — perlu id hasil insert untuk set PIN.
+    // _doSave sudah mengisi window._urLastSavedId sebelum memanggil ini.
+    sb.rpc('set_user_pin', {p_id: id || window._urLastSavedId, p_new_pin: _pinToSet})
+      .then(function(rp){
+        if(rp.error) toast('Profil tersimpan, tapi gagal set PIN: '+(rp.error.message||''),'err');
+        else toast(id?'User diperbarui':'User ditambahkan','ok');
+        urCloseForm();
+        _urLoaded = false;
+        urLoad();
+      }).catch(function(){
+        toast('Profil tersimpan, tapi gagal set PIN (jaringan)','err');
+        urCloseForm(); _urLoaded=false; urLoad();
+      });
+  }
+
+  function _doSave(pl){
+    sb.rpc('upsert_user_admin', {p_id: id || null, p_payload: pl}).then(function(r){
+      if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i> Simpan'; }
+      if(r.error){
+        toast('Gagal: '+(r.error.message||''),'err'); return;
+      }
+      window._urLastSavedId = r.data && r.data.id;
+      _afterProfileSaved();
     }).catch(function(){ if(btn)btn.disabled=false; toast('Error jaringan','err'); });
   }
   _doSave(payload);
@@ -19930,7 +19934,7 @@ function urToggleStatus(id){
     urUpdateStats(); urRender();
     return;
   }
-  sb.from('app_users').update({is_active:newIsActive}).eq('id',id).then(function(r){
+  sb.rpc('toggle_user_active', {p_id: id, p_is_active: newIsActive}).then(function(r){
     if(r.error){ toast('Gagal: '+(r.error.message||''),'err'); return; }
     u.status = newStatus; u.is_active = newIsActive;
     toast('Status diubah menjadi '+newStatus,'ok');
@@ -19976,7 +19980,7 @@ function urSavePinReset(){
     return;
   }
 
-  sb.from('app_users').update({pin:pin}).eq('id',id).then(function(r){
+  sb.rpc('set_user_pin', {p_id: id, p_new_pin: pin}).then(function(r){
     if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-lock"></i> Reset PIN'; }
     if(r.error){ toast('Gagal: '+(r.error.message||''),'err'); return; }
     toast('PIN berhasil direset','ok');
@@ -20733,23 +20737,23 @@ function _rptStartHeartbeat(){
       if(typeof _rptOnlineDiagRefresh==='function') _rptOnlineDiagRefresh();
       return;
     }
-    sb.from('app_users').update({last_seen:new Date().toISOString()}).eq('id',cu.id).select('id').then(function(r){
+    sb.rpc('heartbeat_ping', {p_user_id: cu.id}).then(function(r){
       if(r && r.error){
-        console.error('[heartbeat] gagal update last_seen — cek kolom/RLS app_users:', r.error);
-        window._rptLastBeat = {time:new Date(), ok:false, msg:r.error.message||'Error tidak diketahui'};
-      } else if(!r || !r.data || !r.data.length){
-        /* Update "berhasil" tanpa error TAPI 0 baris kena — ini penyebab paling
-           sering last_seen macet padahal tidak ada error di console: filter
-           .eq('id',cu.id) tidak match baris manapun (RLS row-level menyaring
-           diam-diam, atau id tidak cocok). */
-        console.error('[heartbeat] update tidak mengenai baris manapun (0 rows) — cek RLS UPDATE app_users / kecocokan id:', cu.id);
-        window._rptLastBeat = {time:new Date(), ok:false, msg:'0 baris ter-update (kemungkinan RLS memblokir UPDATE, atau id: '+cu.id+' tidak cocok)'};
+        if(String(r.error.message||'').indexOf('Could not find the function')>=0 || String(r.error.message||'').indexOf('does not exist')>=0){
+          console.warn('[heartbeat] RPC heartbeat_ping belum ada di database — jalankan BAGIAN 12 di supabase_fixes.sql. Online-tracking nonaktif sementara.');
+          window._rptLastBeat = {time:new Date(), ok:false, msg:'RPC heartbeat_ping belum dipasang — jalankan BAGIAN 12 SQL'};
+        } else {
+          console.error('[heartbeat] gagal:', r.error);
+          window._rptLastBeat = {time:new Date(), ok:false, msg:r.error.message||'Error tidak diketahui'};
+        }
+      } else if(r && r.data === false){
+        window._rptLastBeat = {time:new Date(), ok:false, msg:'User id tidak ditemukan di server'};
       } else {
         window._rptLastBeat = {time:new Date(), ok:true, msg:'OK'};
       }
       if(typeof _rptOnlineDiagRefresh==='function') _rptOnlineDiagRefresh();
     }).catch(function(e){
-      console.error('[heartbeat] exception update last_seen:', e);
+      console.error('[heartbeat] exception:', e);
       window._rptLastBeat = {time:new Date(), ok:false, msg:e.message||'Exception'};
       if(typeof _rptOnlineDiagRefresh==='function') _rptOnlineDiagRefresh();
     });
@@ -20902,10 +20906,7 @@ function rptOnlineLoad(){
   var sc = window.SOT ? SOT.cache() : {};
   var areaNm={};(sc.areas||[]).forEach(function(a){areaNm[a.id]=a.nama||a.kode;});
 
-  sb.from('app_users')
-    .select('id,nama,username,role,area_coverage_id,is_active,last_seen')
-    .eq('is_active',true)
-    .order('nama',{ascending:true})
+  sb.rpc('list_users_with_last_seen')
     .then(function(r){
       if(r.error){
         if(_isColMissingRpt(r.error) && /last_seen/i.test(r.error.message||'')){
@@ -21114,7 +21115,7 @@ function rptAktLoad(){
   if(!sb) return;
   var sel = document.getElementById('rpt-akt-fil-user');
   if(sel && sel.options.length <= 1){
-    sb.from('app_users').select('id,nama,username').eq('is_active',true).order('nama')
+    sb.rpc('list_active_users_basic')
       .then(function(r){
         if(r.error || !r.data) return;
         r.data.forEach(function(u){
@@ -21266,16 +21267,15 @@ function rptLogLoad(){
   if(!sb) return;
   var sel = document.getElementById('rpt-log-fil-user');
   if(sel && sel.options.length <= 1){
-    sb.from('app_users').select('id,nama,username').eq('is_active',true).order('nama')
-      .then(function(r){
-        if(r.error || !r.data) return;
-        r.data.forEach(function(u){
-          var o = document.createElement('option');
-          o.value = u.nama || u.username;
-          o.textContent = u.nama || u.username;
-          sel.appendChild(o);
-        });
-      }).catch(function(){});
+    sb.rpc('list_active_users_basic').then(function(r){
+      if(r.error || !r.data) return;
+      r.data.forEach(function(u){
+        var o = document.createElement('option');
+        o.value = u.nama || u.username;
+        o.textContent = u.nama || u.username;
+        sel.appendChild(o);
+      });
+    }).catch(function(){});
   }
 }
 
