@@ -3225,6 +3225,13 @@ ALTER TABLE dismantle_orders
             <div class="form-hint">RW 3 — Existing = masuk hitungan Fee Recurring · Expand = tidak masuk hitungan Fee Recurring</div>
           </div>
 
+          <!-- Titik Mulai Hitung Tagihan (opsional, khusus data import) -->
+          <div class="form-group">
+            <label class="form-lbl"><i class="ti ti-calendar-event"></i> Mulai Hitung Tagihan (opsional)</label>
+            <input type="date" class="inp" id="pelf-recurring-mulai">
+            <div class="form-hint">Kosongkan untuk pakai Tgl Pasang seperti biasa. Isi ini kalau pelanggan hasil import lama dan tidak mau ditagih mundur sampai ke tanggal pasang aslinya — tagihan akan mulai dihitung dari tanggal ini saja. Tidak mengubah pilihan Existing/Expand di atas.</div>
+          </div>
+
           <!-- Tgl Pasang & Status -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div class="form-group">
@@ -4112,6 +4119,17 @@ ALTER TABLE dismantle_orders
         <div class="gis-dq-panel" id="rec-tipe-dq-panel" style="display:none">
           <div class="gis-dq-hd"><i class="ti ti-alert-triangle"></i><span id="rec-tipe-dq-title">Memeriksa…</span></div>
           <div class="gis-dq-body" id="rec-tipe-dq-body"></div>
+        </div>
+
+        <!-- Panel terpisah: soal titik mulai tagihan untuk data import lama.
+             TIDAK berkaitan dengan Existing/Expand di atas — itu tetap
+             klasifikasi bisnis apa adanya, ini murni soal tanggal mulai
+             hitung supaya data import tidak ditagih mundur & auto-dismantle
+             keliru. -->
+        <button class="btn-ghost" style="margin-bottom:8px;font-size:11px" onclick="recCekImportLama()"><i class="ti ti-calendar-event"></i> Cek Pelanggan Berisiko Ditagih Mundur (Data Import)</button>
+        <div class="gis-dq-panel" id="rec-import-dq-panel" style="display:none">
+          <div class="gis-dq-hd"><i class="ti ti-alert-triangle"></i><span id="rec-import-dq-title">Memeriksa…</span></div>
+          <div class="gis-dq-body" id="rec-import-dq-body"></div>
         </div>
         <div class="olt-stat-strip">
           <div class="olt-stat-item tc1"><div class="olt-stat-n" id="recst-total">—</div><div class="olt-stat-l">Total Baris</div></div>
