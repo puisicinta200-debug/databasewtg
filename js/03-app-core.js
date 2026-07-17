@@ -4036,6 +4036,130 @@ function recCekTipeKosong(){
    export → isi kolom tipe_recurring per baris (existing/expand) di Excel →
    upload lagi lewat Import / Export → Import Data Pelanggan (dicocokkan
    otomatis lewat CID, hanya kolom yang diisi yang akan ter-update). */
+
+/* ── Panel terpisah: pelanggan hasil import lama yang berisiko ditagih
+   mundur & auto-dismantle keliru. INI TIDAK ADA HUBUNGANNYA dengan
+   existing/expand (recCekTipeKosong di atas) — target populasinya beda:
+   di sini yang dicari adalah pelanggan AKTIF, tanggal pasang jauh di masa
+   lalu, dan recurring_mulai BELUM diisi — apa pun status existing/expand-
+   nya. Existing/expand tetap dihormati apa adanya, cuma titik mulai
+   hitungan tagihannya yang digeser. */
+function recCekImportLama(){
+  var panel = document.getElementById('rec-import-dq-panel');
+  var title = document.getElementById('rec-import-dq-title');
+  var body  = document.getElementById('rec-import-dq-body');
+  if(!panel) return;
+
+  var sumber = (_recPelMap && Object.keys(_recPelMap).length) ? Object.values(_recPelMap) : _getPelData();
+  if(!sumber || !sumber.length){
+    if(typeof toast==='function') toast('Data pelanggan belum dimuat — buka halaman ini sebentar lalu coba lagi','err');
+    return;
+  }
+
+  panel.style.display='block';
+  title.textContent='Memeriksa…';
+  body.innerHTML='';
+
+  var FREE = (typeof JENIS_GRATIS!=='undefined') ? JENIS_GRATIS : ['FASUM','ODP_TEMPEL','ODC_TEMPEL'];
+  var cutoff = new Date(); cutoff.setMonth(cutoff.getMonth()-2); // >2 bulan dianggap "lama"
+  var cutoffStr = cutoff.toISOString().slice(0,10);
+
+  var berisiko = sumber.filter(function(p){
+    return p && p.status==='aktif' && FREE.indexOf(p.jenis_pelanggan)<0
+      && !p.recurring_mulai
+      && p.tgl_pasang && p.tgl_pasang < cutoffStr;
+  });
+  window._recImportLamaList = berisiko;
+
+  if(!berisiko.length){
+    title.textContent='✅ Tidak ada pelanggan berisiko ditagih mundur';
+    body.innerHTML = '<div class="gis-dq-item"><i class="ti ti-check"></i> Semua pelanggan aktif dengan tanggal pasang lama sudah punya titik mulai tagihan, atau memang pelanggan baru.</div>';
+    return;
+  }
+
+  var perKec = {};
+  berisiko.forEach(function(p){
+    var k = p.kecamatan || '(tanpa kecamatan)';
+    (perKec[k] = perKec[k]||[]).push(p);
+  });
+
+  title.textContent = '⚠ ' + berisiko.length + ' pelanggan berisiko ditagih mundur & auto-dismantle keliru';
+  var html = '<div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6">Pelanggan berikut statusnya aktif, tanggal pasang lebih dari 2 bulan lalu, dan belum punya titik mulai tagihan manual — sistem akan menghitung tagihan mundur sampai tanggal pasang aslinya. Kalau ini pelanggan hasil import data lama (bukan penunggak sungguhan), terapkan titik mulai di bawah. <b>Status Existing/Expand mereka tidak akan berubah.</b></div>';
+  html += '<div style="margin-bottom:10px;padding:10px;background:var(--bg3,#f4f6fb);border-radius:8px">'+
+    '<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px"><i class="ti ti-calendar-event"></i> Terapkan Titik Mulai Hitung Tagihan</div>'+
+    '<input type="date" id="rec-bulk-anchor-date" style="width:100%;padding:8px 10px;border:1.5px solid var(--border2);border-radius:8px;font-family:Sora,sans-serif;font-size:13px;margin-bottom:8px" value="'+new Date().toISOString().slice(0,10)+'">'+
+    '<button class="btn" style="width:100%;background:var(--c1,#2451e0)" onclick="recBulkSetAnchor()"><i class="ti ti-bolt"></i> Terapkan ke '+berisiko.length+' Pelanggan Ini</button>'+
+  '</div>';
+  Object.keys(perKec).sort().forEach(function(k){
+    var arr = perKec[k];
+    html += '<div class="gis-dq-item" style="align-items:flex-start;flex-direction:column;gap:4px;padding:8px 0">';
+    html += '<div style="font-weight:800;color:var(--text);display:flex;align-items:center;gap:6px"><i class="ti ti-map-pin"></i> '+_esc(k)+' — '+arr.length+' pelanggan</div>';
+    arr.slice(0,20).forEach(function(p){
+      html += '<div style="padding-left:20px;font-family:monospace;font-size:11px;color:var(--text2)">• '+_esc(p.cid||p.id)+' — '+_esc(p.nama||'-')+' <span style="color:var(--text3)">(pasang: '+_esc(p.tgl_pasang||'-')+', '+(p.tipe_recurring||'existing')+')</span></div>';
+    });
+    if(arr.length>20) html += '<div style="padding-left:20px;font-size:10.5px;color:var(--text3)">…dan '+(arr.length-20)+' lainnya</div>';
+    html += '</div>';
+  });
+  html += '<div style="font-size:10.5px;color:var(--text3);margin-top:6px;padding-top:8px;border-top:1px solid var(--border)">Kolom (existing/expand) di setiap baris menunjukkan klasifikasi mereka saat ini — sengaja ditampilkan supaya Anda bisa cek dulu, campuran existing & expand dalam daftar ini normal dan aman diterapkan bersamaan.</div>';
+  body.innerHTML = html;
+}
+
+function recBulkSetAnchor(){
+  var kosong = window._recImportLamaList || [];
+  if(!kosong.length){ if(typeof toast==='function') toast('Tidak ada data untuk diproses','err'); return; }
+
+  var dateInput = document.getElementById('rec-bulk-anchor-date');
+  var anchorDate = dateInput ? dateInput.value : '';
+  if(!anchorDate){ toast('Pilih tanggal mulai dulu','err'); return; }
+
+  if(!confirm(
+    'Terapkan titik mulai hitung tagihan '+anchorDate+' untuk '+kosong.length+' pelanggan ini?\n\n'+
+    '- Status existing/expand mereka TIDAK berubah\n'+
+    '- Tagihan recurring akan dihitung mulai dari tanggal ini, bukan dari tanggal pasang asli\n'+
+    '- Tagihan mundur (menunggu_validasi) yang sudah kadung dibuat sebelum tanggal ini akan DIBATALKAN\n\n'+
+    'Lanjutkan?'
+  )) return;
+
+  var sb = getSB(); if(!sb){ toast('Database tidak terhubung','err'); return; }
+  var ids = kosong.map(function(p){ return p.id; });
+
+  var btn = event && event.target;
+  if(btn){ btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Memproses…'; }
+
+  sb.from('pelanggan').update({recurring_mulai:anchorDate}).in('id', ids)
+    .then(function(r){
+      if(r.error){
+        toast('Gagal menerapkan: '+(r.error.message||''),'err');
+        if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-bolt"></i> Terapkan';}
+        return;
+      }
+
+      /* Batalkan tagihan mundur yang sudah kadung dibuat untuk periode
+         SEBELUM titik mulai baru — tapi biarkan tagihan yang periodenya
+         sama/sesudah titik mulai, karena itu memang wajar ditagih. */
+      var anchorPeriode = anchorDate.slice(0,7); // YYYY-MM
+      sb.from('fee_recurring').update({status:'stopped', catatan:'Dibatalkan — titik mulai tagihan digeser ke '+anchorDate+' (data import)'})
+        .in('pel_id', ids).in('status', ['menunggu_validasi','draft']).lt('periode', anchorPeriode)
+        .then(function(r2){
+          if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-bolt"></i> Terapkan'; }
+          if(r2.error){
+            toast(kosong.length+' pelanggan diterapkan, tapi gagal membatalkan tagihan lama: '+(r2.error.message||''),'err');
+          } else {
+            toast(kosong.length+' pelanggan diterapkan & tagihan sebelum '+anchorDate+' dibatalkan','ok');
+          }
+          window._recImportLamaList = [];
+          if(typeof recCekImportLama==='function') setTimeout(recCekImportLama, 500);
+          if(typeof recLoad==='function'){ _recLoaded=false; setTimeout(recLoad, 600); }
+        }).catch(function(e){
+          if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-bolt"></i> Terapkan'; }
+          toast('Diterapkan, tapi error membatalkan tagihan lama: '+(e.message||''),'err');
+        });
+    }).catch(function(e){
+      if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-bolt"></i> Terapkan'; }
+      toast('Error: '+(e.message||''),'err');
+    });
+}
+
 function recExportTipeKosong(){
   var kosong = window._recTipeKosongList || [];
   if(!kosong.length){ if(typeof toast==='function') toast('Tidak ada data untuk di-export','err'); return; }
@@ -6317,7 +6441,7 @@ function recLoad(){
   _recDrill={kec:'',kel:'',rw:''};
   Promise.all([
     _sbFetchAllRows(sb,'fee_recurring','id,pel_id,periode,nominal,status,tgl_generate,tgl_bayar,catatan,created_at', function(q){ return q.order('periode',{ascending:false}); }),
-    _sbFetchAllRows(sb,'pelanggan','id,cid,nama,area_id,area_coverage,kecamatan,kelurahan,rw,rt,jenis_pelanggan,tipe_recurring,status,tgl_pasang,created_at')
+    _sbFetchAllRows(sb,'pelanggan','id,cid,nama,area_id,area_coverage,kecamatan,kelurahan,rw,rt,jenis_pelanggan,tipe_recurring,status,tgl_pasang,recurring_mulai,created_at')
   ]).then(function(res){
     var rRec=res[0], rPel=res[1];
     if(rRec.error){
@@ -6624,7 +6748,13 @@ function _recAutoSinkron(sb, pelData){
     if(!p || p.status!=='aktif') return;
     if(FREE_TYPES.indexOf(p.jenis_pelanggan)>=0) return;
     if((p.tipe_recurring||'existing')==='expand') return;
-    var anchor=p.tgl_pasang||p.created_at; if(!anchor) return;
+    /* Titik mulai hitungan tagihan: kalau ada override manual
+       (recurring_mulai — diisi manual per pelanggan, atau otomatis saat
+       import), pakai itu. Kalau tidak ada, baru fallback ke tanggal
+       pasang asli seperti biasa. Ini TIDAK mengubah aturan existing/expand
+       di atas — cuma menggeser DARI TANGGAL MANA hitungan dimulai untuk
+       pelanggan yang memang seharusnya masuk kategori 'existing'. */
+    var anchor=p.recurring_mulai||p.tgl_pasang||p.created_at; if(!anchor) return;
     var due=_recDueMonths(anchor,today);
     due.forEach(function(per){
       var key=p.id+'|'+per;
@@ -9588,6 +9718,7 @@ function pelSave(){
   var paket    = document.getElementById('pelf-paket').value;
   var jenisPel = document.getElementById('pelf-jenis').value||'Reguler';
   var tipeRecurring = document.getElementById('pelf-tipe-recurring').value||'existing';
+  var recurringMulai = (document.getElementById('pelf-recurring-mulai')||{}).value || null;
   var tglPasang= document.getElementById('pelf-tgl-pasang').value;
   var status   = document.getElementById('pelf-status').value;
   var lat      = parseFloat(document.getElementById('pelf-lat').value)||null;
@@ -9648,6 +9779,7 @@ function pelSave(){
     paket: paket,
     jenis_pelanggan: jenisPel,
     tipe_recurring: tipeRecurring,
+    recurring_mulai: recurringMulai,
     tgl_pasang: tglPasang||null,
     status: status,
     lat: lat,
@@ -11677,6 +11809,8 @@ function pelOpenForm(data){
   document.getElementById('pelf-paket').value      = isEdit ? (data.paket||'') : '';
   document.getElementById('pelf-jenis').value      = isEdit ? (data.jenis_pelanggan||'Reguler') : 'Reguler';
   document.getElementById('pelf-tipe-recurring').value = isEdit ? (data.tipe_recurring||'existing') : 'existing';
+  var recMulaiEl = document.getElementById('pelf-recurring-mulai');
+  if(recMulaiEl) recMulaiEl.value = isEdit ? (data.recurring_mulai||'') : '';
   document.getElementById('pelf-tgl-pasang').value = isEdit ? (data.tgl_pasang||'') : '';
   document.getElementById('pelf-status').value     = isEdit ? (data.status||'aktif') : 'aktif';
   document.getElementById('pelf-port').value       = isEdit ? (data.nomor_port||'') : '';
@@ -16987,7 +17121,7 @@ var _ieSchemas = {
   olts:      {label:'Master OLT',        cols:['kode','nama','lokasi','brand','model','jumlah_pon','pon_used','uplink','status','lat','lng','keterangan'],required:['kode','nama']},
   odcs:      {label:'Master ODC',        cols:['kode','nama','area_kode','olt_kode','lokasi','type','jumlah_port','status','lat','lng','keterangan'],                required:['kode','nama']},
   odps:      {label:'Master ODP',        cols:['kode','nama','area_kode','odc_kode','lokasi','type','jumlah_port','status','lat','lng','keterangan'],                required:['kode','nama']},
-  pelanggan: {label:'Pelanggan', cols:['cid','nama','hp','nik','alamat','kecamatan','kelurahan','rw','rt','paket','jenis_pelanggan','tgl_pasang','status','tipe_recurring','area_id','odp_id','nomor_port','sn_ont','mac_ont','ont_model','teknisi_pasang','lat','lng','keterangan'], resolve_cols:['area_kode','odp_kode','area_coverage'], required:['cid','nama']},
+  pelanggan: {label:'Pelanggan', cols:['cid','nama','hp','nik','alamat','kecamatan','kelurahan','rw','rt','paket','jenis_pelanggan','tgl_pasang','status','tipe_recurring','recurring_mulai','area_id','odp_id','nomor_port','sn_ont','mac_ont','ont_model','teknisi_pasang','lat','lng','keterangan'], resolve_cols:['area_kode','odp_kode','area_coverage'], required:['cid','nama']},
   material_items: {label:'Material',     cols:['kode','nama','kategori','satuan','merk','stok','min_stok','harga_satuan','status','keterangan'],         required:['kode','nama','kategori']}
   /* 'tickets' dihapus — fitur ticketing tidak dipakai, diganti Maintenance.
      Riwayat Maintenance tersedia sebagai EXPORT saja (lihat ieDoExport,
@@ -17680,6 +17814,16 @@ function _ieDoImportCoreRun(sb, btn, validRows, _existingCidSet){
       obj[k] = v;
     });
     _numFields.forEach(function(f){ if(obj[f]!==undefined && obj[f]!==null) obj[f]=Number(obj[f])||0; });
+
+    /* [FIX RECURRING IMPORT] Kalau ini pelanggan BARU (belum ada di DB) dan
+       CSV tidak mengisi recurring_mulai, otomatis isi dengan tanggal import
+       hari ini — supaya tagihan recurring-nya tidak dihitung mundur sampai
+       ke tanggal pasang asli (yang bisa jauh sebelum sistem ini dipakai).
+       Tidak berlaku untuk baris UPDATE (pelanggan yang sudah ada) — biarkan
+       nilai recurring_mulai yang sudah ada di DB, jangan ditimpa. */
+    if(_ieCurrentModul==='pelanggan' && !_isUpdateRow && !obj.recurring_mulai){
+      obj.recurring_mulai = new Date().toISOString().slice(0,10);
+    }
     /* Fix nik: Excel export sebagai scientific notation (3.27E+15) */
     if(obj.nik && (obj.nik.indexOf('E+')>=0 || obj.nik.indexOf('e+')>=0)){
       try{ obj.nik = String(Math.round(parseFloat(obj.nik))); }catch(e){}
