@@ -104,12 +104,12 @@
       if(!akanSuspend.length) return;
 
       var ids = akanSuspend.map(function(p){ return p.id; });
-      sb.from('pelanggan').update({status:'suspend'}).in('id', ids).then(function(ru){
-        if(ru && ru.error) return;
-        if(typeof toast === 'function') toast('⏸ '+akanSuspend.length+' pelanggan belum konfirmasi bayar '+SUSPEND_AFTER+' periode → otomatis di-SUSPEND', 'err');
+      _wtgUpdateStatusBatched(sb, ids, 'suspend', function(totalOk){
+        if(!totalOk) return;
+        if(typeof toast === 'function') toast('⏸ '+totalOk+' pelanggan belum konfirmasi bayar '+SUSPEND_AFTER+' periode → otomatis di-SUSPEND', 'err');
         if(typeof _pelLoaded !== 'undefined') _pelLoaded = false;
         setTimeout(function(){ if(typeof pelLoad === 'function') pelLoad(); }, 300);
-      }).catch(function(){});
+      });
     }).catch(function(){});
   }
 
@@ -213,6 +213,31 @@
     }).catch(function(e){ if(typeof toast === 'function') toast('Error: '+(e&&e.message||'coba lagi'), 'err'); });
   }
 
+  // Update banyak ID sekaligus lewat URL query bisa kepanjangan & ditolak
+  // server ("Bad Request") kalau jumlah pelanggannya ratusan. Makanya
+  // dipecah per BATCH_SIZE, dikirim satu-satu berurutan (bukan barengan),
+  // sama seperti pola batching yang sudah dipakai di bagian lain aplikasi.
+  var WTG_BATCH_SIZE = 150;
+
+  function _wtgUpdateStatusBatched(sb, ids, statusBaru, onDone){
+    var totalOk = 0, totalGagal = 0;
+    var chunks = [];
+    for(var i=0; i<ids.length; i+=WTG_BATCH_SIZE){ chunks.push(ids.slice(i, i+WTG_BATCH_SIZE)); }
+
+    function jalankan(idx){
+      if(idx >= chunks.length){ onDone(totalOk, totalGagal); return; }
+      sb.from('pelanggan').update({status:statusBaru}).in('id', chunks[idx]).then(function(ru){
+        if(ru && ru.error) totalGagal += chunks[idx].length;
+        else totalOk += chunks[idx].length;
+        jalankan(idx+1);
+      }).catch(function(){
+        totalGagal += chunks[idx].length;
+        jalankan(idx+1);
+      });
+    }
+    jalankan(0);
+  }
+
   function wtgReaktivasiMassal(statusAsal){
     var label = statusAsal === 'suspend' ? 'SUSPEND' : 'CABUT';
     var sb = typeof getSB === 'function' ? getSB() : null;
@@ -230,12 +255,19 @@
       if(!confirm(pesan)) return;
 
       var ids = list.map(function(p){ return p.id; });
-      sb.from('pelanggan').update({status:'aktif'}).in('id', ids).then(function(ru){
-        if(ru.error){ if(typeof toast === 'function') toast('Gagal mengaktifkan massal: '+ru.error.message, 'err'); return; }
-        if(typeof toast === 'function') toast('✅ '+ids.length+' pelanggan berhasil diaktifkan kembali', 'ok');
+      if(typeof toast === 'function') toast('⏳ Mengaktifkan '+ids.length+' pelanggan, mohon tunggu…', 'ok');
+
+      _wtgUpdateStatusBatched(sb, ids, 'aktif', function(totalOk, totalGagal){
+        if(totalOk && !totalGagal){
+          if(typeof toast === 'function') toast('✅ '+totalOk+' pelanggan berhasil diaktifkan kembali', 'ok');
+        } else if(totalOk && totalGagal){
+          if(typeof toast === 'function') toast('⚠ '+totalOk+' berhasil, '+totalGagal+' gagal — coba ulangi lagi untuk sisanya', 'err');
+        } else {
+          if(typeof toast === 'function') toast('Gagal mengaktifkan massal, coba lagi', 'err');
+        }
         if(typeof _pelLoaded !== 'undefined') _pelLoaded = false;
         if(typeof pelLoad === 'function') pelLoad();
-      }).catch(function(e){ if(typeof toast === 'function') toast('Error: '+(e&&e.message||'coba lagi'), 'err'); });
+      });
     }).catch(function(e){ if(typeof toast === 'function') toast('Error: '+(e&&e.message||'coba lagi'), 'err'); });
   }
 
