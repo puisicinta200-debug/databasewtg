@@ -217,7 +217,15 @@
   // server ("Bad Request") kalau jumlah pelanggannya ratusan. Makanya
   // dipecah per BATCH_SIZE, dikirim satu-satu berurutan (bukan barengan),
   // sama seperti pola batching yang sudah dipakai di bagian lain aplikasi.
-  var WTG_BATCH_SIZE = 150;
+  // Batch diperkecil (samakan dengan pola aman yang sudah dipakai fitur
+  // import lain di aplikasi ini) + diberi jeda antar batch. Ini supaya
+  // notifikasi realtime yang muncul akibat perubahan banyak baris sekaligus
+  // tidak "membanjiri" cache data (SOT) yang dipakai halaman Monitoring /
+  // Inventory / Owner Dashboard, yang bisa bikin halaman itu macet
+  // "Memuat data..." kalau reaktivasi dilakukan untuk ratusan pelanggan
+  // sekaligus dalam waktu singkat.
+  var WTG_BATCH_SIZE = 50;
+  var WTG_BATCH_DELAY_MS = 600;
 
   function _wtgUpdateStatusBatched(sb, ids, statusBaru, onDone){
     var totalOk = 0, totalGagal = 0;
@@ -229,10 +237,10 @@
       sb.from('pelanggan').update({status:statusBaru}).in('id', chunks[idx]).then(function(ru){
         if(ru && ru.error) totalGagal += chunks[idx].length;
         else totalOk += chunks[idx].length;
-        jalankan(idx+1);
+        setTimeout(function(){ jalankan(idx+1); }, WTG_BATCH_DELAY_MS);
       }).catch(function(){
         totalGagal += chunks[idx].length;
-        jalankan(idx+1);
+        setTimeout(function(){ jalankan(idx+1); }, WTG_BATCH_DELAY_MS);
       });
     }
     jalankan(0);
