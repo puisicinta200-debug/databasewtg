@@ -1094,3 +1094,196 @@
   };
 
 })();
+
+
+/* =====================================================================
+   PERBAIKAN LANJUTAN #2 — 3 KASUS BARU (audit ulang form Tambah/Edit ODP)
+   ---------------------------------------------------------------------
+   TEMUAN:
+   Case 1 ("Port ODC kosong padahal sudah dipakai") DAN sebagian dari
+   Case 3 ("Port ODP & ODC induk reset saat edit") — TERNYATA 1 akar
+   masalah yang sama: ODP yang dibuat SEBELUM kolom "odc_port_no" ada
+   di database (sebelum perbaikan kolom kemarin), otomatis nilainya
+   KOSONG (NULL) — jadi sistem tidak tahu ODP itu menempati port yang
+   mana. Makanya semua port kelihatan "Kosong" padahal sebenarnya sudah
+   dipakai, dan saat di-edit, pilihan Port ODC-nya ikut kosong juga.
+   → Solusi: tombol "Lengkapi Nomor Port dari Kode" (dengan pratinjau
+     dulu, aman) — mengisi ulang odc_port_no berdasarkan angka di
+     ujung kode ODP yang SUDAH ADA (misal ..._001 → Port 1).
+
+   Case 2 ("Area kepilih otomatis tapi ODC induk tidak ikut terbuka")
+   DAN sisa Case 3 (ODC induk reset saat edit ODP yang area-nya kosong)
+   — akar masalahnya: dropdown Area MEMANG SENGAJA "mengingat" pilihan
+   area terakhir (ini perilaku asli, bukan bug, supaya tidak perlu
+   pilih ulang tiap kali). Tapi dropdown ODC yang saya perbaiki
+   sebelumnya belum ikut membaca "ingatan" itu, jadi dua dropdown itu
+   jadi tidak sinkron. Sudah diperbaiki di bawah — dropdown ODC sekarang
+   ikut ke area yang sama seperti yang ditampilkan di layar.
+===================================================================== */
+(function(){
+  'use strict';
+
+  /* ================= PERBAIKAN Case 2 & sebagian Case 3: sinkronkan dropdown Area <-> ODC ================= */
+  var _origOdpFillOdcDropdown2 = window._odpFillOdcDropdown;
+  window._odpFillOdcDropdown = function(selId, currentVal, areaId){
+    // Kalau areaId tidak dikirim (form "Tambah" baru), ikuti apa yang
+    // SEDANG TAMPIL di dropdown Area (termasuk kalau itu "ingatan" dari
+    // sesi sebelumnya) — supaya dropdown ODC selalu sinkron dgn Area.
+    if (!areaId){
+      var areaEl = document.getElementById('odpf-area');
+      if (areaEl && areaEl.value) areaId = areaEl.value;
+    }
+    // Kalau tetap tidak ada areaId (data ODP lama areanya kosong), coba
+    // tebak dari ODC yang sedang dipilih/di-edit.
+    if (!areaId && currentVal){
+      var odcTerkait = (window._odcData || []).find(function(o){ return o.id === currentVal; });
+      if (odcTerkait) areaId = odcTerkait.area_id;
+    }
+    return _origOdpFillOdcDropdown2(selId, currentVal, areaId);
+  };
+
+  /* ================= FITUR: Lengkapi Nomor Port ODC dari Kode (backfill aman) ================= */
+  function tebakNomorPortDariKode(kode){
+    var m = /_(\d{1,3})$/.exec(kode || '');
+    if (!m) return null;
+    return parseInt(m[1], 10);
+  }
+
+  function isSuperAdmin2(){
+    var role = (typeof normalizeRole === 'function') ? normalizeRole(window.CR) : window.CR;
+    return role === 'super_admin';
+  }
+
+  function ensureBackfillButton(){
+    if (!isSuperAdmin2()) return;
+    if (document.getElementById('odp-backfill-btn')) return;
+    var rapikanBtn = document.getElementById('odp-rapikan-btn');
+    if (!rapikanBtn || !rapikanBtn.parentNode) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'odp-backfill-btn';
+    btn.onclick = window.odpBukaBackfillPort;
+    btn.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:6px 11px;border-radius:20px;border:1.5px solid rgba(26,86,219,.3);background:var(--c1b);color:var(--c1);cursor:pointer;white-space:nowrap;margin-top:8px;margin-left:8px';
+    btn.innerHTML = '<i class="ti ti-plug-connected" style="font-size:12px"></i> Lengkapi Nomor Port dari Kode';
+    rapikanBtn.parentNode.insertBefore(btn, rapikanBtn.nextSibling);
+  }
+  var _origOdpRenderForBackfill = window.odpRender;
+  window.odpRender = function(){
+    _origOdpRenderForBackfill();
+    ensureBackfillButton();
+  };
+  setTimeout(ensureBackfillButton, 950);
+
+  window.odpBukaBackfillPort = function(){
+    if (!isSuperAdmin2()){ if (typeof toast === 'function') toast('Khusus Super Admin', 'err'); return; }
+    var sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb){ if (typeof toast === 'function') toast('Database tidak terhubung', 'err'); return; }
+
+    if (window.ProgUI) ProgUI.open({ title: 'Memeriksa Nomor Port ODC', step: 'Mengambil semua data ODP…' });
+
+    sb.from('odps').select('id,kode,odc_id,odc_port_no').then(function(r){
+      if (r.error){ if (window.ProgUI) ProgUI.error('Gagal: ' + r.error.message); return; }
+      var semua = r.data || [];
+      var terpakaiPerOdc = {}; // odc_id -> { portNo: true }
+      semua.forEach(function(o){
+        if (o.odc_id && o.odc_port_no){
+          terpakaiPerOdc[o.odc_id] = terpakaiPerOdc[o.odc_id] || {};
+          terpakaiPerOdc[o.odc_id][o.odc_port_no] = true;
+        }
+      });
+
+      var rencana = [], tidakBisaTebak = 0, bentrok = 0;
+      semua.forEach(function(o){
+        if (!o.odc_id || o.odc_port_no) return; // sudah ada nomor port, lewati
+        var tebakan = tebakNomorPortDariKode(o.kode);
+        if (!tebakan){ tidakBisaTebak++; return; }
+        terpakaiPerOdc[o.odc_id] = terpakaiPerOdc[o.odc_id] || {};
+        if (terpakaiPerOdc[o.odc_id][tebakan]){ bentrok++; return; } // sudah dipakai ODP lain di ODC yg sama, lewati demi aman
+        terpakaiPerOdc[o.odc_id][tebakan] = true; // tandai terpakai supaya tidak dobel dalam 1 proses ini
+        rencana.push({ id: o.id, kode: o.kode, portNo: tebakan });
+      });
+
+      if (window.ProgUI && ProgUI.close) ProgUI.close();
+      tampilkanPratinjauBackfill(rencana, tidakBisaTebak, bentrok);
+    }).catch(function(e){
+      if (window.ProgUI) ProgUI.error('Error: ' + (e.message || 'coba lagi'));
+    });
+  };
+
+  function tampilkanPratinjauBackfill(rencana, tidakBisaTebak, bentrok){
+    var existing = document.getElementById('odp-backfill-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'odp-backfill-overlay';
+    overlay.className = 'olt-overlay on';
+    overlay.onclick = function(e){ if (e.target === overlay) overlay.remove(); };
+
+    var contohHtml = rencana.slice(0, 30).map(function(x){
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border);font-family:monospace;font-size:11px">' +
+        '<span style="color:var(--text)">' + x.kode + '</span>' +
+        '<span style="color:var(--c1);font-weight:700">Port ' + x.portNo + '</span>' +
+      '</div>';
+    }).join('');
+
+    overlay.innerHTML =
+      '<div class="olt-sheet">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">' +
+          '<div style="font-size:13px;font-weight:800;color:var(--text)"><i class="ti ti-plug-connected" style="color:var(--c1)"></i> Pratinjau Lengkapi Port ODC</div>' +
+          '<button onclick="document.getElementById(\'odp-backfill-overlay\').remove()" style="width:30px;height:30px;border-radius:9px;background:var(--bg3);border:none;cursor:pointer"><i class="ti ti-x"></i></button>' +
+        '</div>' +
+        '<div class="olt-sheet-body">' +
+          '<div style="font-size:11px;color:var(--text3);margin-bottom:12px">Nomor port ditebak dari angka di ujung kode ODP (misal <code>..._001</code> → Port 1). Ini hanya melengkapi data yang KOSONG — tidak menimpa yang sudah terisi.</div>' +
+          '<div style="display:flex;gap:8px;margin-bottom:12px">' +
+            '<div style="flex:1;background:var(--gng2);border-radius:12px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--green)">' + rencana.length + '</div><div style="font-size:9px;color:var(--text3);font-weight:700">SIAP DILENGKAPI</div></div>' +
+            '<div style="flex:1;background:var(--yg,rgba(217,119,6,.1));border-radius:12px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--yellow)">' + bentrok + '</div><div style="font-size:9px;color:var(--text3);font-weight:700">DILEWATI (BENTROK)</div></div>' +
+            '<div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--text3)">' + tidakBisaTebak + '</div><div style="font-size:9px;color:var(--text3);font-weight:700">TAK BISA DITEBAK</div></div>' +
+          '</div>' +
+          (rencana.length === 0
+            ? '<div style="text-align:center;padding:30px;color:var(--text3);font-size:12.5px">Tidak ada yang perlu dilengkapi.</div>'
+            : '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Contoh (maks. 30 dari ' + rencana.length + '):</div>' +
+              '<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:280px;overflow-y:auto">' + contohHtml + '</div>' +
+              '<button onclick="odpJalankanBackfillPort(' + rencana.length + ')" style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:none;background:var(--c1);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Ya, Lengkapi ' + rencana.length + ' Nomor Port Ini</button>' +
+              '<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:8px">Yang "Tak Bisa Ditebak" atau "Bentrok" perlu diisi manual lewat Edit ODP.</div>'
+          ) +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    window._odpRencanaBackfill = rencana;
+  }
+
+  window.odpJalankanBackfillPort = function(jumlah){
+    var rencana = window._odpRencanaBackfill || [];
+    if (!rencana.length) return;
+    if (!confirm('Yakin lengkapi ' + rencana.length + ' nomor port ODC sekarang? Langsung tersimpan ke database.')) return;
+
+    var overlay = document.getElementById('odp-backfill-overlay');
+    if (overlay) overlay.remove();
+
+    var sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb) return;
+    var ok = 0, gagal = 0;
+
+    if (window.ProgUI) ProgUI.open({ title: 'Melengkapi ' + rencana.length + ' Port ODC', step: 'Memulai…' });
+
+    function jalan(idx){
+      if (idx >= rencana.length){
+        if (window.ProgUI) ProgUI.success(ok + ' berhasil dilengkapi' + (gagal ? ', ' + gagal + ' gagal' : ''));
+        if (typeof toast === 'function') toast('✅ ' + ok + ' nomor port ODC dilengkapi' + (gagal ? ', ' + gagal + ' gagal' : ''), 'ok');
+        if (window.SOT && typeof SOT.invalidate === 'function') SOT.invalidate('general');
+        window._odpLoaded = false;
+        if (typeof odpLoad === 'function') odpLoad();
+        return;
+      }
+      var item = rencana[idx];
+      if (window.ProgUI) ProgUI.step('Melengkapi ' + (idx + 1) + '/' + rencana.length + '…', Math.round((idx / rencana.length) * 100));
+      sb.from('odps').update({ odc_port_no: item.portNo }).eq('id', item.id).then(function(r){
+        if (r.error) gagal++; else ok++;
+        setTimeout(function(){ jalan(idx + 1); }, 60);
+      }).catch(function(){ gagal++; setTimeout(function(){ jalan(idx + 1); }, 60); });
+    }
+    jalan(0);
+  };
+
+})();
