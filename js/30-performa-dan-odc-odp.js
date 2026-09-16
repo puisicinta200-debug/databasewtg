@@ -418,22 +418,21 @@
   'use strict';
 
   /* ================= state pilihan filter (per halaman) ================= */
+  /* ================= state pilihan filter kapasitas (per halaman) ================= */
   var state = {
-    odc: { kap: new Set(), area: new Set() },
-    odp: { kap: new Set(), area: new Set() },
+    odc: { kap: new Set() },
+    odp: { kap: new Set() },
   };
+  // CATATAN AUDIT: filter "Area" versi saya SEBELUMNYA dihapus di sini —
+  // ternyata dobel dengan filter Area yang MEMANG SUDAH ADA bawaan di
+  // halaman Master ODC/ODP (dropdown "Semua Area"). Sekarang HANYA ada
+  // 1 filter Area (yang bawaan), tidak ada duplikasi lagi.
 
   var KAP_OPTIONS = [
-    ['kosong', 'Kosong', 'var(--green)'],
+    ['kosong', 'Kosong (belum ada isi)', 'var(--green)'],
     ['isi', 'Isi (Belum Penuh)', 'var(--yellow)'],
-    ['penuh', 'Penuh', 'var(--red)'],
+    ['penuh', 'Full (sudah penuh)', 'var(--red)'],
   ];
-  // Catatan penting: ini BEDA dengan filter "Status: Full" yang sudah
-  // ada sebelumnya. "Status: Full" itu label yang diisi MANUAL oleh
-  // staf (bisa saja sudah tidak sesuai kondisi terkini kalau lupa
-  // diupdate). Filter "Kapasitas Real-time" di sini dihitung OTOMATIS
-  // dari data port yang sungguhan sekarang — jadi selalu akurat, dan
-  // saling melengkapi (bukan gantikan) filter Status yang lama.
 
   /* ================= hitung status kapasitas ================= */
   function odcCapClass(o){
@@ -457,132 +456,111 @@
     return 'isi';
   }
 
-  /* ================= komponen dropdown multi-pilih (dipakai ulang) ================= */
-  function ensureMultiSelectCSS(){
-    if (document.getElementById('wtg-multisel-css')) return;
+  /* =====================================================================
+     FILTER KAPASITAS — dipindah jadi BOTTOM SHEET (bukan dropdown kecil)
+     ---------------------------------------------------------------------
+     PERBAIKAN AUDIT: versi sebelumnya pakai kotak kecil yang muncul di
+     bawah tombol (position:absolute) — ternyata KEPOTONG/tidak kelihatan
+     karena kotak filternya ada di dalam area yang bisa di-scroll ke
+     samping (overflow-x). Sekarang pakai tampilan geser-dari-bawah yang
+     SAMA seperti fitur "Rapikan Kode" — dijamin selalu kelihatan & bisa
+     diklik di layar manapun.
+  ===================================================================== */
+  function ensureKapasitasCSS(){
+    if (document.getElementById('wtg-kap-css')) return;
     var st = document.createElement('style');
-    st.id = 'wtg-multisel-css';
+    st.id = 'wtg-kap-css';
     st.textContent =
-      '.wtg-msel{position:relative;flex-shrink:0}' +
-      '.wtg-msel-btn{display:flex;align-items:center;gap:5px;white-space:nowrap}' +
-      '.wtg-msel-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:60;background:var(--bg2);border:1.5px solid var(--border2);border-radius:12px;box-shadow:var(--sh-md);padding:8px;min-width:190px;display:none}' +
-      '.wtg-msel-panel.on{display:block}' +
-      '.wtg-msel-opt{display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--text)}' +
-      '.wtg-msel-opt:hover{background:var(--bg3)}' +
-      '.wtg-msel-opt input{width:16px;height:16px;flex-shrink:0}' +
-      '.wtg-msel-foot{display:flex;justify-content:space-between;border-top:1px solid var(--border);margin-top:4px;padding-top:6px}' +
-      '.wtg-msel-foot button{background:none;border:none;color:var(--c1);font-size:11px;font-weight:700;cursor:pointer;padding:4px 6px}';
+      '.wtg-kap-opt{display:flex;align-items:center;gap:10px;padding:13px 6px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--text)}' +
+      '.wtg-kap-opt input{width:18px;height:18px;flex-shrink:0}';
     document.head.appendChild(st);
   }
 
-  function closeAllPanels(exceptId){
-    document.querySelectorAll('.wtg-msel-panel.on').forEach(function(p){
-      if (p.id !== exceptId) p.classList.remove('on');
-    });
-  }
-  document.addEventListener('click', function(e){
-    if (!e.target.closest('.wtg-msel')) closeAllPanels(null);
-  });
+  function bukaSheetKapasitas(page){
+    ensureKapasitasCSS();
+    var existing = document.getElementById('wtg-kap-overlay');
+    if (existing) existing.remove();
 
-  function buildMultiSelect(id, label, options, selectedSet, onChange){
-    var wrap = document.createElement('div');
-    wrap.className = 'wtg-msel';
-    wrap.id = id + '-wrap';
+    var overlay = document.createElement('div');
+    overlay.id = 'wtg-kap-overlay';
+    overlay.className = 'olt-overlay on';
+    overlay.onclick = function(e){ if (e.target === overlay) overlay.remove(); };
+
+    var selectedSet = state[page].kap;
+    var optsHtml = KAP_OPTIONS.map(function(opt){
+      var val = opt[0], lbl = opt[1], col = opt[2];
+      return '<label class="wtg-kap-opt">' +
+        '<input type="checkbox" data-val="' + val + '" ' + (selectedSet.has(val) ? 'checked' : '') + '>' +
+        '<span style="width:9px;height:9px;border-radius:50%;background:' + col + ';flex-shrink:0"></span>' +
+        '<span>' + lbl + '</span>' +
+      '</label>';
+    }).join('');
+
+    overlay.innerHTML =
+      '<div class="olt-sheet">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">' +
+          '<div style="font-size:13px;font-weight:800;color:var(--text)">Filter Kapasitas Real-time</div>' +
+          '<button onclick="document.getElementById(\'wtg-kap-overlay\').remove()" style="width:30px;height:30px;border-radius:9px;background:var(--bg3);border:none;cursor:pointer"><i class="ti ti-x"></i></button>' +
+        '</div>' +
+        '<div class="olt-sheet-body">' +
+          '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Pilih salah satu, beberapa, atau kosongkan semua untuk menampilkan semuanya.</div>' +
+          '<div id="wtg-kap-opts">' + optsHtml + '</div>' +
+          '<button id="wtg-kap-terapkan" style="width:100%;margin-top:16px;padding:13px;border-radius:12px;border:none;background:var(--c1);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Terapkan</button>' +
+          '<button id="wtg-kap-reset" style="width:100%;margin-top:8px;padding:11px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-weight:700;font-size:12px;cursor:pointer">Bersihkan Filter</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll('#wtg-kap-opts input').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        if (inp.checked) selectedSet.add(inp.dataset.val); else selectedSet.delete(inp.dataset.val);
+      });
+    });
+    document.getElementById('wtg-kap-terapkan').onclick = function(){
+      overlay.remove();
+      updateKapButtonLabel(page);
+      window[page + 'Render']();
+    };
+    document.getElementById('wtg-kap-reset').onclick = function(){
+      selectedSet.clear();
+      overlay.remove();
+      updateKapButtonLabel(page);
+      window[page + 'Render']();
+    };
+  }
+
+  function updateKapButtonLabel(page){
+    var btn = document.getElementById('wtg-' + page + '-kap-btn');
+    if (!btn) return;
+    var n = state[page].kap.size;
+    btn.innerHTML = 'Kapasitas Real-time: <b style="color:var(--c1)">' + (n === 0 ? 'Semua' : n + ' dipilih') + '</b> <i class="ti ti-chevron-down" style="font-size:12px"></i>';
+  }
+
+  function ensureFilterUI(page){
+    if (document.getElementById('wtg-' + page + '-kap-btn')) return;
+    var anchor = page === 'odc' ? document.querySelector('#odc-fil-olt') : document.querySelector('#odp-fil-odc');
+    if (!anchor || !anchor.parentNode) return;
 
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'sel olt-fil-sel wtg-msel-btn';
-    btn.id = id + '-btn';
-    wrap.appendChild(btn);
-
-    var panel = document.createElement('div');
-    panel.className = 'wtg-msel-panel';
-    panel.id = id + '-panel';
-    wrap.appendChild(panel);
-
-    function renderBtn(){
-      var n = selectedSet.size;
-      btn.innerHTML = label + ': <b style="color:var(--c1)">' + (n === 0 ? 'Semua' : n + ' dipilih') + '</b> <i class="ti ti-chevron-down" style="font-size:12px"></i>';
-    }
-    function renderPanel(){
-      panel.innerHTML = '';
-      options.forEach(function(opt){
-        var val = opt[0], lbl = opt[1], col = opt[2] || 'var(--c1)';
-        var row = document.createElement('label');
-        row.className = 'wtg-msel-opt';
-        row.innerHTML = '<input type="checkbox" ' + (selectedSet.has(val) ? 'checked' : '') + '> ' +
-          '<span style="width:8px;height:8px;border-radius:50%;background:' + col + ';flex-shrink:0"></span> ' + lbl;
-        row.querySelector('input').addEventListener('change', function(e){
-          if (e.target.checked) selectedSet.add(val); else selectedSet.delete(val);
-          renderBtn();
-          onChange();
-        });
-        panel.appendChild(row);
-      });
-      var foot = document.createElement('div');
-      foot.className = 'wtg-msel-foot';
-      foot.innerHTML = '<button type="button" data-act="all">Pilih Semua</button><button type="button" data-act="clear">Bersihkan</button>';
-      foot.querySelector('[data-act="all"]').onclick = function(){
-        options.forEach(function(o){ selectedSet.add(o[0]); });
-        renderPanel(); renderBtn(); onChange();
-      };
-      foot.querySelector('[data-act="clear"]').onclick = function(){
-        selectedSet.clear();
-        renderPanel(); renderBtn(); onChange();
-      };
-      panel.appendChild(foot);
-    }
-
-    btn.onclick = function(e){
-      e.stopPropagation();
-      var willOpen = !panel.classList.contains('on');
-      closeAllPanels(panel.id);
-      if (willOpen){ renderPanel(); panel.classList.add('on'); } else panel.classList.remove('on');
-    };
-
-    renderBtn();
-    return { el: wrap, refreshOptions: function(newOptions){ options = newOptions; if (panel.classList.contains('on')) renderPanel(); renderBtn(); } };
-  }
-
-  /* ================= pasang UI filter ke halaman ODC & ODP ================= */
-  function ensureFilterUI(page){
-    ensureMultiSelectCSS();
-    var barSelector = page === 'odc' ? '#odc-fil-olt' : '#odp-fil-odc';
-    var anchor = document.querySelector(barSelector);
-    if (!anchor || !anchor.parentNode) return false;
-    if (document.getElementById('wtg-' + page + '-kap-wrap')) return true;
-
-    var areaOptions = (window._areaData || []).map(function(a){ return [a.id, a.nama || a.kode]; });
-
-    var kapMs = buildMultiSelect('wtg-' + page + '-kap', 'Kapasitas Real-time', KAP_OPTIONS, state[page].kap, function(){ window[page + 'Render'](); });
-    var areaMs = buildMultiSelect('wtg-' + page + '-area', 'Area', areaOptions, state[page].area, function(){ window[page + 'Render'](); });
-
-    anchor.parentNode.appendChild(kapMs.el);
-    anchor.parentNode.appendChild(areaMs.el);
-
-    // simpan referensi supaya opsi Area bisa disegarkan kalau data area berubah
-    window['_wtg' + page + 'AreaMs'] = areaMs;
-    return true;
-  }
-
-  function refreshAreaOptionsIfNeeded(page){
-    var ms = window['_wtg' + page + 'AreaMs'];
-    if (!ms) return;
-    var areaOptions = (window._areaData || []).map(function(a){ return [a.id, a.nama || a.kode]; });
-    ms.refreshOptions(areaOptions);
+    btn.id = 'wtg-' + page + '-kap-btn';
+    btn.className = 'sel olt-fil-sel';
+    btn.style.flexShrink = '0';
+    btn.onclick = function(){ bukaSheetKapasitas(page); };
+    anchor.parentNode.insertBefore(btn, anchor.nextSibling);
+    updateKapButtonLabel(page);
   }
 
   /* ================= override odcRender (logika ASLI + 2 kriteria baru) ================= */
   window.odcRender = function(){
     ensureFilterUI('odc');
-    refreshAreaOptionsIfNeeded('odc');
 
     var q   = (document.getElementById('odc-search') || {}).value || '';
     var fSt = (document.getElementById('odc-fil-status') || {}).value || '';
     var fAr = (document.getElementById('odc-fil-area') || {}).value || '';
     var fOl = (document.getElementById('odc-fil-olt') || {}).value || '';
     q = q.toLowerCase().trim();
-    var kapSet = state.odc.kap, areaSet = state.odc.area;
+    var kapSet = state.odc.kap;
 
     _odcFil = _odcData.filter(function(o){
       var matchQ  = !q || (o.nama || '').toLowerCase().includes(q) || (o.kode || '').toLowerCase().includes(q) || (o.lokasi || '').toLowerCase().includes(q);
@@ -590,8 +568,7 @@
       var matchAr = !fAr || o.area_id === fAr;
       var matchOl = !fOl || o.olt_id === fOl;
       var matchKap = !kapSet.size || kapSet.has(odcCapClass(o));
-      var matchAreaMulti = !areaSet.size || areaSet.has(o.area_id);
-      return matchQ && matchSt && matchAr && matchOl && matchKap && matchAreaMulti;
+      return matchQ && matchSt && matchAr && matchOl && matchKap;
     });
 
     if (typeof odcUpdateStats === 'function') odcUpdateStats();
@@ -628,14 +605,13 @@
   /* ================= override odpRender (logika ASLI + 2 kriteria baru) ================= */
   window.odpRender = function(){
     ensureFilterUI('odp');
-    refreshAreaOptionsIfNeeded('odp');
 
     var q   = (document.getElementById('odp-search') || {}).value || '';
     var fSt = (document.getElementById('odp-fil-status') || {}).value || '';
     var fAr = (document.getElementById('odp-fil-area') || {}).value || '';
     var fOc = (document.getElementById('odp-fil-odc') || {}).value || '';
     q = q.toLowerCase().trim();
-    var kapSet = state.odp.kap, areaSet = state.odp.area;
+    var kapSet = state.odp.kap;
 
     _odpFil = _odpData.filter(function(o){
       var matchQ  = !q || (o.nama || '').toLowerCase().includes(q) || (o.kode || '').toLowerCase().includes(q) || (o.lokasi || '').toLowerCase().includes(q);
@@ -643,8 +619,7 @@
       var matchAr = !fAr || o.area_id === fAr;
       var matchOc = !fOc || o.odc_id === fOc;
       var matchKap = !kapSet.size || kapSet.has(odpCapClass(o));
-      var matchAreaMulti = !areaSet.size || areaSet.has(o.area_id);
-      return matchQ && matchSt && matchAr && matchOc && matchKap && matchAreaMulti;
+      return matchQ && matchSt && matchAr && matchOc && matchKap;
     });
 
     if (typeof odpUpdateStats === 'function') odpUpdateStats();
@@ -1279,6 +1254,172 @@
       var item = rencana[idx];
       if (window.ProgUI) ProgUI.step('Melengkapi ' + (idx + 1) + '/' + rencana.length + '…', Math.round((idx / rencana.length) * 100));
       sb.from('odps').update({ odc_port_no: item.portNo }).eq('id', item.id).then(function(r){
+        if (r.error) gagal++; else ok++;
+        setTimeout(function(){ jalan(idx + 1); }, 60);
+      }).catch(function(){ gagal++; setTimeout(function(){ jalan(idx + 1); }, 60); });
+    }
+    jalan(0);
+  };
+
+})();
+
+
+/* =====================================================================
+   PERBAIKAN LANJUTAN #3 — Port PON (ODC → OLT) masih kosong semua
+   ---------------------------------------------------------------------
+   TEMUAN: sama seperti kasus "Port ODC" sebelumnya, tapi ini di level
+   ODC → OLT. Kolom "olt_port_no" MEMANG SUDAH ADA di database (beda
+   dengan odc_port_no yang kemarin harus ditambah), tapi banyak ODC yang
+   dibuat lewat import massal dulu kemungkinan besar tidak terisi kolom
+   ini — makanya semua Port PON kelihatan "Kosong".
+
+   PENTING — INI BEDA DENGAN BACKFILL ODP SEBELUMNYA: kode ODC (misal
+   "W1_CBD_JJC.JKBN_021") TIDAK mengandung info "ini nomor port PON
+   yang keberapa" — jadi TIDAK BISA ditebak seakurat kasus ODP kemarin.
+   Yang saya buat di sini cuma pengisian NOMOR URUT sementara (ODC ke-1
+   di OLT itu → Port 1, ke-2 → Port 2, dst) SUPAYA tidak ada 2 ODC yang
+   bentrok nomor port-nya lagi — BUKAN jaminan sesuai kabel fisik yang
+   sebenarnya. Karena itu, tombol ini punya peringatan jelas & tetap
+   wajib lihat pratinjau dulu, dan sangat disarankan dicek ulang manual
+   ke lapangan kalau presisi port fisik penting untuk Anda.
+===================================================================== */
+(function(){
+  'use strict';
+
+  function isSuperAdmin3(){
+    var role = (typeof normalizeRole === 'function') ? normalizeRole(window.CR) : window.CR;
+    return role === 'super_admin';
+  }
+
+  function ensureOltPortBackfillButton(){
+    if (!isSuperAdmin3()) return;
+    if (document.getElementById('odc-oltport-btn')) return;
+    var rapikanBtn = document.querySelector('#odc-fil-olt'); // toolbar Master ODC
+    var anchor = rapikanBtn ? rapikanBtn.closest('.olt-filter-bar') : null;
+    if (!anchor) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'odc-oltport-btn';
+    btn.onclick = window.odcBukaBackfillOltPort;
+    btn.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:6px 11px;border-radius:20px;border:1.5px solid rgba(217,119,6,.35);background:var(--yg,rgba(217,119,6,.1));color:var(--yellow);cursor:pointer;white-space:nowrap;margin-top:8px';
+    btn.innerHTML = '<i class="ti ti-alert-triangle" style="font-size:12px"></i> Lengkapi Port PON (perkiraan)';
+    anchor.parentNode.insertBefore(btn, anchor.nextSibling);
+  }
+  var _origOdcRenderForOltPort = window.odcRender;
+  window.odcRender = function(){
+    _origOdcRenderForOltPort();
+    ensureOltPortBackfillButton();
+  };
+  setTimeout(ensureOltPortBackfillButton, 1000);
+
+  window.odcBukaBackfillOltPort = function(){
+    if (!isSuperAdmin3()){ if (typeof toast === 'function') toast('Khusus Super Admin', 'err'); return; }
+    var sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb){ if (typeof toast === 'function') toast('Database tidak terhubung', 'err'); return; }
+
+    if (window.ProgUI) ProgUI.open({ title: 'Memeriksa Port PON', step: 'Mengambil semua data ODC…' });
+
+    sb.from('odcs').select('id,kode,olt_id,olt_port_no').then(function(r){
+      if (r.error){ if (window.ProgUI) ProgUI.error('Gagal: ' + r.error.message); return; }
+      var semua = r.data || [];
+      var tanpaOlt = semua.filter(function(o){ return !o.olt_id; }).length;
+      var perOlt = {};
+      semua.forEach(function(o){
+        if (!o.olt_id) return;
+        perOlt[o.olt_id] = perOlt[o.olt_id] || [];
+        perOlt[o.olt_id].push(o);
+      });
+
+      var rencana = [];
+      Object.keys(perOlt).forEach(function(oltId){
+        var list = perOlt[oltId];
+        var terpakai = {};
+        list.forEach(function(o){ if (o.olt_port_no) terpakai[o.olt_port_no] = true; });
+        var kosong = list.filter(function(o){ return !o.olt_port_no; }).sort(function(a, b){ return (a.kode || '').localeCompare(b.kode || ''); });
+        var nomor = 1;
+        kosong.forEach(function(o){
+          while (terpakai[nomor]) nomor++;
+          terpakai[nomor] = true;
+          rencana.push({ id: o.id, kode: o.kode, portNo: nomor });
+          nomor++;
+        });
+      });
+
+      if (window.ProgUI && ProgUI.close) ProgUI.close();
+      tampilkanPratinjauOltPort(rencana, tanpaOlt);
+    }).catch(function(e){
+      if (window.ProgUI) ProgUI.error('Error: ' + (e.message || 'coba lagi'));
+    });
+  };
+
+  function tampilkanPratinjauOltPort(rencana, tanpaOlt){
+    var existing = document.getElementById('odc-oltport-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'odc-oltport-overlay';
+    overlay.className = 'olt-overlay on';
+    overlay.onclick = function(e){ if (e.target === overlay) overlay.remove(); };
+
+    var contohHtml = rencana.slice(0, 30).map(function(x){
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border);font-family:monospace;font-size:11px">' +
+        '<span style="color:var(--text)">' + x.kode + '</span>' +
+        '<span style="color:var(--yellow);font-weight:700">Port ' + x.portNo + '</span>' +
+      '</div>';
+    }).join('');
+
+    overlay.innerHTML =
+      '<div class="olt-sheet">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">' +
+          '<div style="font-size:13px;font-weight:800;color:var(--text)"><i class="ti ti-alert-triangle" style="color:var(--yellow)"></i> Pratinjau Port PON (Perkiraan)</div>' +
+          '<button onclick="document.getElementById(\'odc-oltport-overlay\').remove()" style="width:30px;height:30px;border-radius:9px;background:var(--bg3);border:none;cursor:pointer"><i class="ti ti-x"></i></button>' +
+        '</div>' +
+        '<div class="olt-sheet-body">' +
+          '<div style="background:var(--yg,rgba(217,119,6,.1));border:1px solid rgba(217,119,6,.3);border-radius:12px;padding:12px;margin-bottom:12px;font-size:11px;color:var(--text2);line-height:1.5">' +
+            '<b>Ini nomor urut PERKIRAAN</b>, bukan hasil baca dari kabel fisik — karena kode ODC tidak menyimpan info nomor port PON aslinya. Cuma memastikan tidak ada 2 ODC bentrok nomor port. Kalau presisi ke lapangan penting, cek &amp; sesuaikan manual satu-satu lewat Edit ODC.' +
+          '</div>' +
+          (tanpaOlt > 0 ? '<div style="font-size:10.5px;color:var(--red);margin-bottom:10px"><i class="ti ti-alert-circle"></i> ' + tanpaOlt + ' ODC tidak punya OLT induk sama sekali — tidak bisa diisikan port PON, perlu dihubungkan ke OLT dulu lewat Edit ODC.</div>' : '') +
+          '<div style="display:flex;gap:8px;margin-bottom:12px">' +
+            '<div style="flex:1;background:var(--gng2);border-radius:12px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--green)">' + rencana.length + '</div><div style="font-size:9px;color:var(--text3);font-weight:700">SIAP DIISI</div></div>' +
+          '</div>' +
+          (rencana.length === 0
+            ? '<div style="text-align:center;padding:30px;color:var(--text3);font-size:12.5px">Tidak ada yang perlu diisi.</div>'
+            : '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Contoh (maks. 30 dari ' + rencana.length + '):</div>' +
+              '<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:260px;overflow-y:auto">' + contohHtml + '</div>' +
+              '<button onclick="odcJalankanBackfillOltPort(' + rencana.length + ')" style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:none;background:var(--yellow);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Ya, Isi ' + rencana.length + ' Port PON (Perkiraan) Ini</button>'
+          ) +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    window._odcRencanaOltPort = rencana;
+  }
+
+  window.odcJalankanBackfillOltPort = function(jumlah){
+    var rencana = window._odcRencanaOltPort || [];
+    if (!rencana.length) return;
+    if (!confirm('Yakin isi ' + rencana.length + ' nomor Port PON dengan PERKIRAAN sekarang? Ini bukan data pasti — pastikan Anda memahami itu.')) return;
+
+    var overlay = document.getElementById('odc-oltport-overlay');
+    if (overlay) overlay.remove();
+    var sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb) return;
+    var ok = 0, gagal = 0;
+
+    if (window.ProgUI) ProgUI.open({ title: 'Mengisi ' + rencana.length + ' Port PON', step: 'Memulai…' });
+
+    function jalan(idx){
+      if (idx >= rencana.length){
+        if (window.ProgUI) ProgUI.success(ok + ' berhasil diisi' + (gagal ? ', ' + gagal + ' gagal' : ''));
+        if (typeof toast === 'function') toast('✅ ' + ok + ' Port PON diisi (perkiraan)' + (gagal ? ', ' + gagal + ' gagal' : ''), 'ok');
+        if (window.SOT && typeof SOT.invalidate === 'function') SOT.invalidate('general');
+        window._odcData = [];
+        if (typeof odcLoad === 'function') odcLoad();
+        return;
+      }
+      var item = rencana[idx];
+      if (window.ProgUI) ProgUI.step('Mengisi ' + (idx + 1) + '/' + rencana.length + '…', Math.round((idx / rencana.length) * 100));
+      sb.from('odcs').update({ olt_port_no: item.portNo }).eq('id', item.id).then(function(r){
         if (r.error) gagal++; else ok++;
         setTimeout(function(){ jalan(idx + 1); }, 60);
       }).catch(function(){ gagal++; setTimeout(function(){ jalan(idx + 1); }, 60); });
