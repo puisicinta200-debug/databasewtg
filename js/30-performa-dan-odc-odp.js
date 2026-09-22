@@ -1428,3 +1428,89 @@
   };
 
 })();
+
+
+/* =====================================================================
+   PERBAIKAN LANJUTAN #4 — Tombol pelengkap data dibuat MENCOLOK
+   ---------------------------------------------------------------------
+   TEMUAN: tombol "Lengkapi Nomor Port dari Kode" dan "Lengkapi Port
+   PON" yang saya buat sebelumnya ternyata BERBENTUK PIL KECIL di
+   pojok filter — gampang terlewat/tidak disadari. Fiturnya sendiri
+   sudah benar, cuma kurang terlihat.
+
+   Sekarang ditambah: BANNER BESAR berwarna, muncul OTOMATIS di paling
+   atas halaman Master ODC/ODP (di atas kotak statistik), TAPI HANYA
+   kalau memang ada data yang belum lengkap — kalau semua sudah
+   beres, banner ini tidak muncul sama sekali. Tombol pil kecil yang
+   lama tetap ada juga (tidak dihapus, cuma dilengkapi).
+===================================================================== */
+(function(){
+  'use strict';
+
+  function isSuperAdminGap(){
+    var role = (typeof normalizeRole === 'function') ? normalizeRole(window.CR) : window.CR;
+    return role === 'super_admin';
+  }
+
+  function pasangBannerOdp(){
+    if (!isSuperAdminGap()) return;
+    var statEl = document.getElementById('odpst-total');
+    var strip = statEl ? statEl.closest('.olt-stat-strip') : null;
+    if (!strip || !strip.parentNode) return;
+    if (document.getElementById('wtg-gap-banner-odp')) return;
+
+    var sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb) return;
+
+    sb.from('odps').select('id', { count: 'exact', head: true }).not('odc_id', 'is', null).is('odc_port_no', null).then(function(r){
+      var n = r.count || 0;
+      if (n <= 0) return;
+      var banner = document.createElement('div');
+      banner.id = 'wtg-gap-banner-odp';
+      banner.style.cssText = 'background:var(--c1bg,rgba(26,86,219,.08));border:1.5px solid rgba(26,86,219,.3);border-radius:14px;padding:14px;margin:0 0 12px;display:flex;align-items:flex-start;gap:10px';
+      banner.innerHTML =
+        '<i class="ti ti-plug-connected" style="font-size:22px;color:var(--c1);flex-shrink:0;margin-top:2px"></i>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:12.5px;font-weight:800;color:var(--c1);margin-bottom:3px">' + n + ' ODP belum punya nomor Port ODC</div>' +
+          '<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px">Ini data lama yang belum dilengkapi, bukan kesalahan input baru. Sistem bisa mengisikan otomatis berdasarkan kode ODP — lihat dulu pratinjaunya sebelum disimpan.</div>' +
+          '<button onclick="odpBukaBackfillPort()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--c1);color:#fff;font-weight:700;font-size:11.5px;cursor:pointer">Lengkapi Sekarang</button>' +
+        '</div>';
+      strip.parentNode.insertBefore(banner, strip);
+    }).catch(function(){});
+  }
+
+  function pasangBannerOdc(){
+    if (!isSuperAdminGap()) return;
+    var statEl = document.getElementById('odcst-total');
+    var strip = statEl ? statEl.closest('.olt-stat-strip') : null;
+    if (!strip || !strip.parentNode) return;
+    if (document.getElementById('wtg-gap-banner-odc')) return;
+
+    var sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb) return;
+
+    sb.from('odcs').select('id', { count: 'exact', head: true }).not('olt_id', 'is', null).is('olt_port_no', null).then(function(r){
+      var n = r.count || 0;
+      if (n <= 0) return;
+      var banner = document.createElement('div');
+      banner.id = 'wtg-gap-banner-odc';
+      banner.style.cssText = 'background:var(--yg,rgba(217,119,6,.1));border:1.5px solid rgba(217,119,6,.35);border-radius:14px;padding:14px;margin:0 0 12px;display:flex;align-items:flex-start;gap:10px';
+      banner.innerHTML =
+        '<i class="ti ti-alert-triangle" style="font-size:22px;color:var(--yellow);flex-shrink:0;margin-top:2px"></i>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:12.5px;font-weight:800;color:var(--yellow);margin-bottom:3px">' + n + ' ODC belum punya nomor Port PON</div>' +
+          '<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px">Ini data lama yang belum dilengkapi. Sistem bisa mengisikan nomor urut PERKIRAAN (bukan hasil baca kabel fisik) — lihat pratinjaunya dulu, dan sebaiknya dicek ulang manual kalau presisi ke lapangan penting.</div>' +
+          '<button onclick="odcBukaBackfillOltPort()" style="padding:9px 16px;border-radius:10px;border:none;background:var(--yellow);color:#fff;font-weight:700;font-size:11.5px;cursor:pointer">Lihat &amp; Lengkapi</button>' +
+        '</div>';
+      strip.parentNode.insertBefore(banner, strip);
+    }).catch(function(){});
+  }
+
+  var _origOdpRenderForGapBanner = window.odpRender;
+  window.odpRender = function(){ _origOdpRenderForGapBanner(); pasangBannerOdp(); };
+  var _origOdcRenderForGapBanner = window.odcRender;
+  window.odcRender = function(){ _origOdcRenderForGapBanner(); pasangBannerOdc(); };
+
+  setTimeout(function(){ pasangBannerOdp(); pasangBannerOdc(); }, 1200);
+
+})();
